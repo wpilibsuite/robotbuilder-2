@@ -19,10 +19,123 @@ html, body {
   //}
 }
 
+.header {
+  display: grid;
+  grid-template-columns: 1fr 380px 1fr;
+  background-color: #111;
+
+  .MuiTab-root {
+    color: gray;
+
+    &.Mui-selected {
+      color: white;
+      border-color: white;
+    }
+  }
+
+  .project-name-input {
+    color: white;
+
+    &.focused {
+      color: red;
+    }
+  }
+}
+
+.gutter {
+  //background-color: darkslategray;
+  //min-width: 400px
+}
+
 .controller-pane {
   background-color: white;
   margin-left: 16px;
   margin-right: 16px;
+
+  display: grid;
+  grid-template-columns: minmax(400px, 1fr) 4fr minmax(400px, 1fr);
+
+  transition-timing-function: ease-in-out;
+  transition: 0.5s;
+
+  @media screen and (max-width: 1280px) {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .gutter-left {
+      display: none;
+    }
+  }
+}
+
+.controller-svg-wrapper {
+  margin-right: 16px;
+  margin-left: 16px;
+}
+
+.controller-center {
+  margin-top: 20px;
+}
+
+.controller-svg {
+  width: 100%;
+  height: 100%;
+  min-width: 400px;
+  max-width: 80vw;
+  max-height: calc(100vh - 200px);
+
+  .controller-button {
+    &.selected {
+      .icon {
+        stroke: #333;
+      }
+
+      .icon-solid {
+        fill: #333;
+      }
+
+      .outline {
+        stroke: #333;
+        fill: lightblue;
+      }
+    }
+
+    .icon, .outline {
+      transition: 0.1s;
+      transition-timing-function: ease-in-out;
+    }
+
+    .icon {
+      fill: none;
+      stroke: #ddd;
+    }
+
+    .icon-solid {
+      fill: #ddd;
+    }
+
+    .outline {
+      fill: rgba(0, 0, 0, 0);
+      stroke: #ececec;
+    }
+
+    &:hover {
+      cursor: pointer;
+
+      .outline {
+        stroke: #2b7bff;
+      }
+
+      .icon {
+        stroke: #2b5bff;
+      }
+
+      .icon-solid {
+        fill: #2b5bff;
+      }
+    }
+  }
 }
 
 .button-node {
@@ -32,7 +145,7 @@ html, body {
   //stroke: #338;
   //stroke-width: 2px;
 
- circle:hover {
+  circle:hover {
     fill: rgba(200, 200, 255, 1);
     box-shadow: 2px 2px 4px #333;
     cursor: pointer;

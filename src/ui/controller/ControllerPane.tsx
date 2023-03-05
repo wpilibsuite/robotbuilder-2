@@ -20,6 +20,7 @@ import { ButtonConfig, ControllerConfig } from "./ControllerConfig";
 import { Command } from "../../bindings/Command";
 import React, { createRef, useRef, useState } from "react";
 import { useResizeDetector } from "react-resize-detector";
+import $ from "jquery";
 
 export type ControllerPaneProps = {
   controller: Controller;
@@ -58,8 +59,7 @@ function CommandSelectBox({commands, initialCommand, onChange}: CommandSelectBox
 
 type ButtonBindingDialogProps = {
   button: ControllerButton;
-  config: ButtonConfig;
-  scale: number;
+  target: HTMLElement;
   commands: Command[];
 }
 
@@ -74,18 +74,13 @@ const imageScale = function (image: HTMLImageElement) {
   return scale;
 }
 
-function ButtonBindingDialog({button, config, scale, commands}: ButtonBindingDialogProps) {
+function ButtonBindingDialog({button, target, commands}: ButtonBindingDialogProps) {
   const updateButtonCommand = (bindingType: string, uuid: string) => {
     button[bindingType] = uuid;
   };
 
   return (
-    <Card style={ {
-      position: "absolute",
-      // left: x,
-      top: config.nodePos[1] * scale,
-      transition: "all 0.1s"
-    } } className={ "binding-dialog" } component={ Paper }>
+    <Card className={ "binding-dialog" } component={ Paper }>
       <CardHeader title={ button.name }>{ button.name }</CardHeader>
       <CardContent>
         <TableContainer>
@@ -159,19 +154,6 @@ function ButtonBindingDialog({button, config, scale, commands}: ButtonBindingDia
   );
 }
 
-
-const useRefScale = (ref) => {
-  const [scale, setScale] = useState(1)
-  React.useEffect(() => {
-    if (ref.current) {
-      console.log('Updating scale due to resize');
-      const {current} = ref;
-      setScale(imageScale(current));
-    }
-  }, [ref]);
-  return scale;
-}
-
 export function ControllerPane(props: ControllerPaneProps) {
   let config: ControllerConfig;
   switch (props.controller.type) {
@@ -183,12 +165,13 @@ export function ControllerPane(props: ControllerPaneProps) {
       break;
   }
 
-  const [currentButton, setCurrentButton] = useState({button: null, config: null});
+  const [currentButton, setCurrentButton] = useState({button: null, target: null});
   const [showDialog, setShowDialog] = useState(false);
 
-  const toggleDialog = (buttonConfig: ButtonConfig) => {
-    if (showDialog && currentButton.config.name === buttonConfig.name) {
-      setCurrentButton({button: null, config: null});
+  const toggleDialog = (buttonConfig: ButtonConfig, target: HTMLElement) => {
+    if (showDialog && currentButton.button.name === buttonConfig.name) {
+      setCurrentButton({button: null, target: null});
+      target.classList.remove("selected");
       setShowDialog(false);
     } else {
       let button: ControllerButton = props.controller.buttons.find(b => b.name === buttonConfig.name);
@@ -197,45 +180,42 @@ export function ControllerPane(props: ControllerPaneProps) {
         button = {name: buttonConfig.name}
         props.controller.buttons.push(button);
       }
-      setCurrentButton({button: button, config: buttonConfig});
+      setCurrentButton({button: button, target: target});
+      target.classList.add("selected");
       setShowDialog(true);
     }
   }
 
-  const [scale, setScale] = useState(1);
-  const targetRef = useRef(null);
-  useResizeDetector({ targetRef, onResize: (width, height) => { setScale(imageScale(targetRef.current)) } });
+  const svg = config.svg;
 
   return (
-    <Box style={ {
-      display: "grid",
-      gridTemplateColumns: "400px 1fr 400px",
-      position: "relative",
-    } } className={ "controller-pane" }>
+    <Box className={ "controller-pane" }>
       <Box className={ "gutter left-gutter" }>
       </Box>
       <Box className={ "controller-center" }>
-        <img ref={ targetRef } src={ config.imagePath } className={ "controller-image" }
-             alt={ `${ config.name } Controller` }/>
-
-        {
-          config.buttons.map(button => {
-            return (
-              <span className={ "button-node-wrapper" }
-                    style={ {position: "absolute", left: button.nodePos[0] * scale - 8, top: button.nodePos[1] * scale - 8} }
-                    key={ `button-node-${ button.name }` }
-                    onClick={ () => toggleDialog(button) }>
-              { button.node }
-            </span>
-            );
-          })
+        <div key={`controller-svg-${config.name}`} className="controller-svg-wrapper" onClick={ (e) => {
+          const uiButton = $(e.target).parent(".controller-button")[0];
+          if (uiButton) {
+            const name = $(uiButton).data("buttonName");
+            if (name) {
+              const bc = config.buttons.find(b => b.name === name);
+              let button: ControllerButton = props.controller.buttons.find(button => button.name === name);
+              if (!button) {
+                button = { name: name };
+                props.controller.buttons.push(button);
+              }
+              toggleDialog(bc, uiButton as HTMLElement);
+            }
+          }
         }
+        }>
+          { svg }
+        </div>
       </Box>
       <Box className={ "gutter right-gutter" }>
         { showDialog ?
           <ButtonBindingDialog button={ currentButton.button }
-                               config={ currentButton.config }
-                               scale={ scale }
+                               target={ currentButton.target }
                                commands={ props.commands }/> : null
         }
       </Box>

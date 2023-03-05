@@ -1,4 +1,5 @@
 import { ControllerConfig } from "../ControllerConfig";
+import { ReactSVG } from "react-svg";
 
 const rightButtonNode = (
   <div style={{
@@ -20,45 +21,39 @@ const buttonNode = (
 
 export const PS5Controller: ControllerConfig = {
   name: 'PS5',
-  imagePath: '/controllers/ps5.png',
+  svg: <ReactSVG src={"/controllers/ps5.svg"}/>,
   buttons: [
     {
       name: "TRIANGLE",
-      index: 1,
-      nodePos: [1948 + 32, 365 + 32],
-      node: buttonNode
+      index: 1
     },
     {
       name: "CIRCLE",
-      index: 2,
-      nodePos: [2112 + 32, 532 + 32],
-      node: buttonNode
+      index: 2
     },
     {
       name: "SQUARE",
-      index: 3,
-      nodePos: [1785 + 32, 532 + 32],
-      node: buttonNode
+      index: 3
     },
     {
       name: "X",
-      index: 4,
-      nodePos: [1948 + 32, 698 + 32],
-      node: buttonNode
+      index: 4
     },
-
-    // {name: "D-PAD UP", nodePos: [170, 410]},
-    // {name: "D-PAD RIGHT", nodePos: []},
-    // {name: "D-PAD DOWN", nodePos: []},
-    // {name: "D-PAD LEFT", nodePos: []},
-    //
-    // {name: "LEFT JOYSTICK", nodePos: []},
-    // {name: "RIGHT JOYSTICK", nodePos: []},
-    //
-    // {name: "LEFT BUMPER", nodePos: []},
-    // {name: "LEFT TRIGGER", nodePos: []},
-    //
-    // {name: "RIGHT BUMPER", nodePos: []},
-    // {name: "RIGHT TRIGGER", nodePos: []},
+    {
+      name: "D-PAD UP",
+      index: 5
+    },
+    {
+      name: "D-PAD RIGHT",
+      index: 6
+    },
+    {
+      name: "D-PAD DOWN",
+      index: 7
+    },
+    {
+      name: "D-PAD LEFT",
+      index: 8
+    }
   ]
 }

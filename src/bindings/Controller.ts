@@ -6,6 +6,8 @@ export type Controller = {
    */
   name: string;
 
+  uuid: string;
+
   /**
    * The type of the controller, e.g. "Playstation 5" or "Flightmaster".
    */

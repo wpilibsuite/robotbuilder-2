@@ -47,6 +47,8 @@ export class SubsystemAction {
    */
   name: string;
 
+  uuid: string;
+
   /**
    * The parameters available to be passed to the action. This may be empty.
    */
@@ -70,6 +72,8 @@ export class SubsystemState {
    * The name of the state.  This should be unique among all states on the subsystem.
    */
   name: string;
+
+  uuid: string;
 }
 
 export class Subsystem {
@@ -77,6 +81,8 @@ export class Subsystem {
    * The name of the subsystem.
    */
   name: string;
+
+  uuid: string;
 
   /**
    * The possible actions the subsystem can perform.
@@ -105,6 +111,9 @@ export type Command =
   | RaceGroup
   | ParallelGroup;
 
+
+type SubsystemRef = string;
+
 /**
  * An atomic command performs a single subsystem action until some state is reached
  */
@@ -119,7 +128,7 @@ export class AtomicCommand {
   /**
    * The subsystem that the command manipulates.
    */
-  subsystem: Subsystem;
+  subsystem: SubsystemRef;
 
   /**
    * The action that the command will execute.

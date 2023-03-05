@@ -15,11 +15,11 @@ export function Controllers(props: ControllersProps) {
 
   return (
     <Box className={ "controllers" }>
-      <Tabs onChange={(_, newController) => setController(newController)} value={controller} centered>
+      <Tabs onChange={(_, newController) => setController(newController)} value={controller.uuid} centered>
         {
           props.controllers.map((controller) => {
             return (
-              <Tab label={ controller.name } value={ controller } key={controller.name}/>
+              <Tab label={ controller.name } value={ controller.uuid } key={controller.name}/>
             );
           })
         }
