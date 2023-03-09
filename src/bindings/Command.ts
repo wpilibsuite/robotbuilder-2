@@ -1,3 +1,5 @@
+import { v4 as uuidV4 } from "uuid"
+
 /**
  * The possible primitive types that can be passed as arguments to an action invocation.
  */
@@ -6,6 +8,8 @@ export type ParamType =
   | "long"
   | "double"
   | "boolean";
+
+type UUID = string;
 
 export type Unit = { name: string, symbol: string };
 
@@ -18,6 +22,8 @@ export class Param {
    */
   name: string;
 
+  uuid: string;
+
   /**
    * The type of the parameter.
    */
@@ -28,6 +34,10 @@ export class Param {
    * by C++ to encode units in the type system.
    */
   unit?: Unit;
+
+  constructor() {
+    this.uuid = uuidV4();
+  }
 }
 
 /**
@@ -49,10 +59,19 @@ export class SubsystemAction {
 
   uuid: string;
 
+  subsystem: SubsystemRef;
+
   /**
    * The parameters available to be passed to the action. This may be empty.
    */
   params: Param[];
+
+  constructor({ name, subsystem }: { name?: string, subsystem?: SubsystemRef }) {
+    this.name = name;
+    this.subsystem = subsystem;
+
+    this.uuid = uuidV4();
+  }
 }
 
 export class SubsystemActionInvocation {
@@ -74,6 +93,15 @@ export class SubsystemState {
   name: string;
 
   uuid: string;
+
+  subsystem: SubsystemRef;
+
+  constructor({ name, subsystem }: { name?: string, subsystem?: SubsystemRef }) {
+    this.name = name;
+    this.subsystem = subsystem;
+
+    this.uuid = uuidV4();
+  }
 }
 
 export class Subsystem {
@@ -93,6 +121,36 @@ export class Subsystem {
    * The possible states that the subsystem exposes to commands.
    */
   states: SubsystemState[];
+
+  constructor() {
+    this.uuid = uuidV4();
+    this.actions = [];
+    this.states = [];
+  }
+
+  addAction(action: SubsystemAction) {
+    if (action.subsystem !== this.uuid) return;
+
+    this.actions.push(action);
+  }
+
+  addState(state: SubsystemState) {
+    if (state.subsystem !== this.uuid) return;
+
+    this.states.push(state);
+  }
+
+  createAction(name: string): SubsystemAction {
+    const action = new SubsystemAction({ name: name, subsystem: this.uuid });
+    this.addAction(action);
+    return action;
+  }
+
+  createState(name: string): SubsystemState {
+    const state = new SubsystemState({ name: name, subsystem: this.uuid });
+    this.addState(state);
+    return state;
+  }
 }
 
 /**
@@ -107,10 +165,7 @@ export type EndCondition =
 export type Command =
   | AtomicCommand
   | SequentialGroup
-  | DeadlineGroup
-  | RaceGroup
   | ParallelGroup;
-
 
 type SubsystemRef = string;
 
@@ -124,6 +179,13 @@ export class AtomicCommand {
   name: string;
 
   uuid: string;
+
+  type: "Atomic";
+
+  constructor() {
+    this.uuid = uuidV4();
+    this.type = "Atomic";
+  }
 
   /**
    * The subsystem that the command manipulates.
@@ -147,66 +209,40 @@ export class AtomicCommand {
 export class SequentialGroup {
   name: string;
   uuid: string;
-  commands: Command[];
+  commands: UUID[];
+  type: "SequentialGroup";
+
+  constructor() {
+    this.uuid = uuidV4();
+    this.commands = [];
+    this.type = "SequentialGroup";
+  }
 
   addCommand(command: Command) {
-    this.commands.push(command);
+    this.commands.push(command.uuid);
   }
 }
 
-/**
- * A group of commands that run in parallel; the group will terminate only when the leader command finishes. Any other
- * running commands will be cancelled.
- */
-export class DeadlineGroup {
-  name: string;
+type ParallelEndCondition =
+  "any" |
+  "all" |
+  UUID;
 
-  uuid: string;
-  /**
-   * The commands that will race.
-   */
-  commands: Command[];
-
-  /**
-   * The race leader. Once this command finishes, all other running commands will be cancelled.
-   */
-  leader: Command;
-
-  addCommand(command: Command) {
-    this.commands.push(command);
-  }
-}
-
-/**
- * A group of commands that run in parallel; the group will terminate when ANY of the commands it encapsulates finishes.
- */
-export class RaceGroup {
-  name: string;
-
-  uuid: string;
-  /**
-   * The commands that will race.
-   */
-  commands: Command[];
-
-  addCommand(command: Command) {
-    this.commands.push(command);
-  }
-}
-
-/**
- * A group of commands that run in parallel; the group will terminate only when ALL encapsulated commands finish.
- */
 export class ParallelGroup {
   name: string;
-
   uuid: string;
-  /**
-   * The commands to run together.
-   */
-  commands: Command[];
+  commands: UUID[];
+  endCondition: ParallelEndCondition;
+  type: "ParallelGroup";
+
+  constructor() {
+    this.uuid = uuidV4();
+    this.endCondition = "any";
+    this.commands = [];
+    this.type = "ParallelGroup";
+  }
 
   addCommand(command: Command) {
-    this.commands.push(command);
+    this.commands.push(command.uuid);
   }
 }

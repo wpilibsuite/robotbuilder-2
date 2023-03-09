@@ -1,4 +1,3 @@
-import ps5 from './images/ps5.png';
 import { Box, Tab, Tabs } from "@mui/material";
 import { Controller } from "../../bindings/Controller.ts";
 import { ControllerPane } from "./ControllerPane.tsx";
@@ -11,20 +10,25 @@ export type ControllersProps = {
 };
 
 export function Controllers(props: ControllersProps) {
-  const [controller, setController] = React.useState(props.controllers[0]);
+  const [controller, setController] = React.useState(props.controllers[0].uuid);
 
   return (
     <Box className={ "controllers" }>
-      <Tabs onChange={(_, newController) => setController(newController)} value={controller.uuid} centered>
+      <Tabs onChange={ (_, newController) => setController(newController) }
+            value={ controller }
+            centered>
         {
           props.controllers.map((controller) => {
             return (
-              <Tab label={ controller.name } value={ controller.uuid } key={controller.name}/>
+              <Tab label={ controller.name }
+                   value={ controller.uuid }
+                   key={ controller.name }/>
             );
           })
         }
       </Tabs>
-      <ControllerPane controller={ controller } commands={ props.commands }/>
+      <ControllerPane controller={ props.controllers.find(c => c.uuid === controller) }
+                      commands={ props.commands }/>
     </Box>
   );
 }

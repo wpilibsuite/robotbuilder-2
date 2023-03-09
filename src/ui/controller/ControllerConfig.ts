@@ -1,5 +1,3 @@
-import { ReactNode } from "react";
-
 export type ButtonConfig = {
   /**
    * The name of the button.
@@ -16,9 +14,9 @@ export type ControllerConfig = {
   name: string;
 
   /**
-   * The SVG component to render.
+   * The path to the SVG file to render as the controller.
    */
-  svg: ReactNode;
+  svg: string;
 
   /**
    * The buttons available for configuration on the controller.

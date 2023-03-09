@@ -6,6 +6,14 @@ html, body {
   height: 100%;
 }
 
+.project-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  //background-color: #222;
+}
+
 .binding-dialog {
   //background-color: #eee;
   //box-shadow: 2px 2px 4px #333;
@@ -34,12 +42,49 @@ html, body {
   }
 
   .project-name-input {
-    color: white;
+    margin-bottom: 5px;
+    margin-left: 12px;
+    margin-right: 24px;
+    //width: 100%;
+    justify-content: left;
+    display: flex;
 
-    &.focused {
-      color: red;
+    //border-bottom: 1px solid #666;
+
+    .MuiFormLabel-root, .MuiInputLabel-root {
+      font-weight: 500;
+      font-size: 12pt;
+      color: #ddd;
+    }
+
+    .MuiInputBase-root {
+      font-weight: bold;
+      font-size: 12pt;
+      color: #eee;
+      width: 100%;
+
+      input {
+        width: 100%;
+        padding: 0;
+        text-align: left;
+
+        &::selection {
+          background-color: royalblue;
+        }
+      }
     }
   }
+}
+
+.footer {
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  background-color: #111;
+  padding: 8px;
 }
 
 .gutter {
@@ -48,7 +93,6 @@ html, body {
 }
 
 .controller-pane {
-  background-color: white;
   margin-left: 16px;
   margin-right: 16px;
 
@@ -58,7 +102,7 @@ html, body {
   transition-timing-function: ease-in-out;
   transition: 0.5s;
 
-  @media screen and (max-width: 1280px) {
+  @media screen and (max-width: 1250px) {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -88,16 +132,16 @@ html, body {
   .controller-button {
     &.selected {
       .icon {
-        stroke: #333;
+        stroke: #111;
       }
 
       .icon-solid {
-        fill: #333;
+        fill: #111;
       }
 
       .outline {
         stroke: #333;
-        fill: lightblue;
+        fill: crimson;
       }
     }
 
@@ -106,33 +150,35 @@ html, body {
       transition-timing-function: ease-in-out;
     }
 
+    --icon-color: #ececec;
+
     .icon {
       fill: none;
-      stroke: #ddd;
+      stroke: var(--icon-color);
     }
 
     .icon-solid {
-      fill: #ddd;
+      fill: var(--icon-color);
     }
 
     .outline {
-      fill: rgba(0, 0, 0, 0);
-      stroke: #ececec;
+      fill: transparent;
+      stroke: red;
     }
 
     &:hover {
       cursor: pointer;
 
       .outline {
-        stroke: #2b7bff;
+        stroke: red;
       }
 
       .icon {
-        stroke: #2b5bff;
+        stroke: red;
       }
 
       .icon-solid {
-        fill: #2b5bff;
+        fill: red;
       }
     }
   }
@@ -172,4 +218,161 @@ div.gutter {
 
 .command-select {
   min-width: 140px;
+}
+
+.subsystems {
+  display: flex;
+  flex-direction: column;
+  //gap: 8px;
+  justify-content: center;
+
+  .subsystem-pane {
+    background-color: #f7f7f7;
+
+    .subsystem-lane {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+
+      .subsystem-lane-items {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+
+        .subsystem-lane-item {
+          //height: 80px;
+          width: 80px;
+          //background-color: red;
+          //border-radius: 4px;
+        }
+      }
+    }
+  }
+}
+
+.commands {
+  padding: 16px 0;
+  height: 100%;
+
+}
+
+.sequential-group-editor {
+  background-color: #222
+}
+
+.sequential-group-title {
+  color: white;
+  font-weight: bold;
+  font-size: 14pt;
+  padding-left: 20px;
+}
+
+.sequential-group-editor-commands {
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+  padding: 8px 16px;
+  border-bottom: 2px solid #111;
+
+  .parallel-group-editor {
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    max-width: 200px;
+    gap: 2px;
+
+    .command-drop-target {
+      width: 100%;
+      height: 30px; // mui likes to subtract 10 pixels for SOME REASON
+      //margin-top: 8px;
+      background-color: #1f1f1f;
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px dashed #444;
+
+      color: #666;
+    }
+  }
+
+  .group-header {
+    margin-bottom: 5px;
+    width: 100%;
+    justify-content: center;
+    display: flex;
+    border-bottom: 1px solid #666;
+
+    .MuiFormLabel-root, .MuiInputLabel-root {
+      font-weight: 500;
+      font-size: 12pt;
+      color: #ddd;
+    }
+
+    .MuiInputBase-root {
+      font-weight: bold;
+      font-size: 12pt;
+      color: #eee;
+      width: 100%;
+
+      input {
+        width: 100%;
+        padding: 0;
+        text-align: center;
+      }
+    }
+  }
+
+  .command-tile {
+    //width: 100%;
+    height: 20px;
+    display: flex;
+    justify-content: left;
+    padding: 8px;
+
+    &:hover {
+      transform: scale(1.05);
+      cursor: pointer;
+    }
+
+    .command-title {
+      margin-bottom: 0;
+      color: #111;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &.full-group-entry {
+      background-color: #FF7F00;
+      //background: linear-gradient(to bottom, #c00, #4b3817);
+    }
+
+    &.racer-group-entry {
+      background-color: #007900;
+      //background: linear-gradient(to bottom, #31bf31, #007900);
+      // TODO: Make the right end pointed
+    }
+
+    &.leader-group-entry {
+      background-color: #FF7F00;
+      //background: linear-gradient(to bottom, #fff17e, #788613);
+      display: flex;
+      flex-direction: row;
+      padding-left: 0;
+
+      .leader-icon {
+        margin: 0 4px;
+        width: 20px;
+        height: 100%;
+        fill: gold;
+      }
+    }
+
+    &.follower-group-entry {
+      //background: linear-gradient(to bottom, #31bf31, #007900);
+      background-color: #007900;
+      margin-left: 20px;
+      // TODO: Make the right end pointed
+    }
+  }
 }

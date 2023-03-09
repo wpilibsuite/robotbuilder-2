@@ -18,9 +18,9 @@ import { Controller, ControllerButton } from "../../bindings/Controller.ts";
 import { PS5Controller } from "./configs/ps5.tsx";
 import { ButtonConfig, ControllerConfig } from "./ControllerConfig";
 import { Command } from "../../bindings/Command";
-import React, { createRef, useRef, useState } from "react";
-import { useResizeDetector } from "react-resize-detector";
+import React, { useState } from "react";
 import $ from "jquery";
+import { ReactSVG } from "react-svg";
 
 export type ControllerPaneProps = {
   controller: Controller;
@@ -33,9 +33,9 @@ type CommandSelectBoxProps = {
   onChange: any;
 }
 
-function CommandSelectBox({commands, initialCommand, onChange}: CommandSelectBoxProps) {
+function CommandSelectBox({ commands, initialCommand, onChange }: CommandSelectBoxProps) {
   return (
-    <FormControl size="small" style={ {width: "100%"} }>
+    <FormControl size="small" style={ { width: "100%" } }>
       <Select className={ "command-select" } variant={ "standard" } onChange={ onChange }
               defaultValue={ initialCommand ?? '' }>
         <MenuItem value={ '' } selected={ !initialCommand }>
@@ -63,18 +63,7 @@ type ButtonBindingDialogProps = {
   commands: Command[];
 }
 
-const imageScale = function (image: HTMLImageElement) {
-  if (!image) {
-    console.log("no image, defaulting to 1");
-    return 1;
-  }
-
-  const scale = image.width / image.naturalWidth;
-  console.log("Current image scale", scale, "image:", image);
-  return scale;
-}
-
-function ButtonBindingDialog({button, target, commands}: ButtonBindingDialogProps) {
+function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogProps) {
   const updateButtonCommand = (bindingType: string, uuid: string) => {
     button[bindingType] = uuid;
   };
@@ -165,35 +154,33 @@ export function ControllerPane(props: ControllerPaneProps) {
       break;
   }
 
-  const [currentButton, setCurrentButton] = useState({button: null, target: null});
+  const [currentButton, setCurrentButton] = useState({ button: null, target: null });
   const [showDialog, setShowDialog] = useState(false);
 
   const toggleDialog = (buttonConfig: ButtonConfig, target: HTMLElement) => {
     if (showDialog && currentButton.button.name === buttonConfig.name) {
-      setCurrentButton({button: null, target: null});
+      setCurrentButton({ button: null, target: null });
       target.classList.remove("selected");
       setShowDialog(false);
     } else {
       let button: ControllerButton = props.controller.buttons.find(b => b.name === buttonConfig.name);
       if (!button) {
         // Create a new controller button for the bindings
-        button = {name: buttonConfig.name}
+        button = { name: buttonConfig.name }
         props.controller.buttons.push(button);
       }
-      setCurrentButton({button: button, target: target});
+      setCurrentButton({ button: button, target: target });
       target.classList.add("selected");
       setShowDialog(true);
     }
   }
-
-  const svg = config.svg;
 
   return (
     <Box className={ "controller-pane" }>
       <Box className={ "gutter left-gutter" }>
       </Box>
       <Box className={ "controller-center" }>
-        <div key={`controller-svg-${config.name}`} className="controller-svg-wrapper" onClick={ (e) => {
+        <div key={ `controller-svg-${ config.name }` } className="controller-svg-wrapper" onClick={ (e) => {
           const uiButton = $(e.target).parent(".controller-button")[0];
           if (uiButton) {
             const name = $(uiButton).data("buttonName");
@@ -209,7 +196,7 @@ export function ControllerPane(props: ControllerPaneProps) {
           }
         }
         }>
-          { svg }
+          <ReactSVG src={ config.svg }/>
         </div>
       </Box>
       <Box className={ "gutter right-gutter" }>
