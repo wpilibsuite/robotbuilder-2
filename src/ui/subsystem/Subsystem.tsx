@@ -1,5 +1,5 @@
 import { Project } from "../../bindings/Project.ts";
-import { Subsystem, SubsystemAction, SubsystemState } from "../../bindings/Command.ts";
+import { Subsystem } from "../../bindings/Command.ts";
 import {
   Box,
   Button,
@@ -81,7 +81,7 @@ function CommandsLane({ subsystem, project }: BasicOpts) {
       <h3>Commands</h3>
       <Box className="subsystem-lane-items">
         {
-          project.commands.filter(c => c.type === "Atomic" && c.subsystem == subsystem.uuid).map(command => {
+          project.commands.filter(c => c.type === "Atomic" && c.subsystem === subsystem.uuid).map(command => {
             return (
              <Card key={command.uuid} className="subsystem-lane-item" component={Paper}>
                { command.name }
