@@ -1,13 +1,15 @@
 import { v4 as uuidV4 } from "uuid"
+import { ComponentDefinition } from "../components/ComponentDefinition.ts";
 
 /**
- * The possible primitive types that can be passed as arguments to an action invocation.
+ * The possible types that can be passed as arguments to an action invocation.
  */
 export type ParamType =
   | "int"
   | "long"
   | "double"
-  | "boolean";
+  | "boolean"
+  | string;
 
 type UUID = string;
 
@@ -38,15 +40,48 @@ export class Param {
   constructor() {
     this.uuid = uuidV4();
   }
+
+  static create(name: string, type: ParamType): Param {
+    const param = new Param();
+    param.name = name;
+    param.type = type;
+    return param;
+  }
+
+  createArg() {
+    const arg = new Arg();
+    arg.param = this.uuid;
+    return arg;
+  }
 }
 
 /**
  * An argument that may be passed to a subsystem action.
  */
 export class Arg {
-  param: Param;
+  param: UUID; // UUID of the param it's binding to
 
-  value: any;
+  /**
+   * "passed-value" -> the method that calls the method this arg is bound to must provide a param to pass through
+   *  { param: { name: "x", type: "double" }, type: "passed-value" } ->
+   *    public void foo(double x) { bar(x); }
+   *
+   * "passed-supplier" -> the method that call the method this arg is bound to must provide a param to set a value supplier with
+   *  { param: { name: "x", type: "double" }, type: "passed-supplier } ->
+   *    public void foo(DoubleSupplier x) { bar(x.getAsDouble()); }
+   *
+   * "hardcoded" -> a hardcoded value is set, which may be refactored into a class-level constant.
+   *                The hardcoded value is stored in `templatedValue`
+   *  { param: { name: "x", type: "double" }, type: "hardcoded", templatedValue: "42" } ->
+   *    public void foo() { bar(42); }
+   *
+   * "templated" -> arbitrary code provided by the user.  The value is stored in `templatedValue`
+   *  { param: { name: "x", type: "double" }, type: "templated", templatedValue: "System.currentTimeMillis() / 1e3" } ->
+   *    public void foo() { bar(System.currentTimeMillis() / 1e3); }
+   */
+  type: "passed-value" | "passed-supplier" | "hardcoded" | "templated" = "passed-value";
+
+  templatedValue?: string;
 
   // Note: not specifying units because it's going to be whatever the parameter takes
 }
@@ -66,11 +101,12 @@ export class SubsystemAction {
    */
   params: Param[];
 
-  constructor({ name, subsystem }: { name?: string, subsystem?: SubsystemRef }) {
+  constructor(name?: string, subsystem?: SubsystemRef) {
     this.name = name;
     this.subsystem = subsystem;
 
     this.uuid = uuidV4();
+    this.params = [];
   }
 }
 
@@ -96,11 +132,26 @@ export class SubsystemState {
 
   subsystem: SubsystemRef;
 
-  constructor({ name, subsystem }: { name?: string, subsystem?: SubsystemRef }) {
+  constructor(name?: string, subsystem?: string) {
     this.name = name;
     this.subsystem = subsystem;
 
     this.uuid = uuidV4();
+  }
+}
+
+export class SubsystemComponent {
+  name: string;
+  readonly uuid: UUID = uuidV4();
+  readonly definition: ComponentDefinition;
+  readonly properties: object;
+
+  constructor(name: string, definition: ComponentDefinition, properties: object) {
+    this.uuid = uuidV4();
+
+    this.name = name;
+    this.definition = definition;
+    this.properties = properties;
   }
 }
 
@@ -122,10 +173,19 @@ export class Subsystem {
    */
   states: SubsystemState[];
 
+  /**
+   * The UUIDs of all the atomic commands that require this subsystem.
+   */
+  commands: AtomicCommand[];
+
+  components: SubsystemComponent[];
+
   constructor() {
     this.uuid = uuidV4();
     this.actions = [];
     this.states = [];
+    this.commands = [];
+    this.components = [];
   }
 
   addAction(action: SubsystemAction) {
@@ -140,16 +200,26 @@ export class Subsystem {
     this.states.push(state);
   }
 
-  createAction(name: string): SubsystemAction {
-    const action = new SubsystemAction({ name: name, subsystem: this.uuid });
+  public createAction(name: string): SubsystemAction {
+    const action = new SubsystemAction(name, this.uuid);
     this.addAction(action);
     return action;
   }
 
-  createState(name: string): SubsystemState {
-    const state = new SubsystemState({ name: name, subsystem: this.uuid });
+  public createState(name: string): SubsystemState {
+    const state = new SubsystemState(name, this.uuid);
     this.addState(state);
     return state;
+  }
+
+  public createCommand(name: string, action: SubsystemAction, endCondition: EndCondition): AtomicCommand {
+    const command = new AtomicCommand();
+    command.name = name;
+    command.subsystem = this.uuid;
+    command.action = action.uuid;
+    command.endCondition = endCondition;
+    this.commands.push(command);
+    return command;
   }
 }
 
@@ -158,16 +228,35 @@ export class Subsystem {
  * "none", if the command should never end naturally; or any State
  */
 export type EndCondition =
-  | "immediate"
-  | "none"
-  | { state: SubsystemState };
+  | "forever" // command runs until interrupted
+  | "once" // command runs exactly once, then finishes
+  | UUID; // subsystem state uuid
 
 export type Command =
   | AtomicCommand
   | SequentialGroup
   | ParallelGroup;
 
-type SubsystemRef = string;
+type SubsystemRef = UUID;
+
+type ActionParamCallOptionInvocationType = "hardcode" | "passthrough-value" | "passthrough-supplier";
+export class ActionParamCallOption {
+
+  action: UUID; // the action
+
+  param: UUID; // the specific param on the action to configure
+
+  invocationType: ActionParamCallOptionInvocationType = "hardcode";
+
+  hardcodedValue?: string = null
+
+  constructor(action: SubsystemAction, param: Param, invocationType: ActionParamCallOptionInvocationType, hardcodedValue: string = null) {
+    this.action = action.uuid;
+    this.param = param.uuid;
+    this.invocationType = invocationType;
+    this.hardcodedValue = hardcodedValue;
+  }
+}
 
 /**
  * An atomic command performs a single subsystem action until some state is reached
@@ -180,12 +269,7 @@ export class AtomicCommand {
 
   uuid: string;
 
-  type: "Atomic";
-
-  constructor() {
-    this.uuid = uuidV4();
-    this.type = "Atomic";
-  }
+  type: string = "Atomic";
 
   /**
    * The subsystem that the command manipulates.
@@ -195,12 +279,21 @@ export class AtomicCommand {
   /**
    * The action that the command will execute.
    */
-  action: SubsystemAction;
+  action: UUID; // Subsystem action UUID
 
   /**
    * The end condition for the command.
    */
   endCondition: EndCondition;
+
+  /**
+   * Parameters required to build an instance of the command.
+   */
+  params: ActionParamCallOption[] = [];
+
+  constructor() {
+    this.uuid = uuidV4();
+  }
 }
 
 /**

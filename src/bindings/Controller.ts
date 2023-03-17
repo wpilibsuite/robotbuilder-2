@@ -14,6 +14,11 @@ export type Controller = {
   type: string;
 
   /**
+   * The port number of the controller in the driver station.
+   */
+  port: number;
+
+  /**
    * The buttons available on the controller
    */
   buttons: ControllerButton[];

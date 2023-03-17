@@ -1,19 +1,20 @@
-import { Box, Button, Tab, Tabs, } from "@mui/material";
+import { Box, Button, Tab, Tabs, TextField, } from "@mui/material";
 import { Controllers } from "./controller/Controller.tsx";
 import { Subsystems } from "./subsystem/Subsystem.tsx";
 import { Commands } from "./command/Commands.tsx";
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { makeNewProject, Project } from "./../bindings/Project.ts";
 import $ from "jquery";
 import EditableLabel from "./EditableLabel.tsx";
 import {
   AtomicCommand,
-  ParallelGroup,
+  ParallelGroup, Param,
   SequentialGroup,
   Subsystem,
   SubsystemAction,
   SubsystemState
 } from "../bindings/Command.ts";
+import { Exception } from "sass";
 
 type ProjectProps = {
   initialProject: Project;
@@ -31,6 +32,12 @@ const saveProject = (project: Project) => {
   link.click();
 };
 
+function mapToClass<T>(data: Object, clazz: any): T {
+  const instance = new clazz();
+  Object.assign(instance, data);
+  return instance;
+}
+
 const loadProject = (file: File): Promise<Project> => {
   console.log('loadProject(', file, ')');
   return file.text()
@@ -41,23 +48,33 @@ const loadProject = (file: File): Promise<Project> => {
       project.commands = project.commands.filter(command => {
         switch (command.type) {
           case "Atomic":
-            Object.setPrototypeOf(command, AtomicCommand);
-            return true;
           case "SequentialGroup":
-            Object.setPrototypeOf(command, SequentialGroup);
-            return true;
           case "ParallelGroup":
-            Object.setPrototypeOf(command, ParallelGroup);
             return true;
           default:
             console.error('Unexpected command type', command.type, 'was not one of "Atomic", "SequentialGroup", "ParallelGroup" - deleting');
             return false;
         }
-      });
-      project.subsystems.forEach(s => {
-        Object.setPrototypeOf(s, Subsystem);
-        s.actions.forEach(action => Object.setPrototypeOf(action, SubsystemAction));
-        s.states.forEach(state => Object.setPrototypeOf(state, SubsystemState));
+      }).map(commandData => {
+        switch (commandData.type) {
+          case "Atomic":
+            return mapToClass(commandData, AtomicCommand);
+          case "SequentialGroup":
+            return mapToClass(commandData, SequentialGroup);
+          case "ParallelGroup":
+            return mapToClass(commandData, ParallelGroup);
+        }
+      })
+      project.subsystems = project.subsystems.map(subsystemData => {
+        const subsystemObj = new Subsystem();
+        Object.assign(subsystemObj, subsystemData);
+        subsystemObj.actions = subsystemData.actions.map((data) => {
+          const action: SubsystemAction = mapToClass(data, SubsystemAction);
+          action.params = action.params.map(a => mapToClass(a, Param));
+          return action;
+        });
+        subsystemObj.states = subsystemData.states.map((data) => mapToClass(data, SubsystemState));
+        return subsystemObj;
       });
       // Controllers don't have classes, just a shape - so no prototype assignment is necessary
 
@@ -79,7 +96,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
   const renderContent = (selectedTab: Tab) => {
     switch (selectedTab) {
       case "controllers":
-        return (<Controllers controllers={ project.controllers } commands={ project.commands }/>);
+        return (<Controllers project={ project }/>);
       case "subsystems":
         return (<Subsystems project={ project }/>);
       case "commands":
@@ -90,6 +107,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
   const [projectName, sn] = useState(project.name);
 
   const setProjectName = (name: string) => {
+    console.debug('Setting project name to', name);
     sn(name);
     project.name = name;
   }
@@ -100,13 +118,13 @@ export function ProjectView({ initialProject }: ProjectProps) {
     setProjectName(newName);
   };
 
-  const projectNameRef = useRef(null);
-
   return (
     <Box className="project-view">
       <Box className="header">
         <Box className="project-name-input">
-          <EditableLabel initialValue={ projectName } onBlur={ updateProjectName }/>
+          <TextField variant="standard"
+                     value={ project.name }
+                     onChange={ e => updateProjectName(e.target.value) }/>
         </Box>
 
         <Box>
@@ -128,8 +146,13 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
         <Button>Export</Button>
 
-        <input style={ { display: "none" } } type="file" id="load-project"
-               onChange={ (e) => loadProject(e.target.files[0]).then(setProject) }/>
+        <input style={ { display: "none" } }
+               type="file"
+               id="load-project"
+               onChange={ (e) => loadProject(e.target.files[0]).then(p => {
+                 setProject(p);
+                 setProjectName(p.name);
+               }) }/>
         <Button onClick={ () => $('#load-project').click() }>Load</Button>
 
         <Button onClick={ () => {
@@ -139,8 +162,9 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
           // Select the default tab
           handleChange(null, defaultTab);
-          $(projectNameRef.current).find('input').val(newProject.name);
-        } }>New</Button>
+        } }>
+          New
+        </Button>
       </Box>
     </Box>
   );

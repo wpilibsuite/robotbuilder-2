@@ -317,6 +317,9 @@ export function Commands({ project }: { project: Project }) {
     <div className={ "commands" }>
       { editingSequentialGroup ?
         <SequentialGroupEditor commandGroup={ editingSequentialGroup } project={ project }/> : null }
+      <div>
+        Currently under construction. Check back later!
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-  FormControl,
+  FormControl, ListItem, ListSubheader,
   MenuItem,
   Paper,
   Select,
@@ -17,23 +17,42 @@ import {
 import { Controller, ControllerButton } from "../../bindings/Controller.ts";
 import { PS5Controller } from "./configs/ps5.tsx";
 import { ButtonConfig, ControllerConfig } from "./ControllerConfig";
-import { Command } from "../../bindings/Command";
+import { AtomicCommand, Command } from "../../bindings/Command.ts";
 import React, { useState } from "react";
 import $ from "jquery";
 import { ReactSVG } from "react-svg";
+import { Project } from "../../bindings/Project.ts";
 
 export type ControllerPaneProps = {
+  project: Project;
   controller: Controller;
-  commands: Command[];
 };
 
 type CommandSelectBoxProps = {
-  commands: Command[];
+  project: Project;
   initialCommand: string | undefined;
   onChange: any;
 }
 
-function CommandSelectBox({ commands, initialCommand, onChange }: CommandSelectBoxProps) {
+function groupArrayContents<K, V>(array: V[], groupingFunction: (V) => K): Map<K, V[]> {
+  const object = new Map<K, V[]>();
+  array.forEach(item => {
+    const key = groupingFunction(item);
+    if (!object.get(key)) {
+      object.set(key, []);
+    }
+    object.get(key).push(item);
+  })
+
+  return object;
+}
+
+function CommandSelectBox({ project, initialCommand, onChange }: CommandSelectBoxProps) {
+  const groupedAtomicCommands = groupArrayContents(
+    project.subsystems.flatMap(s => s.commands) as AtomicCommand[],
+    (c: AtomicCommand) => project.subsystems.find(s => s.uuid === c.subsystem)
+  );
+
   return (
     <FormControl size="small" style={ { width: "100%" } }>
       <Select className={ "command-select" } variant={ "standard" } onChange={ onChange }
@@ -42,13 +61,17 @@ function CommandSelectBox({ commands, initialCommand, onChange }: CommandSelectB
           Unbound
         </MenuItem>
         {
-          commands.map(command => {
-            return (
-              <MenuItem key={ command.uuid }
-                        value={ command.uuid }
-                        selected={ (command.uuid === initialCommand) }>
-                { command.name }
-              </MenuItem>
+          Array.from(groupedAtomicCommands.entries()).sort((a, b) => a[0].uuid.localeCompare(b[0].uuid)).flatMap(data => {
+            const [subsystem, commands] = data;
+
+            const groupHeader = <ListSubheader key={ subsystem.uuid }>{ subsystem.name }</ListSubheader>
+
+            return [groupHeader].concat(
+              commands.map(command => {
+                return (
+                  <MenuItem value={ command.uuid} key={ command.uuid }>{ command.name }</MenuItem>
+                )
+              })
             );
           })
         }
@@ -59,11 +82,10 @@ function CommandSelectBox({ commands, initialCommand, onChange }: CommandSelectB
 
 type ButtonBindingDialogProps = {
   button: ControllerButton;
-  target: HTMLElement;
-  commands: Command[];
+  project: Project;
 }
 
-function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogProps) {
+function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
   const updateButtonCommand = (bindingType: string, uuid: string) => {
     button[bindingType] = uuid;
   };
@@ -85,7 +107,7 @@ function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogPr
                 <TableCell>Press and hold</TableCell>
                 <TableCell>
                   <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
-                                    commands={ commands }
+                                    project={ project }
                                     initialCommand={ button.whileHeld }
                                     onChange={ (event) => updateButtonCommand('whileHeld', event.target.value) }/>
                 </TableCell>
@@ -94,7 +116,7 @@ function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogPr
                 <TableCell>Press</TableCell>
                 <TableCell>
                   <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
-                                    commands={ commands }
+                                    project={ project }
                                     initialCommand={ button.whenPressed }
                                     onChange={ (event) => updateButtonCommand('whenPressed', event.target.value) }/>
                 </TableCell>
@@ -103,7 +125,7 @@ function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogPr
                 <TableCell>Toggle on press</TableCell>
                 <TableCell>
                   <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
-                                    commands={ commands }
+                                    project={ project }
                                     initialCommand={ button.toggleOnPress }
                                     onChange={ (event) => updateButtonCommand('toggleOnPress', event.target.value) }/>
                 </TableCell>
@@ -112,7 +134,7 @@ function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogPr
                 <TableCell>When released</TableCell>
                 <TableCell>
                   <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
-                                    commands={ commands }
+                                    project={ project }
                                     initialCommand={ button.whenReleased }
                                     onChange={ (event) => updateButtonCommand('whenReleased', event.target.value) }/>
                 </TableCell>
@@ -121,7 +143,7 @@ function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogPr
                 <TableCell>While released</TableCell>
                 <TableCell>
                   <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
-                                    commands={ commands }
+                                    project={ project }
                                     initialCommand={ button.whileReleased }
                                     onChange={ (event) => updateButtonCommand('whileReleased', event.target.value) }/>
                 </TableCell>
@@ -130,7 +152,7 @@ function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogPr
                 <TableCell>Toggle on release</TableCell>
                 <TableCell>
                   <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
-                                    commands={ commands }
+                                    project={ project }
                                     initialCommand={ button.toggleOnRelease }
                                     onChange={ (event) => updateButtonCommand('toggleOnRelease', event.target.value) }/>
                 </TableCell>
@@ -143,9 +165,9 @@ function ButtonBindingDialog({ button, target, commands }: ButtonBindingDialogPr
   );
 }
 
-export function ControllerPane(props: ControllerPaneProps) {
+export function ControllerPane({ controller, project }: ControllerPaneProps) {
   let config: ControllerConfig;
-  switch (props.controller.type) {
+  switch (controller.type) {
     case "ps5":
       config = PS5Controller;
       break;
@@ -163,11 +185,11 @@ export function ControllerPane(props: ControllerPaneProps) {
       target.classList.remove("selected");
       setShowDialog(false);
     } else {
-      let button: ControllerButton = props.controller.buttons.find(b => b.name === buttonConfig.name);
+      let button: ControllerButton = controller.buttons.find(b => b.name === buttonConfig.name);
       if (!button) {
         // Create a new controller button for the bindings
         button = { name: buttonConfig.name }
-        props.controller.buttons.push(button);
+        controller.buttons.push(button);
       }
       setCurrentButton({ button: button, target: target });
       target.classList.add("selected");
@@ -186,10 +208,10 @@ export function ControllerPane(props: ControllerPaneProps) {
             const name = $(uiButton).data("buttonName");
             if (name) {
               const bc = config.buttons.find(b => b.name === name);
-              let button: ControllerButton = props.controller.buttons.find(button => button.name === name);
+              let button: ControllerButton = controller.buttons.find(button => button.name === name);
               if (!button) {
                 button = { name: name };
-                props.controller.buttons.push(button);
+                controller.buttons.push(button);
               }
               toggleDialog(bc, uiButton as HTMLElement);
             }
@@ -202,8 +224,7 @@ export function ControllerPane(props: ControllerPaneProps) {
       <Box className={ "gutter right-gutter" }>
         { showDialog ?
           <ButtonBindingDialog button={ currentButton.button }
-                               target={ currentButton.target }
-                               commands={ props.commands }/> : null
+                               project={ project }/> : null
         }
       </Box>
     </Box>

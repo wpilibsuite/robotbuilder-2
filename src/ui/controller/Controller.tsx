@@ -1,16 +1,14 @@
 import { Box, Tab, Tabs } from "@mui/material";
-import { Controller } from "../../bindings/Controller.ts";
 import { ControllerPane } from "./ControllerPane.tsx";
+import { Project } from "../../bindings/Project.ts";
 import React from "react";
-import { Command } from "../../bindings/Command";
 
 export type ControllersProps = {
-  controllers: Controller[];
-  commands: Command[];
+  project: Project;
 };
 
-export function Controllers(props: ControllersProps) {
-  const [controller, setController] = React.useState(props.controllers[0].uuid);
+export function Controllers({  project }: ControllersProps) {
+  const [controller, setController] = React.useState(project.controllers[0].uuid);
 
   return (
     <Box className={ "controllers" }>
@@ -18,7 +16,7 @@ export function Controllers(props: ControllersProps) {
             value={ controller }
             centered>
         {
-          props.controllers.map((controller) => {
+          project.controllers.map((controller) => {
             return (
               <Tab label={ controller.name }
                    value={ controller.uuid }
@@ -27,8 +25,8 @@ export function Controllers(props: ControllersProps) {
           })
         }
       </Tabs>
-      <ControllerPane controller={ props.controllers.find(c => c.uuid === controller) }
-                      commands={ props.commands }/>
+      <ControllerPane project={ project }
+                      controller={ project.controllers.find(c => c.uuid === controller) }/>
     </Box>
   );
 }
