@@ -4,8 +4,8 @@ import {
   AtomicCommand,
   EndCondition,
   Param,
-  Subsystem,
-  SubsystemComponent
+  Subsystem, SubsystemAction,
+  SubsystemComponent, SubsystemState
 } from "../../bindings/Command";
 import {
   Autocomplete,
@@ -38,16 +38,19 @@ type BasicOpts = {
   project: Project;
 }
 
-function SensorsLane({ subsystem, project }: BasicOpts) {
+function SensorsLane({
+                       sensors,
+                       onChange
+                     }: { sensors: SubsystemComponent[], onChange: (newSensors: SubsystemComponent[]) => void }) {
   return (
     <Box className="subsystem-lane sensors-lane">
       <h3>Sensors</h3>
       <Box className="subsystem-lane-items">
         {
-          subsystem.getSensors().map(component => {
+          sensors.map(sensor => {
             return (
-              <Card key={ component.uuid } className="subsystem-lane-item" component={ Paper }>
-                { component.name }
+              <Card key={ sensor.uuid } className="subsystem-lane-item" component={ Paper }>
+                { sensor.name }
               </Card>
             )
           })
@@ -60,7 +63,13 @@ function SensorsLane({ subsystem, project }: BasicOpts) {
   );
 }
 
-function ActuatorsLane({ subsystem, project }: BasicOpts) {
+type ActuatorsLaneProps = {
+  subsystem: Subsystem;
+  actuators: SubsystemComponent[];
+  onChange: (newActuators: SubsystemComponent[]) => void;
+};
+
+function ActuatorsLane({ subsystem, actuators, onChange }: ActuatorsLaneProps) {
   const [showNewActuatorDialog, setShowNewActuatorDialog] = useState(false);
 
   const [newActuatorDefinition, setNewActuatorDefinition] = useState(null as ComponentDefinition);
@@ -72,7 +81,7 @@ function ActuatorsLane({ subsystem, project }: BasicOpts) {
       <h3>Actuators</h3>
       <Box className="subsystem-lane-items">
         {
-          subsystem.getActuators().map(component => {
+          actuators.map(component => {
             return (
               <Card key={ component.uuid } className="subsystem-lane-item" component={ Paper }>
                 { component.name }
@@ -149,15 +158,16 @@ function ActuatorsLane({ subsystem, project }: BasicOpts) {
                                 <Autocomplete multiple
                                               onChange={ (event, newValue: SubsystemComponent[]) => {
                                                 console.log('Selected vararg options', newValue);
-                                                const props = {...newActuatorProperties}
+                                                const props = { ...newActuatorProperties }
                                                 props[prop.codeName] = newValue.map(component => component.uuid);
                                                 setNewActuatorProperties(props);
                                               } }
                                               options={ subsystem.components.filter(c => c.definition.wpilibApiTypes.find(t => t === type)) }
                                               getOptionLabel={ (option) => option.name }
                                               renderInput={ (params) => {
-                                                return <TextField {...params} placeholder={ `Select one or more ${type}` } />;
-                                              }}
+                                                return <TextField { ...params }
+                                                                  placeholder={ `Select one or more ${ type }` }/>;
+                                              } }
                                 />
                               );
                             } else {
@@ -198,7 +208,7 @@ function ActuatorsLane({ subsystem, project }: BasicOpts) {
             if (newActuatorName && newActuatorDefinition && newActuatorProperties) {
               const newActuator = new SubsystemComponent(newActuatorName, newActuatorDefinition, newActuatorProperties);
               console.debug('Created new actuator component', newActuator);
-              subsystem.components.push(newActuator);
+              onChange(actuators.concat(newActuator));
             } else {
               console.debug('Not enough information provided, not creating an actuator');
             }
@@ -237,17 +247,55 @@ function ControlsLane({ subsystem, project }: BasicOpts) {
 
 function SubsystemPane({ subsystem, project }: BasicOpts) {
   const [generatedCode, setGeneratedCode] = useState(generateSubsystem(subsystem, project));
+  const [sensors, setSensors] = useState(subsystem.getSensors());
+  const [actuators, setActuators] = useState(subsystem.getActuators());
+  const [controls, setControls] = useState(subsystem.getControls());
+  const [actions, setActions] = useState(subsystem.actions);
+  const [states, setStates] = useState(subsystem.states);
+  const [commands, setCommands] = useState(subsystem.commands);
 
-  useEffect(() => setGeneratedCode(generateSubsystem(subsystem, project)));
+  useEffect(() => setGeneratedCode(generateSubsystem(subsystem, project)), [subsystem, project, sensors, actuators, controls, actions, states, commands]);
+  useEffect(() => {
+    setSensors(subsystem.getSensors());
+    setActuators(subsystem.getActuators());
+    setControls(subsystem.getControls());
+    setActions(subsystem.actions);
+    setStates(subsystem.states);
+    setCommands(subsystem.commands);
+  }, [subsystem, project]);
 
   return (
-    <Box className="subsystem-pane" style={{}}>
-      <SensorsLane subsystem={ subsystem } project={ project }/>
-      <ActuatorsLane subsystem={ subsystem } project={ project }/>
+    <Box className="subsystem-pane" style={ {} }>
+      <SensorsLane sensors={ sensors } onChange={ setSensors }/>
+      <ActuatorsLane subsystem={ subsystem }
+                     actuators={ actuators }
+                     onChange={ (newActuators) => {
+                       console.log('Setting actuators to', newActuators);
+                       const added = newActuators.filter(a => !subsystem.components.includes(a))
+                       const removed = subsystem.getActuators().filter(a => !newActuators.includes(a));
+                       subsystem.components = subsystem.components.filter(c => c.type !== "actuator" || !removed.includes(c)).concat(...added);
+                       setActuators(newActuators);
+                     } }/>
       <ControlsLane subsystem={ subsystem } project={ project }/>
-      <ActionsLane subsystem={ subsystem } project={ project }/>
-      <StatesLane subsystem={ subsystem } project={ project }/>
-      <CommandsLane subsystem={ subsystem } project={ project }/>
+      <ActionsLane subsystem={ subsystem }
+                   actions={ actions }
+                   onChange={ (newActions) => {
+                     subsystem.actions = [...newActions];
+                     setActions(subsystem.actions);
+                   } }/>
+      <StatesLane subsystem={ subsystem }
+                  states={ states }
+                  onChange={ (newStates) => {
+                    subsystem.states = [...newStates];
+                    setStates(subsystem.states);
+                  } }/>
+      <CommandsLane subsystem={ subsystem }
+                    commands={ commands }
+                    onChange={ (newCommands) => {
+                      // TODO: Update the project.  Maybe?  Project shouldn't know about subsystem's commands...
+                      subsystem.commands = newCommands;
+                      setCommands(newCommands);
+                    } }/>
       <SyntaxHighlighter
         language="java"
         style={ SyntaxHighlightStyles.vs }
@@ -272,7 +320,11 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
   );
 }
 
-function ActionsLane({ subsystem, project }: BasicOpts) {
+function ActionsLane({
+                       subsystem,
+                       actions,
+                       onChange
+                     }: { subsystem: Subsystem, actions: SubsystemAction[], onChange: (newActions: SubsystemAction[]) => void }) {
   const [showCreateActionDialog, setShowCreateActionDialog] = useState(false);
   const [newActionName, setNewActionName] = useState(null);
   const [newActionParams, setNewActionParams] = useState([]);
@@ -289,6 +341,7 @@ function ActionsLane({ subsystem, project }: BasicOpts) {
     newAction.params = data.params;
 
     console.debug('Created new action', newAction);
+    onChange([...subsystem.actions]);
     closeDialog();
   }
 
@@ -345,7 +398,7 @@ function ActionsLane({ subsystem, project }: BasicOpts) {
       </Dialog>
       <Box className="subsystem-lane-items">
         {
-          subsystem.actions.map(action => {
+          actions.map(action => {
             return (
               <Card key={ action.uuid } className="subsystem-lane-item" component={ Paper }>
                 { action.name }
@@ -361,13 +414,18 @@ function ActionsLane({ subsystem, project }: BasicOpts) {
   );
 }
 
-function StatesLane({ subsystem, project }: BasicOpts) {
+function StatesLane({
+                      subsystem,
+                      states,
+                      onChange
+                    }: { subsystem: Subsystem, states: SubsystemState[], onChange: (newStates: SubsystemState[]) => void }) {
   const [showCreateStateDialog, setShowCreateStateDialog] = useState(false);
   const [newStateName, setNewStateName] = useState(null);
 
   const createState = (data) => {
     console.log(data);
     const newState = subsystem.createState(data.name);
+    onChange([...subsystem.states]);
     console.debug('Created new state', newState);
     setNewStateName(null);
     setShowCreateStateDialog(false);
@@ -388,7 +446,7 @@ function StatesLane({ subsystem, project }: BasicOpts) {
       </Dialog>
       <Box className="subsystem-lane-items">
         {
-          subsystem.states.map(state => {
+          states.map(state => {
             return (
               <Card key={ state.uuid } className="subsystem-lane-item" component={ Paper }>
                 { state.name }
@@ -404,7 +462,11 @@ function StatesLane({ subsystem, project }: BasicOpts) {
   );
 }
 
-function CommandsLane({ subsystem, project }: BasicOpts) {
+function CommandsLane({
+                        subsystem,
+                        commands,
+                        onChange
+                      }: { subsystem: Subsystem, commands: AtomicCommand[], onChange: (newCommands: AtomicCommand[]) => void }) {
   const [showCreateCommandDialog, setShowCreateCommandDialog] = useState(false);
   const [commandDialogType, setCommandDialogType] = useState(null);
   const [editedCommand, setEditedCommand] = useState(null);
@@ -419,10 +481,10 @@ function CommandsLane({ subsystem, project }: BasicOpts) {
       editedCommand.action = data.action;
       editedCommand.endCondition = data.endCondition;
       editedCommand.params = data.params;
+      onChange([...commands]);
     } else {
       const newCommand = data.toCommand();
-      subsystem.commands.push(newCommand);
-      project.commands.push(newCommand);
+      onChange(commands.concat(newCommand));
     }
     setEditedCommand(null);
     setCommandDialogType(null);
