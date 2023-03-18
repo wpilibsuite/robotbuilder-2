@@ -362,9 +362,17 @@ function ActionsLane({
             newActionParams.map((param: Param) => {
               return (
                 <div key={ param.uuid } className="action-param">
-                  <TextField variant="standard" defaultValue={ param.name ?? '' }
-                             onChange={ (e) => param.name = e.target.value }/>
-                  <Select variant="standard" onChange={ (e) => param.type = e.target.value as string }>
+                  <TextField variant="standard"
+                             defaultValue={ param.name ?? '' }
+                             onChange={ (e) => {
+                               param.name = e.target.value;
+                               setNewActionParams([...newActionParams]);
+                             } }/>
+                  <Select variant="standard"
+                          onChange={ (e) => {
+                            param.type = e.target.value as string;
+                            setNewActionParams([...newActionParams]);
+                          } }>
                     <MenuItem value="int" key={ 'int-select' }>Int</MenuItem>
                     <MenuItem value="long" key={ 'long-select' }>Long</MenuItem>
                     <MenuItem value="double" key={ 'double-select' }>Double</MenuItem>
@@ -391,7 +399,7 @@ function ActionsLane({
         <DialogActions>
           <Button onClick={ () => closeDialog() }>Cancel</Button>
           <Button onClick={ () => createAction({ name: newActionName, params: newActionParams }) }
-                  disabled={ !newActionName || newActionParams.filter(p => !p.name || p.name === '' || !p.type || p.type === '').length > 0 }>
+                  disabled={ !newActionName || !!newActionParams.find(p => !p.name || p.name === '' || !p.type || p.type === '') }>
             OK
           </Button>
         </DialogActions>
