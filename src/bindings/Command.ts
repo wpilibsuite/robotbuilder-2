@@ -140,8 +140,11 @@ export class SubsystemState {
   }
 }
 
+type SubsystemType = "sensor" | "actuator" | "control";
+
 export class SubsystemComponent {
   name: string;
+  readonly type: SubsystemType;
   readonly uuid: UUID = uuidV4();
   readonly definition: ComponentDefinition;
   readonly properties: object;
@@ -152,6 +155,7 @@ export class SubsystemComponent {
     this.name = name;
     this.definition = definition;
     this.properties = properties;
+    this.type = this.definition.type;
   }
 }
 
@@ -220,6 +224,18 @@ export class Subsystem {
     command.endCondition = endCondition;
     this.commands.push(command);
     return command;
+  }
+
+  public getSensors() {
+    return this.components.filter(c => c.type === "sensor");
+  }
+
+  public getActuators() {
+    return this.components.filter(c => c.type === "actuator");
+  }
+
+  public getControls() {
+    return this.components.filter(c => c.type === "control");
   }
 }
 

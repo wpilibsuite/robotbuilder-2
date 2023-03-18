@@ -2,7 +2,7 @@ import { ControllerConfig } from "../ControllerConfig";
 
 export const PS5Controller: ControllerConfig = {
   name: 'PS5',
-  svg: "/controllers/ps5.svg",
+  svg: "controllers/ps5.svg",
   buttons: [
     {
       name: "TRIANGLE",

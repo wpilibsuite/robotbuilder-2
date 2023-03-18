@@ -1,4 +1,15 @@
+export type ComponentType =
+  "sensor" |
+  "actuator" |
+  "control";
+
 export type ComponentDefinition = {
+  /**
+   * A unique identifier to represent this definition.  It's encouraged to version the identifier to make
+   * API-incompatible versions of the definition distinct.
+   */
+  id: string;
+
   /**
    * The human-readable name of the component.
    */
@@ -13,6 +24,17 @@ export type ComponentDefinition = {
    * The name of the Java class that represents the component.  This is equal to `fqn.split('.').lastItem`
    */
   className: string;
+
+  /**
+   * The WPILib API types the component matches.  For example, a TalonSRX includes the "MotorController" API
+   * type since it inherits from that type.
+   */
+  wpilibApiTypes: string[];
+
+  /**
+   * The type of component (sensor, actuator, or controller/"plant").
+   */
+  type: ComponentType;
 
   /**
    * The different parts of a command lifecycle to provide hints for.  Components that hint at compatibility with

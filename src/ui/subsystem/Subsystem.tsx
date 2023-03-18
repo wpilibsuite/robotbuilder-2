@@ -17,29 +17,220 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle,
+  DialogTitle, Input,
   Paper,
   Select,
   Tab,
   Tabs,
   TextField, Tooltip
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { ComponentDefinition, Property } from "../../components/ComponentDefinition.ts";
 import { fieldDeclaration, variableName } from "../../codegen/java/util.ts";
+import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions.ts";
 
 type BasicOpts = {
   subsystem: Subsystem;
   project: Project;
 }
 
+function SensorsLane({ subsystem, project }: BasicOpts) {
+  return (
+    <Box className="subsystem-lane sensors-lane">
+      <h3>Sensors</h3>
+      <Box className="subsystem-lane-items">
+        {
+          subsystem.getSensors().map(component => {
+            return (
+              <Card key={ component.uuid } className="subsystem-lane-item" component={ Paper }>
+                { component.name }
+              </Card>
+            )
+          })
+        }
+        <Button onClick={ console.log }>
+          + Add Sensor
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
+function ActuatorsLane({ subsystem, project }: BasicOpts) {
+  const [renderState, setRenderState] = useState({});
+  const [showNewActuatorDialog, setShowNewActuatorDialog] = useState(false);
+
+  const [newActuatorDefinition, setNewActuatorDefinition] = useState(null as ComponentDefinition);
+  const [newActuatorName, setNewActuatorName] = useState(null);
+  const [newActuatorProperties, setNewActuatorProperties] = useState(null);
+
+  const rerender = () => setRenderState({});
+
+  return (
+    <Box className="subsystem-lane actuators-lane">
+      <h3>Actuators</h3>
+      <Box className="subsystem-lane-items">
+        {
+          subsystem.getActuators().map(component => {
+            return (
+              <Card key={ component.uuid } className="subsystem-lane-item" component={ Paper }>
+                { component.name }
+              </Card>
+            )
+          })
+        }
+        <Button onClick={ () => {
+          setNewActuatorName(null);
+          setNewActuatorDefinition(null);
+          setNewActuatorProperties(null);
+          setShowNewActuatorDialog(true);
+          return;
+          const definition = COMPONENT_DEFINITIONS.definitions.find(d => d.type === "actuator");
+          if (!definition) return;
+
+          const component = new SubsystemComponent("New Actuator", definition, {});
+          subsystem.components.push(component);
+          rerender();
+        } }>
+          + Add Actuator
+        </Button>
+      </Box>
+      <Dialog open={ showNewActuatorDialog }>
+        <DialogTitle>
+          Add New Actuator
+        </DialogTitle>
+        <DialogContent>
+          <Box style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
+            <label>Name</label>
+            <TextField onChange={ (e) => setNewActuatorName(e.target.value) } defaultValue={ "" } variant="standard"/>
+
+            <label>Choose a type</label>
+            <Select onChange={ (e) => {
+              setNewActuatorDefinition(COMPONENT_DEFINITIONS.forId(e.target.value));
+              setNewActuatorProperties({}); // clear any saved properties from the previous selection
+            } } defaultValue={ "" } variant="standard">
+              { COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "actuator").map(definition => {
+                return (
+                  <MenuItem value={ definition.id } key={ definition.id }>
+                    { definition.name }
+                  </MenuItem>
+                )
+              }) }
+            </Select>
+
+            {
+              newActuatorDefinition ? (
+                newActuatorDefinition.properties.map(prop => {
+                  return (
+                    [
+                      <label key={ `prop-label-${ prop.name }` }>
+                        { prop.name }
+                      </label>,
+                      (() => {
+                        switch (prop.type) {
+                          case "int":
+                          case "long":
+                          case "double":
+                            // TODO: Allow integer only input for int/long.  Maybe allow props to define pass/reject functions?
+                            return <Input type="number" key={ `prop-input-${ prop.name }` } onChange={ (e) => {
+                              const props = { ...newActuatorProperties };
+                              props[prop.codeName] = e.target.value;
+                              setNewActuatorProperties(props);
+                            } }/>
+                          default:
+                            if (prop.type.startsWith("vararg")) {
+                              // do something special to add or remove elements from a list
+                              return <span>TODO: vararg support</span>
+                            } else {
+                              // assume it's a custom type - look for components with an API type that matches and offer them in a select box
+                              // TODO: Prevent the same component from being selected for multiple properties
+                              return (
+                                <Select key={ `select-${ prop.name }` } variant="standard" onChange={ (e) => {
+                                  const props = { ...newActuatorProperties };
+                                  props[prop.codeName] = e.target.value;
+                                  setNewActuatorProperties(props);
+                                } }>
+                                  {
+                                    subsystem.components
+                                      .filter(c => c.definition.wpilibApiTypes.find(t => t === prop.type))
+                                      .map(c => {
+                                        return (
+                                          <MenuItem key={ c.uuid } value={ c.uuid }>
+                                            { c.name }
+                                          </MenuItem>
+                                        )
+                                      })
+                                  }
+                                </Select>
+                              )
+                            }
+                            return <span>TODO</span>;
+                        }
+                      })()
+                    ]
+                  );
+                })
+              ) : <></>
+            }
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={ () => setShowNewActuatorDialog(false) }>Cancel</Button>
+          <Button onClick={ () => {
+            if (newActuatorName && newActuatorDefinition && newActuatorProperties) {
+              const newActuator = new SubsystemComponent(newActuatorName, newActuatorDefinition, newActuatorProperties);
+              console.debug('Created new actuator component', newActuator);
+              subsystem.components.push(newActuator);
+            } else {
+              console.debug('Not enough information provided, not creating an actuator');
+            }
+            setShowNewActuatorDialog(false);
+          } }>
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+
+}
+
+function ControlsLane({ subsystem, project }: BasicOpts) {
+  return (
+    <Box className="subsystem-lane controls-lane">
+      <h3>Controls</h3>
+      <Box className="subsystem-lane-items">
+        {
+          subsystem.getControls().map(component => {
+            return (
+              <Card key={ component.uuid } className="subsystem-lane-item" component={ Paper }>
+                { component.name }
+              </Card>
+            )
+          })
+        }
+        <Button onClick={ console.log }>
+          + Add Control
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
 function SubsystemPane({ subsystem, project }: BasicOpts) {
+  const [generatedCode, setGeneratedCode] = useState(generateJavaSubsystem(subsystem, project));
+
+  useEffect(() => setGeneratedCode(generateJavaSubsystem(subsystem, project)));
+
   return (
     <Box className="subsystem-pane">
+      <SensorsLane subsystem={ subsystem } project={ project }/>
+      <ActuatorsLane subsystem={ subsystem } project={ project }/>
+      <ControlsLane subsystem={ subsystem } project={ project }/>
       <ActionsLane subsystem={ subsystem } project={ project }/>
       <StatesLane subsystem={ subsystem } project={ project }/>
       <CommandsLane subsystem={ subsystem } project={ project }/>
@@ -49,11 +240,19 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
         showLineNumbers={ true }
         wrapLines={ true }
         lineProps={ (lineNumber: number): React.HTMLProps<HTMLElement> => {
-          const style = { backgroundColor: "#333", color: "#ddd" };
-          return {};
+          const style: React.HTMLProps<HTMLElement> = { display: "block" };
+          const lineContent = generatedCode.split("\n")[lineNumber - 1];
+          if (lineContent === "  // ACTIONS") {
+            style.backgroundColor = "#cfc";
+          } else if (lineContent === "  // STATES") {
+            style.backgroundColor = "#cfc";
+          } else if (lineContent === "  // COMMANDS") {
+            style.backgroundColor = "#cfc";
+          }
+          return { style };
         } }
       >
-        { generateJavaSubsystem(subsystem, project) }
+        { generatedCode }
       </SyntaxHighlighter>
     </Box>
   );
@@ -326,6 +525,9 @@ function generateJavaCommand(name: string, subsystem: Subsystem, actionUuid: str
   if (!action) {
     return '';
   }
+
+  console.debug('Generating Java command code for command', name, 'subsystem', subsystem.name, 'action', actionUuid, 'end condition', endCondition, 'with params', commandParams);
+
   // const subsystemVar = camelCase(subsystem.name);
   const subsystemVar = 'this';
   const actionMethod = camelCase(action.name);
@@ -368,7 +570,7 @@ function generateJavaCommand(name: string, subsystem: Subsystem, actionUuid: str
     }).join(", ");
     // action.params.map(p => command)
   }
-  const commandDef = `public Command ${ camelCase(name) }Command(${ paramDefs })`;
+  const commandDef = `public CommandBase ${ camelCase(name) }Command(${ paramDefs })`; // CommandBase implements the Sendable interface, while Command doesn't
   let actionInvocation;
   if (action.params.length === 0) {
     actionInvocation = `${ subsystemVar }::${ actionMethod }`;
@@ -413,7 +615,7 @@ function generateJavaCommand(name: string, subsystem: Subsystem, actionUuid: str
         }
         return '??';
       } else {
-        return camelCase(param.name);
+        return `/* Unspecified ${ param.name } */`;
       }
     }).join(', ') })`;
   }
@@ -575,13 +777,13 @@ function CreateCommandDialog({
   const [selectedAction, setSelectedAction] = useState(editedCommand?.action);
   const [endCondition, setEndCondition] = useState(editedCommand?.endCondition);
   const [commandName, setCommandName] = useState(editedCommand?.name);
-  const [params, setParams] = useState(editedCommand?.params);
+  const [params, setParams] = useState(editedCommand?.params ?? []);
 
   // doesn't clear properly when hitting +add command, closing, then re-opening
   useEffect(() => setSelectedAction(editedCommand?.action), [editedCommand, subsystem, defaultOpen]);
   useEffect(() => setEndCondition(editedCommand?.endCondition), [editedCommand, subsystem, defaultOpen]);
   useEffect(() => setCommandName(editedCommand?.name), [editedCommand, subsystem, defaultOpen]);
-  useEffect(() => setParams(editedCommand?.params), [editedCommand, subsystem, defaultOpen]);
+  useEffect(() => setParams(editedCommand?.action === selectedAction ? editedCommand?.params ?? [] : []), [editedCommand, subsystem, defaultOpen, selectedAction]);
 
   return (
     <Dialog open={ defaultOpen } className="create-command-dialog">
@@ -601,8 +803,8 @@ function CreateCommandDialog({
                   variant="standard"
                   defaultValue={ editedCommand?.action }
                   onChange={ (e) => {
-                    console.debug('Setting subsystem action to', e.target.value);
-                    setSelectedAction(e.target.value);
+                    const selectedActionUUID = e.target.value;
+                    setSelectedAction(selectedActionUUID);
                   } }
                   placeholder={ "Select an action..." }>
             {
@@ -654,9 +856,82 @@ function CreateCommandDialog({
                                  onChange={ (e) => setCommandName(e.target.value) }/>
         </span>
 
+        {
+          subsystem.actions.find(action => action.uuid === selectedAction) ?
+            (
+              <Box className="params-configuration"
+                   style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
+                {
+                  subsystem.actions.find(action => action.uuid === selectedAction).params.map(param => {
+                    const action = subsystem.actions.find(action => action.uuid === selectedAction);
+
+                    let hardCodedValue = null;
+                    const existingInvocation: ActionParamCallOption | undefined = params.find(p => p.param === param.uuid);
+                    console.debug('Rendering controls for existing argument invocation:', existingInvocation);
+
+                    return (
+                      [
+                        <label>{ param.name }</label>,
+                        <span>
+                          <Select defaultValue={ existingInvocation?.invocationType ?? "" }
+                                  value={ existingInvocation?.invocationType ?? "" }
+                                  variant="standard"
+                                  onChange={ (e) => {
+                                    const optType = e.target.value;
+                                    const newInvocation: ActionParamCallOption = new ActionParamCallOption(action, param, optType, hardCodedValue);
+                                    const existingIndex = params.findIndex((option) => option.param === param.uuid);
+                                    let newParams: ActionParamCallOption[];
+                                    if (existingIndex >= 0) {
+                                      // replace
+                                      params.splice(existingIndex, 1, newInvocation);
+                                      newParams = [...params];
+                                    } else {
+                                      // concat
+                                      newParams = params.concat(newInvocation);
+                                    }
+                                    // sort to keep the parameters in the same order they appear in the action param defs
+                                    newParams = newParams.sort((a, b) => action.params.findIndex(p => p.uuid === a.param) - action.params.findIndex(p => p.uuid === b.param));
+                                    setParams(newParams);
+                                  } }>
+                            <MenuItem value={ "hardcode" }>
+                              Hardcoded
+                            </MenuItem>
+                            <MenuItem value={ "passthrough-value" }>
+                              Pass through a value
+                            </MenuItem>
+                            <MenuItem value={ "passthrough-supplier" }>
+                              Pass through with a supplier
+                            </MenuItem>
+                          </Select>
+                          <TextField variant="standard"
+                                     defaultValue={ existingInvocation?.hardcodedValue ?? "" }
+                                     value={ existingInvocation?.hardcodedValue ?? "" }
+                                     onChange={ (e) => {
+                                       hardCodedValue = e.target.value;
+                                       params.find(p => p.param === param.uuid).hardcodedValue = hardCodedValue;
+                                       setParams([...params]);
+                                     } }/>
+                        </span>
+                      ]
+                    );
+                  })
+                }
+              </Box>
+            ) :
+            null
+        }
         <div className="code-preview java-code-preview">
           <SyntaxHighlighter language="java" style={ SyntaxHighlightStyles.vs }>
-            { generateJavaCommand(commandName, subsystem, selectedAction, endCondition, params) }
+            {
+              (() => {
+                try {
+                  return generateJavaCommand(commandName, subsystem, selectedAction, endCondition, params);
+                } catch (e) {
+                  console.error(e);
+                  return `ERROR: Failed to generate code for command ${ commandName }: ${ e }`;
+                }
+              })()
+            }
           </SyntaxHighlighter>
         </div>
       </DialogContent>
@@ -735,9 +1010,12 @@ function RenameSubsystemDialog({
 }
 
 const CAN_TALON_FX: ComponentDefinition = {
+  id: "SAMPLE-cantalonfx",
   name: "CAN Talon FX",
   fqn: "com.ctre.phoenix.motorcontrol.can.WPI_TalonFX",
   className: "WPI_TalonFX",
+  type: "actuator",
+  wpilibApiTypes: ["MotorController"],
   hints: ["action", "motor"],
   methods: [
     {
@@ -765,9 +1043,12 @@ const CAN_TALON_FX: ComponentDefinition = {
   ]
 };
 const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
+  id: "SAMPLE-motorcontrollergroup",
   name: "Motor Controller Group",
   fqn: "edu.wpi.first.wpilibj.MotorControllerGroup",
   className: "MotorControllerGroup",
+  type: "actuator",
+  wpilibApiTypes: ["MotorController"],
   hints: ["action"],
   methods: [
     {
@@ -789,9 +1070,12 @@ const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
   ]
 }
 const DIFFERENTIAL_DRIVE: ComponentDefinition = {
+  id: "SAMPLE-differentialdrive",
   name: "Differential Drive",
   fqn: "edu.wpi.first.wpilibj.drive.DifferentialDrive",
   className: "DifferentialDrive",
+  wpilibApiTypes: [],
+  type: "actuator",
   hints: ["action"],
   methods: [
     {
@@ -830,6 +1114,10 @@ const DIFFERENTIAL_DRIVE: ComponentDefinition = {
     }
   ]
 }
+
+COMPONENT_DEFINITIONS.addDefinition(CAN_TALON_FX);
+COMPONENT_DEFINITIONS.addDefinition(MOTOR_CONTROLLER_GROUP);
+COMPONENT_DEFINITIONS.addDefinition(DIFFERENTIAL_DRIVE);
 
 function drivebaseTemplate() {
   const drivebase = new Subsystem();
@@ -902,7 +1190,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
             title={ "A robot has to move around somehow!  This supports the three most common drive base types: differential drives (also called skid-steer or tank drive); swerve drives; and mecanum drives." }>
             <h3>Drive Base</h3>
           </Tooltip>
-          <img src={ "logo192.png" }/>
+          <img src={ "logo192.png" } alt={ "" } title={ "DRIVE BASE IMAGE" }/>
         </Box>
       </Button>
       <Button onClick={ () => alert('Not implemented yet') }>
