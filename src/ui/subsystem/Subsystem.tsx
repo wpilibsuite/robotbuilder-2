@@ -52,7 +52,7 @@ function SensorsLane({ subsystem, project }: BasicOpts) {
             )
           })
         }
-        <Button onClick={ console.log }>
+        <Button disabled>
           + Add Sensor
         </Button>
       </Box>
@@ -227,7 +227,7 @@ function ControlsLane({ subsystem, project }: BasicOpts) {
             )
           })
         }
-        <Button onClick={ console.log }>
+        <Button disabled>
           + Add Control
         </Button>
       </Box>
