@@ -1,11 +1,10 @@
 import { Box, Button, Tab, Tabs, TextField, } from "@mui/material";
-import { Controllers } from "./controller/Controller.tsx";
-import { Subsystems } from "./subsystem/Subsystem.tsx";
-import { Commands } from "./command/Commands.tsx";
-import React, { useEffect, useRef, useState } from 'react';
-import { makeNewProject, Project } from "./../bindings/Project.ts";
+import { Controllers } from "./controller/Controller";
+import { Subsystems } from "./subsystem/Subsystem";
+import { Commands } from "./command/Commands";
+import React, { useState } from 'react';
+import { makeNewProject, Project } from "../bindings/Project";
 import $ from "jquery";
-import EditableLabel from "./EditableLabel.tsx";
 import {
   AtomicCommand,
   ParallelGroup, Param,
@@ -13,8 +12,7 @@ import {
   Subsystem,
   SubsystemAction,
   SubsystemState
-} from "../bindings/Command.ts";
-import { Exception } from "sass";
+} from "../bindings/Command";
 
 type ProjectProps = {
   initialProject: Project;

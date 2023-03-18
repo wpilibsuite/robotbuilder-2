@@ -1,14 +1,12 @@
-import { Project } from "../../bindings/Project.ts";
+import { Project } from "../../bindings/Project";
 import {
   ActionParamCallOption,
   AtomicCommand,
   EndCondition,
   Param,
   Subsystem,
-  SubsystemAction,
-  SubsystemComponent,
-  SubsystemState
-} from "../../bindings/Command.ts";
+  SubsystemComponent
+} from "../../bindings/Command";
 import {
   Autocomplete,
   Box,
@@ -25,14 +23,15 @@ import {
   Tabs,
   TextField, Tooltip
 } from "@mui/material";
-import React, { useEffect, useRef, useState } from "react";
+import React, { CSSProperties, useEffect, useState } from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { ComponentDefinition, Property } from "../../components/ComponentDefinition.ts";
-import { fieldDeclaration, variableName } from "../../codegen/java/util.ts";
-import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions.ts";
+import { ComponentDefinition } from "../../components/ComponentDefinition";
+import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions";
+import { generateCommand } from "../../codegen/java/CommandGenerator";
+import { generateSubsystem } from "../../codegen/java/SubsystemGenerator";
 
 type BasicOpts = {
   subsystem: Subsystem;
@@ -61,35 +60,12 @@ function SensorsLane({ subsystem, project }: BasicOpts) {
   );
 }
 
-function VarargSelector({
-                          allOptions,
-                          selectedOptions,
-                          onChange
-                        }: { allOptions: SubsystemComponent[], selectedOptions: SubsystemComponent[], onChange: (...SubsystemComponent) => void }) {
-  return (
-    <Select value={ selectedOptions } variant="standard" multiple onChange={ (e) => onChange(e.target.value) }>
-      {
-        allOptions.map(component => {
-          return (
-            <MenuItem key={ component.uuid } value={ component.uuid }>
-              { component.name }
-            </MenuItem>
-          );
-        })
-      }
-    </Select>
-  );
-}
-
 function ActuatorsLane({ subsystem, project }: BasicOpts) {
-  const [renderState, setRenderState] = useState({});
   const [showNewActuatorDialog, setShowNewActuatorDialog] = useState(false);
 
   const [newActuatorDefinition, setNewActuatorDefinition] = useState(null as ComponentDefinition);
   const [newActuatorName, setNewActuatorName] = useState(null);
   const [newActuatorProperties, setNewActuatorProperties] = useState(null);
-
-  const rerender = () => setRenderState({});
 
   return (
     <Box className="subsystem-lane actuators-lane">
@@ -109,13 +85,6 @@ function ActuatorsLane({ subsystem, project }: BasicOpts) {
           setNewActuatorDefinition(null);
           setNewActuatorProperties(null);
           setShowNewActuatorDialog(true);
-          return;
-          const definition = COMPONENT_DEFINITIONS.definitions.find(d => d.type === "actuator");
-          if (!definition) return;
-
-          const component = new SubsystemComponent("New Actuator", definition, {});
-          subsystem.components.push(component);
-          rerender();
         } }>
           + Add Actuator
         </Button>
@@ -214,7 +183,6 @@ function ActuatorsLane({ subsystem, project }: BasicOpts) {
                                 </Select>
                               )
                             }
-                            return <span>TODO</span>;
                         }
                       })()
                     ]
@@ -268,12 +236,12 @@ function ControlsLane({ subsystem, project }: BasicOpts) {
 }
 
 function SubsystemPane({ subsystem, project }: BasicOpts) {
-  const [generatedCode, setGeneratedCode] = useState(generateJavaSubsystem(subsystem, project));
+  const [generatedCode, setGeneratedCode] = useState(generateSubsystem(subsystem, project));
 
-  useEffect(() => setGeneratedCode(generateJavaSubsystem(subsystem, project)));
+  useEffect(() => setGeneratedCode(generateSubsystem(subsystem, project)));
 
   return (
-    <Box className="subsystem-pane">
+    <Box className="subsystem-pane" style={{}}>
       <SensorsLane subsystem={ subsystem } project={ project }/>
       <ActuatorsLane subsystem={ subsystem } project={ project }/>
       <ControlsLane subsystem={ subsystem } project={ project }/>
@@ -285,8 +253,8 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
         style={ SyntaxHighlightStyles.vs }
         showLineNumbers={ true }
         wrapLines={ true }
-        lineProps={ (lineNumber: number): React.HTMLProps<HTMLElement> => {
-          const style: React.HTMLProps<HTMLElement> = { display: "block" };
+        lineProps={ (lineNumber: number): { style: React.CSSProperties } => {
+          const style: CSSProperties = { display: "block" };
           const lineContent = generatedCode.split("\n")[lineNumber - 1];
           if (lineContent === "  // ACTIONS") {
             style.backgroundColor = "#cfc";
@@ -343,7 +311,7 @@ function ActionsLane({ subsystem, project }: BasicOpts) {
                 <div key={ param.uuid } className="action-param">
                   <TextField variant="standard" defaultValue={ param.name ?? '' }
                              onChange={ (e) => param.name = e.target.value }/>
-                  <Select variant="standard" onChange={ (e) => param.type = e.target.value }>
+                  <Select variant="standard" onChange={ (e) => param.type = e.target.value as string }>
                     <MenuItem value="int" key={ 'int-select' }>Int</MenuItem>
                     <MenuItem value="long" key={ 'long-select' }>Long</MenuItem>
                     <MenuItem value="double" key={ 'double-select' }>Double</MenuItem>
@@ -525,292 +493,6 @@ class NewCommandData {
   }
 }
 
-function camelCase(actionName: string) {
-  // remove punctuation and treat as space as far as camel-casing is concerned
-  actionName = actionName.replaceAll(/[^a-zA-Z0-9]/ig, ' ');
-  return actionName.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => {
-    if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
-    return index === 0 ? match.toLowerCase() : match.toUpperCase();
-  });
-}
-
-String.prototype.blank = function (): boolean {
-  return this.length === 0 || this.match(/^\s+$/)
-}
-
-String.prototype.unindent = function (): string {
-  let lines = this.split("\n");
-  // lines = lines.filter(line => !line.blank());
-
-  if (lines.length === 0) return "";
-
-  const indentationLevel = Math.min(...lines.map(line => line.blank() ? 999 : line.match(/(^\s*?)\S/)[1].length));
-  const unindentedLines = lines.map(line => line.substring(indentationLevel, line.length));
-
-  return unindentedLines.join("\n");
-}
-
-/**
- * Indents each line in a multiline string so that every line is at the given indentation level. Relative indentations
- * are preserved.
- */
-String.prototype.indent = function (indentation: number): string {
-  const padding = " ".repeat(indentation);
-  if (this.length === 0) return padding;
-
-  const lines = this.split("\n");
-  return lines.map(line => line.blank() ? line : `${ padding }${ line }`).join("\n");
-}
-
-function generateJavaCommand(name: string, subsystem: Subsystem, actionUuid: string, endCondition: EndCondition, commandParams: ActionParamCallOption[]) {
-  if (!name || !subsystem || !actionUuid || !endCondition) {
-    return '';
-  }
-
-  const action = subsystem.actions.find(a => a.uuid === actionUuid);
-  if (!action) {
-    return '';
-  }
-
-  console.debug('Generating Java command code for command', name, 'subsystem', subsystem.name, 'action', actionUuid, 'end condition', endCondition, 'with params', commandParams);
-
-  // const subsystemVar = camelCase(subsystem.name);
-  const subsystemVar = 'this';
-  const actionMethod = camelCase(action.name);
-  console.log(action);
-  let paramDefs = '';
-  if (commandParams.length > 0) {
-    // Action params MUST be specified in the command factory
-    // Mostly because I don't want to think about passing params when composing command groups
-    // paramDefs = action.params.map(p => `${ p.type } ${ camelCase(p.name) }`).join(', ');
-    paramDefs = commandParams.filter(p => p.invocationType !== "hardcode").map(invocation => {
-      const param = action.params.find(p => p.uuid === invocation.param);
-      switch (invocation.invocationType) {
-        case "passthrough-value":
-          console.log('Passthrough by value', param, invocation);
-          return `${ param.type } ${ camelCase(param.name) }`;
-        case "passthrough-supplier":
-          console.log('Passthrough by supplier', param, invocation);
-          let supplierType = `Supplier<${ param.type }>`;
-          switch (param.type) {
-            case "boolean":
-              supplierType = 'BooleanSupplier';
-              break;
-            case "int":
-              supplierType = "IntegerSupplier";
-              break;
-            case "long":
-              supplierType = "LongSupplier";
-              break;
-            case "double":
-              supplierType = "DoubleSupplier";
-              break;
-            default:
-              supplierType = `Supplier<${ param.type }>`;
-              break;
-          }
-          return `${ supplierType } ${ camelCase(param.name) }`;
-        default:
-          return "/* hardcoded */";
-      }
-    }).join(", ");
-    // action.params.map(p => command)
-  }
-  const commandDef = `public CommandBase ${ camelCase(name) }Command(${ paramDefs })`; // CommandBase implements the Sendable interface, while Command doesn't
-  let actionInvocation;
-  if (action.params.length === 0) {
-    actionInvocation = `${ subsystemVar }::${ actionMethod }`;
-  } else {
-    actionInvocation = `() -> ${ subsystemVar }.${ actionMethod }(${ action.params.map(param => {
-      const invocation = commandParams.find(c => c.param === param.uuid);
-      if (invocation) {
-        switch (invocation.invocationType) {
-          case "hardcode":
-            if (param.type === "string") {
-              // quote the value
-              return `"${ invocation.hardcodedValue }"`;
-            } else {
-              return invocation.hardcodedValue;
-            }
-          case "passthrough-value":
-            // value is set by a parameter to the command construction
-            return camelCase(param.name);
-          case "passthrough-supplier":
-            const paramName = camelCase(param.name);
-            let supplierInvocation = 'get()';
-            switch (param.type) {
-              case "boolean":
-                supplierInvocation = "getAsBoolean()";
-                break;
-              case "int":
-                supplierInvocation = "getAsInt()";
-                break;
-              case "long":
-                supplierInvocation = "getAsLong()";
-                break;
-              case "double":
-                supplierInvocation = "getAsDouble()";
-                break;
-              default:
-                supplierInvocation = "get()";
-                break;
-            }
-            return `${ paramName }.${ supplierInvocation }`;
-          default:
-            return `/* Unsupported invocation type "${ invocation.invocationType }"! Open a bug report! */`;
-        }
-        return '??';
-      } else {
-        return `/* Unspecified ${ param.name } */`;
-      }
-    }).join(', ') })`;
-  }
-
-  switch (endCondition) {
-    case "forever":
-      return (
-        `
-        /**
-         * The ${ name } command.  This will run the ${ action.name } action and will
-         * only stop if it is canceled or another command that requires the ${ subsystem.name } is started.
-         */
-        ${ commandDef } {
-          return ${ subsystemVar }.run(${ actionInvocation });
-        }
-        `.unindent().trimStart().trimEnd()
-      );
-    case "once":
-      return (
-        `
-        /**
-         * The ${ name } command.  This will run the ${ action.name } action once and then immediately finish.
-         */
-        ${ commandDef } {
-          return ${ subsystemVar }.runOnce(${ actionInvocation });
-        }
-        `.unindent().trimStart().trimEnd()
-      );
-    default:
-      // command state uuid
-      const endState = subsystem.states.find(s => s.uuid === endCondition);
-      const stateName = endState.name;
-      return (
-        `
-        /**
-         * The ${ name } command.  This will run the ${ action.name } action until the ${ subsystem.name }
-         * has ${ stateName }.
-         */
-        ${ commandDef } {
-          return ${ subsystemVar }
-                   .run(${ actionInvocation })
-                   .until(${ subsystemVar }::${ camelCase(stateName) });
-        }
-        `.unindent().trimStart().trimEnd()
-      );
-  }
-}
-
-function propertyToValue(type: string, value, subsystem): string {
-  console.debug('propertyToValue(', type, ', ', value, ', ', subsystem, ')');
-  if (!type) return 'null';
-
-  if (!value) {
-    console.warn('No value provided!');
-    return "/* You forgot to set a value! */";
-  }
-
-  if (typeof value === 'string' && value.length === 36) {
-    // might be a UUID for another component
-    const maybeComp: SubsystemComponent = subsystem.components.find(c => c.uuid === value);
-    if (maybeComp) {
-      // it is! convert to a variable name for reference
-      return variableName(maybeComp.name);
-    }
-  } else if (Array.isArray(value)) {
-    const joinedDefs = value.map(element => propertyToValue(type, element, subsystem));
-    if (type.startsWith("vararg")) {
-      return joinedDefs.join(", ");
-    } else {
-      return `new ${ type }[] { ${ joinedDefs.join(", ") } }`;
-    }
-  }
-
-  return value;
-}
-
-function generateJavaSubsystem(subsystem: Subsystem, project: Project) {
-  if (!subsystem || !project) return null;
-
-  let className = camelCase(subsystem.name);
-  if (className.length > 0)
-    className = className[0].toUpperCase() + className.substring(1, className.length);
-
-  const commands = subsystem.commands;
-
-  return (
-    `
-    package frc.robot.subsystems;
-
-${ [...new Set(subsystem.components.map(c => c.definition.fqn))].sort().map(fqn => `import ${ fqn };`.indent(4)).join("\n") }
-
-    /**
-     * The ${ subsystem.name } subsystem.
-     */
-    public class ${ className } extends SubsystemBase {
-${ subsystem.components.map(c => `${ fieldDeclaration(c.definition.className, c.name) };`.indent(6)).join("\n") }
-
-      public ${ className }() {
-        setName("${ subsystem.name }");
-${ subsystem.components.map(c => `this.${ variableName(c.name) } = new ${ c.definition.className }(${ c.definition.properties.filter(p => p.setInConstructor).map(p => propertyToValue(p.type, c.properties[p.codeName], subsystem)).join(", ") });`.indent(8)).join("\n") }
-
-        var commandList = Shuffleboard.getTab("${ subsystem.name }").getLayout("Commands", BuiltInLayouts.kList);
-${ commands.map(c => `commandList.add("${ c.name }", this.${ camelCase(c.name) }Command());`.indent(8)).join("\n") }
-      }
-
-      // ACTIONS
-
-${ subsystem.actions.map(a => generateJavaAction(a).indent(6)).join("\n\n") }
-
-      // STATES
-
-${ subsystem.states.map(s => generateJavaState(s).indent(6)).join("\n\n") }
-
-      // COMMANDS
-
-${ commands.map(c => generateJavaCommand(c.name, subsystem, c.action, c.endCondition, c.params).indent(6)).join("\n\n") }
-    }
-    `.unindent()
-  );
-}
-
-function generateJavaAction(action: SubsystemAction): string {
-  return (
-    `
-    /**
-     * The ${ action.name } action.  If a command runs this action, it will be called periodically
-     * (50 times per second by default) until that command completes.
-     * TODO: document which commands run this action.
-     */
-    public void ${ camelCase(action.name) }(${ action.params.map(p => `${ p.type } ${ camelCase(p.name) }`).join(", ") }) {
-      // Implement me!
-    }
-    `.unindent().trimStart().trimEnd()
-  );
-}
-
-function generateJavaState(state: SubsystemState): string {
-  return (
-    `
-    /**
-     * The ${ state.name } state.
-     * TODO: document which commands end on this state.
-     */
-    public boolean ${ camelCase(state.name) }() {
-      // Implement me!
-    }
-    `.unindent().trimStart().trimEnd()
-  )
-}
 
 function CreateCommandDialog({
                                subsystem,
@@ -923,7 +605,8 @@ function CreateCommandDialog({
                                   value={ existingInvocation?.invocationType ?? "" }
                                   variant="standard"
                                   onChange={ (e) => {
-                                    const optType = e.target.value;
+                                    const optType = e.target.value as "hardcode" | "passthrough-value" | "passthrough-supplier";
+
                                     const newInvocation: ActionParamCallOption = new ActionParamCallOption(action, param, optType, hardCodedValue);
                                     const existingIndex = params.findIndex((option) => option.param === param.uuid);
                                     let newParams: ActionParamCallOption[];
@@ -971,7 +654,7 @@ function CreateCommandDialog({
             {
               (() => {
                 try {
-                  return generateJavaCommand(commandName, subsystem, selectedAction, endCondition, params);
+                  return generateCommand(commandName, subsystem, selectedAction, endCondition, params);
                 } catch (e) {
                   console.error(e);
                   return `ERROR: Failed to generate code for command ${ commandName }: ${ e }`;
@@ -1323,13 +1006,6 @@ export function Subsystems({ project }: { project: Project }) {
     // setContextMenuSubsystem(null);
     setContextMenu(null);
   }
-
-  const newSubsystem = () => {
-    const newSubsystem = new Subsystem();
-    newSubsystem.name = `Subsystem ${ newSubsystem.uuid.substring(0, 4) }`;
-    project.subsystems.push(newSubsystem);
-    setCurrentSubsystem(newSubsystem);
-  };
 
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const renameSubsystem = (subsystem: Subsystem) => {

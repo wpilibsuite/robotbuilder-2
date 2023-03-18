@@ -1,13 +1,13 @@
 import React, { useState, useRef } from "react";
-import { PropTypes } from "prop-types";
+import PropTypes from "prop-types";
 import { Input, InputLabel } from "@mui/material";
 
 const ENTER_KEY_CODE = 13;
 const DEFAULT_LABEL_PLACEHOLDER = "Click To Edit";
 
 const EditableLabel = ({
-                         onFocus = () => {},
-                         onBlur = () => {},
+                         onFocus = (value: string) => {},
+                         onBlur = (value: string) => {},
                          ...props
                        }) => {
   const [isEditing, setEditing] = useState(false);

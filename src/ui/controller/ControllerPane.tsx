@@ -3,7 +3,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-  FormControl, ListItem, ListSubheader,
+  FormControl, ListSubheader,
   MenuItem,
   Paper,
   Select,
@@ -14,14 +14,14 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
-import { Controller, ControllerButton } from "../../bindings/Controller.ts";
-import { PS5Controller } from "./configs/ps5.tsx";
+import { Controller, ControllerButton } from "../../bindings/Controller";
+import { PS5Controller } from "./configs/ps5";
 import { ButtonConfig, ControllerConfig } from "./ControllerConfig";
-import { AtomicCommand, Command } from "../../bindings/Command.ts";
+import { AtomicCommand } from "../../bindings/Command";
 import React, { useState } from "react";
 import $ from "jquery";
 import { ReactSVG } from "react-svg";
-import { Project } from "../../bindings/Project.ts";
+import { Project } from "../../bindings/Project";
 
 export type ControllerPaneProps = {
   project: Project;
@@ -106,7 +106,7 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>Press and hold</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
                                     project={ project }
                                     initialCommand={ button.whileHeld }
                                     onChange={ (event) => updateButtonCommand('whileHeld', event.target.value) }/>
@@ -115,7 +115,7 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>Press</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
                                     project={ project }
                                     initialCommand={ button.whenPressed }
                                     onChange={ (event) => updateButtonCommand('whenPressed', event.target.value) }/>
@@ -124,7 +124,7 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>Toggle on press</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
                                     project={ project }
                                     initialCommand={ button.toggleOnPress }
                                     onChange={ (event) => updateButtonCommand('toggleOnPress', event.target.value) }/>
@@ -133,7 +133,7 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>When released</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
                                     project={ project }
                                     initialCommand={ button.whenReleased }
                                     onChange={ (event) => updateButtonCommand('whenReleased', event.target.value) }/>
@@ -142,7 +142,7 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>While released</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
                                     project={ project }
                                     initialCommand={ button.whileReleased }
                                     onChange={ (event) => updateButtonCommand('whileReleased', event.target.value) }/>
@@ -151,7 +151,7 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>Toggle on release</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld?.uuid ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
                                     project={ project }
                                     initialCommand={ button.toggleOnRelease }
                                     onChange={ (event) => updateButtonCommand('toggleOnRelease', event.target.value) }/>

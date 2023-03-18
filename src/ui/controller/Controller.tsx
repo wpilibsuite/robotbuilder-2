@@ -1,6 +1,6 @@
 import { Box, Tab, Tabs } from "@mui/material";
-import { ControllerPane } from "./ControllerPane.tsx";
-import { Project } from "../../bindings/Project.ts";
+import { ControllerPane } from "./ControllerPane";
+import { Project } from "../../bindings/Project";
 import React from "react";
 
 export type ControllersProps = {

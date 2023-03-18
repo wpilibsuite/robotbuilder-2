@@ -1,5 +1,5 @@
 import { v4 as uuidV4 } from "uuid"
-import { ComponentDefinition } from "../components/ComponentDefinition.ts";
+import { ComponentDefinition } from "../components/ComponentDefinition";
 
 /**
  * The possible types that can be passed as arguments to an action invocation.

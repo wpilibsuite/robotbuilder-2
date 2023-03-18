@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "no-default-export": true,
+    "no-implicit-dependencies": [true],
+    "no-submodule-imports": false,
+    "no-relative-imports": false
+  },
+  "compilerOptions": {
+    "target": "ES6",
+    "lib": ["ES2021", "DOM"],
+    "jsx": "react",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true
+  }
+}

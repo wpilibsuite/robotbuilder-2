@@ -1,10 +1,10 @@
-import { AtomicCommand, Command, ParallelGroup, SequentialGroup } from "../../bindings/Command.ts";
+import { AtomicCommand, Command, ParallelGroup, SequentialGroup } from "../../bindings/Command";
 import { Project } from "../../bindings/Project";
 import { Button } from "@mui/material";
 import React, { useState } from "react";
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import EditableLabel from "../EditableLabel.tsx";
+import EditableLabel from "../EditableLabel";
 
 type CommandTypeProps = {
   command: Command;
@@ -134,12 +134,16 @@ function SequentialGroupEditor({ commandGroup, project }: { commandGroup: Sequen
                 const parallelWrapper = new ParallelGroup();
                 parallelWrapper.name = command.name;
                 parallelWrapper.endCondition = "all";
-                parallelWrapper.commands.push(command);
+                parallelWrapper.commands.push(command.uuid);
                 return (
-                  <ParallelGroupEditor key={ command.uuid } commandGroup={ parallelWrapper } project={ project }
+                  <ParallelGroupEditor key={ command.uuid }
+                                       commandGroup={ parallelWrapper }
+                                       project={ project }
                                        rerender={ rerender }/>);
               case "ParallelGroup":
-                return (<ParallelGroupEditor key={ command.uuid } commandGroup={ command } project={ project }
+                return (<ParallelGroupEditor key={ command.uuid }
+                                             commandGroup={ command as ParallelGroup }
+                                             project={ project }
                                              rerender={ rerender }/>);
               default:
                 console.error("Unexpected command type:", command.type, "Command:", command);
@@ -228,7 +232,7 @@ function commandIncludes(group: SequentialGroup | ParallelGroup, command: Comman
   // FIXME: If A -> B -> C, command C is not considered a child of A!
 
   // A: The group's commands directly include the given command
-  const directChild = !!group.commands.find(c => c.uuid === command.uuid);
+  const directChild = !!group.commands.find(c => c === command.uuid);
   if (directChild) return true;
 
   // B: The group's nested groups include the given command
@@ -238,7 +242,7 @@ function commandIncludes(group: SequentialGroup | ParallelGroup, command: Comman
   // Not a direct child and no nested groups to continue looking in
   if (nestedGroups.length === 0) return false;
 
-  return !!nestedGroups.find(nestedGroup => commandIncludes(nestedGroup, command, project));
+  return !!nestedGroups.find(nestedGroup => commandIncludes(nestedGroup as SequentialGroup | ParallelGroup, command, project));
 }
 
 function AddCommandDropTarget({
@@ -274,7 +278,7 @@ function AddCommandDropTarget({
     project.commands
       .filter(c => !commandGroup.commands.find(groupedCommand => groupedCommand === c.uuid)) // kick out any command that's already in the command group
       .filter(c => c.uuid !== commandGroup.uuid) // exclude the group itself
-      .filter(c => c.type === "Atomic" || !commandIncludes(c, commandGroup, project)) // exclude any groups that include (even implicitly) the group we'd be adding to
+      .filter(c => c.type === "Atomic" || !commandIncludes(c as SequentialGroup | ParallelGroup, commandGroup, project)) // exclude any groups that include (even implicitly) the group we'd be adding to
       .filter(c => !findUsedSubsystems(c, project).find(s => usedSubsystems.includes(s)));
 
   return (
@@ -315,8 +319,11 @@ export function Commands({ project }: { project: Project }) {
 
   return (
     <div className={ "commands" }>
-      { editingSequentialGroup ?
-        <SequentialGroupEditor commandGroup={ editingSequentialGroup } project={ project }/> : null }
+      {
+        editingSequentialGroup ?
+        <SequentialGroupEditor commandGroup={ editingSequentialGroup as SequentialGroup } project={ project }/> :
+        null
+      }
       <div>
         Currently under construction. Check back later!
       </div>
