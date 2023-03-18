@@ -10,6 +10,7 @@ import {
   SubsystemState
 } from "../../bindings/Command.ts";
 import {
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -57,6 +58,26 @@ function SensorsLane({ subsystem, project }: BasicOpts) {
         </Button>
       </Box>
     </Box>
+  );
+}
+
+function VarargSelector({
+                          allOptions,
+                          selectedOptions,
+                          onChange
+                        }: { allOptions: SubsystemComponent[], selectedOptions: SubsystemComponent[], onChange: (...SubsystemComponent) => void }) {
+  return (
+    <Select value={ selectedOptions } variant="standard" multiple onChange={ (e) => onChange(e.target.value) }>
+      {
+        allOptions.map(component => {
+          return (
+            <MenuItem key={ component.uuid } value={ component.uuid }>
+              { component.name }
+            </MenuItem>
+          );
+        })
+      }
+    </Select>
   );
 }
 
@@ -143,8 +164,33 @@ function ActuatorsLane({ subsystem, project }: BasicOpts) {
                             } }/>
                           default:
                             if (prop.type.startsWith("vararg")) {
-                              // do something special to add or remove elements from a list
-                              return <span>TODO: vararg support</span>
+                              // assume variadic components because variadic primitives is odd
+                              // components is also easy to implement with a multiple-select dropdown
+                              const type = prop.type.split("vararg ")[1];
+                              console.log(type);
+                              switch (type) {
+                                case "boolean":
+                                case "int":
+                                case "long":
+                                case "double":
+                                case "string":
+                                  return (<span>Vararg primitive types not yet supported</span>);
+                              }
+                              return (
+                                <Autocomplete multiple
+                                              onChange={ (event, newValue: SubsystemComponent[]) => {
+                                                console.log('Selected vararg options', newValue);
+                                                const props = {...newActuatorProperties}
+                                                props[prop.codeName] = newValue.map(component => component.uuid);
+                                                setNewActuatorProperties(props);
+                                              } }
+                                              options={ subsystem.components.filter(c => c.definition.wpilibApiTypes.find(t => t === type)) }
+                                              getOptionLabel={ (option) => option.name }
+                                              renderInput={ (params) => {
+                                                return <TextField {...params} placeholder={ `Select one or more ${type}` } />;
+                                              }}
+                                />
+                              );
                             } else {
                               // assume it's a custom type - look for components with an API type that matches and offer them in a select box
                               // TODO: Prevent the same component from being selected for multiple properties
@@ -1356,7 +1402,10 @@ export function Subsystems({ project }: { project: Project }) {
       <Menu open={ contextMenu !== null }
             onClose={ handleClose }
             anchorReference="anchorPosition"
-            anchorPosition={ contextMenu !== null ? { left: contextMenu.mouseX, top: contextMenu.mouseY } : undefined }>
+            anchorPosition={ contextMenu !== null ? {
+              left: contextMenu.mouseX,
+              top: contextMenu.mouseY
+            } : undefined }>
         <MenuItem onClick={ () => renameSubsystem(contextMenuSubsystem) }>
           Rename
         </MenuItem>
