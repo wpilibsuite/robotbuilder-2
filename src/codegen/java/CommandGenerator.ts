@@ -1,5 +1,5 @@
-import { ActionParamCallOption, EndCondition, Param, Subsystem } from "../../bindings/Command";
-import { methodName, unindent, variableName } from "./util";
+import { ActionParamCallOption, EndCondition, Param, Subsystem, SubsystemAction } from "../../bindings/Command";
+import { indent, methodName, unindent, variableName } from "./util";
 
 export function generateParam(param: Param, invocation: ActionParamCallOption): string {
   switch (invocation.invocationType) {
@@ -38,6 +38,10 @@ export function generateActionParamValue(param: Param, invocation: ActionParamCa
     switch (invocation.invocationType) {
       case "hardcode":
         // Easiest case.  Assumes the hardcoded value is valid Java code
+        if (!invocation.hardcodedValue || invocation.hardcodedValue === '') {
+          // User didn't set a value, indicate that on the output
+          return `/* ${ param.name } */`;
+        }
         return invocation.hardcodedValue;
       case "passthrough-value":
         // Value is provided by a parameter to the command factory method.
@@ -75,6 +79,23 @@ export function generateActionParamValue(param: Param, invocation: ActionParamCa
   }
 }
 
+function generateActionInvocation(action: SubsystemAction, subsystemVar: string, commandParams: ActionParamCallOption[]) {
+  const actionMethod = methodName(action.name);
+  return `${ subsystemVar }.${ actionMethod }(${ action.params.map(param => generateActionParamValue(param, commandParams.find(c => c.param === param.uuid))).join(', ') })`;
+}
+
+function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: string, commandParams: ActionParamCallOption[]) {
+  const actionMethod = methodName(action.name);
+
+  if (action.params.length === 0) {
+    // No parameters to pass through, use a method reference instead of a lambda
+    // eg `this::fooAction` instead of `() -> this.fooAction()`
+    return `${ subsystemVar }::${ actionMethod }`;
+  } else {
+    return `() -> ${ generateActionInvocation(action, subsystemVar, commandParams) }`;
+  }
+}
+
 /**
  * Generates a Java command method using the fluent API.  The method is expected to be defined in the body
  * of a subsystem class.
@@ -96,7 +117,7 @@ export function generateActionParamValue(param: Param, invocation: ActionParamCa
  *   return this.run(() -> this.fooAction(x, y));
  * }
  */
-export function generateCommand(name: string, subsystem: Subsystem, actionUuid: string, endCondition: EndCondition, commandParams: ActionParamCallOption[]): string {
+export function generateCommand(name: string, subsystem: Subsystem, actionUuid: string, endCondition: EndCondition, commandParams: ActionParamCallOption[], toInitialize: string[], toComplete: string[], toInterrupt: string[]): string {
   if (!name || !subsystem || !actionUuid || !endCondition) {
     // Not enough information, bail
     return '';
@@ -111,27 +132,60 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
   console.debug('Generating Java command code for command', name, 'subsystem', subsystem.name, 'action', actionUuid, 'end condition', endCondition, 'with params', commandParams);
 
   const subsystemVar = 'this';
-  const actionMethod = methodName(action.name);
   let paramDefs = '';
   if (commandParams.length > 0) {
     // All passthrough invocations require parameters on the command factory
     // Hardcoded values are, obviously, hardcoded in the method body
     paramDefs = commandParams.filter(p => p.invocationType !== "hardcode").map(invocation => {
-      const param = action.params.find(p => p.uuid === invocation.param);
+      const param = subsystem.actions.flatMap(a => a.params).find(p => p.uuid === invocation.param);
       return generateParam(param, invocation);
     }).join(", ");
   }
 
   // Return a CommandBase because it implements the Sendable interface, while Command doesn't
   const commandDef = `public CommandBase ${ variableName(name) }Command(${ paramDefs })`;
+  const actionInvocation = generateActionInvocationLambda(action, subsystemVar, commandParams);
 
-  let actionInvocation;
-  if (action.params.length === 0) {
-    // No parameters to pass through, use a method reference instead of a lambda
-    // eg `this::fooAction` instead of `() -> this.fooAction()`
-    actionInvocation = `${ subsystemVar }::${ actionMethod }`;
+  let initializeLambda = null;
+  if (toInitialize.length === 1) {
+    initializeLambda = `runOnce(${ generateActionInvocationLambda(subsystem.actions.find(a => a.uuid === toInitialize[0]), subsystemVar, commandParams) })`;
+  } else if (toInitialize.length > 1) {
+    initializeLambda = indent(`
+      runOnce(() -> {
+        ${ toInitialize.map(uuid => subsystem.actions.find(a => a.uuid === uuid)).map(action => generateActionInvocation(action, subsystemVar, commandParams)).map(invocation => `${ invocation };`).join("\n") }
+      })
+    `,
+      15
+    ).trimStart().trimEnd()
+  }
+
+  let actionLambda = null;
+  switch (endCondition) {
+    case "forever":
+      actionLambda = `run(${ actionInvocation })`;
+      break;
+    case "once":
+      actionLambda = `runOnce(${ actionInvocation })`;
+      break;
+    default:
+      // assume state UUID
+      const endState = subsystem.states.find(s => s.uuid === endCondition);
+      const stateName = endState.name;
+      actionLambda = `run(${ actionInvocation }).until(${ subsystemVar }::${ methodName(stateName) })`;
+      break;
+  }
+  if (initializeLambda) {
+    // wrap in an .andThen
+    actionLambda = `andThen(${ actionLambda })`;
+  }
+
+  const chainItems = [subsystemVar, initializeLambda, actionLambda].filter(i => !!i); // kick out undefined steps
+  let commandChain;
+  if (chainItems.length <= 2) {
+    // only one method call
+    commandChain = chainItems.join(".");
   } else {
-    actionInvocation = `() -> ${ subsystemVar }.${ actionMethod }(${ action.params.map(param => generateActionParamValue(param, commandParams.find(c => c.param === param.uuid))).join(', ') })`;
+    commandChain = chainItems.join("\n" + indent('.', 21)); // need to indent each line
   }
 
   switch (endCondition) {
@@ -144,8 +198,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
            * only stop if it is canceled or another command that requires the ${ subsystem.name } is started.
            */
           ${ commandDef } {
-            return ${ subsystemVar }.run(${ actionInvocation });
-          }
+            return ${ commandChain };
           `
         ).trimStart().trimEnd()
       );
@@ -157,7 +210,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
            * The ${ name } command.  This will run the ${ action.name } action once and then immediately finish.
            */
           ${ commandDef } {
-            return ${ subsystemVar }.runOnce(${ actionInvocation });
+            return ${ commandChain };
           }
           `
         ).trimStart().trimEnd()
@@ -174,9 +227,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
            * has ${ stateName }.
            */
           ${ commandDef } {
-            return ${ subsystemVar }
-                     .run(${ actionInvocation })
-                     .until(${ subsystemVar }::${ methodName(stateName) });
+            return ${ commandChain };
           }
           `
         ).trimStart().trimEnd()

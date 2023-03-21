@@ -30,6 +30,10 @@ export function isBlank(string: string): boolean {
   return string.length === 0 || !!string.match(/^\s+$/);
 }
 
+export function codeBlock(block: string): string {
+  return unindent(block).trimStart().trimEnd();
+}
+
 export function unindent(string: string): string {
   let lines = string.split("\n");
 

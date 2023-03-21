@@ -53,7 +53,18 @@ export type ComponentDefinition = {
 }
 
 export type Property = {
+  /**
+   * The name of the property in a human-readable format.
+   */
   name: string;
+  /**
+   * A human-readable description of the property and what it configures.
+   */
+  description: string;
+  /**
+   * The name of the property as it appears in code.  Crucially, this MUST match the parameter name on either the
+   * constructor or the setter method.
+   */
   codeName: string;
   type: string;
   setInConstructor: boolean;
@@ -71,6 +82,13 @@ export type MethodDefinition = {
    * The name of the method.
    */
   name: string;
+
+  codeName: string;
+
+  /**
+   * A description of the method and what it does, and how it's useful for a robot.
+   */
+  description: string;
 
   /**
    * The different parts of a command lifecycle to provide hints for.  Methods that hint at compatibility with
@@ -113,6 +131,17 @@ export type ParameterDefinition = {
    * Code generation will clean it up and generate appropriate import statements.
    */
   type: string;
+
+  /**
+   * The name of the parameter as it appears in code.
+   */
+  codeName: string;
+
+  /**
+   * A description of what the parameter is used for and what it controls.  This may be displayed in the UI to help
+   * users know what each thing does.
+   */
+  description;
 
   optional?: boolean;
 

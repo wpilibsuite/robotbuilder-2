@@ -4,11 +4,15 @@ import {
   AtomicCommand,
   EndCondition,
   Param,
-  Subsystem, SubsystemAction,
-  SubsystemComponent, SubsystemState
+  StepArgument,
+  StepParam,
+  Subsystem,
+  SubsystemAction,
+  SubsystemActionStep,
+  SubsystemComponent,
+  SubsystemState
 } from "../../bindings/Command";
 import {
-  Autocomplete,
   Box,
   Button,
   Card,
@@ -16,7 +20,7 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle, Input,
+  DialogTitle, Divider, FormControl, InputLabel,
   Paper,
   Select,
   Tab,
@@ -28,10 +32,13 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { ComponentDefinition } from "../../components/ComponentDefinition";
+import { ComponentDefinition, MethodDefinition } from "../../components/ComponentDefinition";
 import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions";
 import { generateCommand } from "../../codegen/java/CommandGenerator";
 import { generateSubsystem } from "../../codegen/java/SubsystemGenerator";
+import { ComponentLane } from "./ComponentLane";
+import { v4 as uuidV4 } from "uuid"
+
 
 type BasicOpts = {
   subsystem: Subsystem;
@@ -61,166 +68,6 @@ function SensorsLane({
       </Box>
     </Box>
   );
-}
-
-type ActuatorsLaneProps = {
-  subsystem: Subsystem;
-  actuators: SubsystemComponent[];
-  onChange: (newActuators: SubsystemComponent[]) => void;
-};
-
-function ActuatorsLane({ subsystem, actuators, onChange }: ActuatorsLaneProps) {
-  const [showNewActuatorDialog, setShowNewActuatorDialog] = useState(false);
-
-  const [newActuatorDefinition, setNewActuatorDefinition] = useState(null as ComponentDefinition);
-  const [newActuatorName, setNewActuatorName] = useState(null);
-  const [newActuatorProperties, setNewActuatorProperties] = useState(null);
-
-  return (
-    <Box className="subsystem-lane actuators-lane">
-      <h3>Actuators</h3>
-      <Box className="subsystem-lane-items">
-        {
-          actuators.map(component => {
-            return (
-              <Card key={ component.uuid } className="subsystem-lane-item" component={ Paper }>
-                { component.name }
-              </Card>
-            )
-          })
-        }
-        <Button onClick={ () => {
-          setNewActuatorName(null);
-          setNewActuatorDefinition(null);
-          setNewActuatorProperties(null);
-          setShowNewActuatorDialog(true);
-        } }>
-          + Add Actuator
-        </Button>
-      </Box>
-      <Dialog open={ showNewActuatorDialog }>
-        <DialogTitle>
-          Add New Actuator
-        </DialogTitle>
-        <DialogContent>
-          <Box style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
-            <label>Name</label>
-            <TextField onChange={ (e) => setNewActuatorName(e.target.value) } defaultValue={ "" } variant="standard"/>
-
-            <label>Choose a type</label>
-            <Select onChange={ (e) => {
-              setNewActuatorDefinition(COMPONENT_DEFINITIONS.forId(e.target.value));
-              setNewActuatorProperties({}); // clear any saved properties from the previous selection
-            } } defaultValue={ "" } variant="standard">
-              { COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "actuator").map(definition => {
-                return (
-                  <MenuItem value={ definition.id } key={ definition.id }>
-                    { definition.name }
-                  </MenuItem>
-                )
-              }) }
-            </Select>
-
-            {
-              newActuatorDefinition ? (
-                newActuatorDefinition.properties.map(prop => {
-                  return (
-                    [
-                      <label key={ `prop-label-${ prop.name }` }>
-                        { prop.name }
-                      </label>,
-                      (() => {
-                        switch (prop.type) {
-                          case "int":
-                          case "long":
-                          case "double":
-                            // TODO: Allow integer only input for int/long.  Maybe allow props to define pass/reject functions?
-                            return <Input type="number" key={ `prop-input-${ prop.name }` } onChange={ (e) => {
-                              const props = { ...newActuatorProperties };
-                              props[prop.codeName] = e.target.value;
-                              setNewActuatorProperties(props);
-                            } }/>
-                          default:
-                            if (prop.type.startsWith("vararg")) {
-                              // assume variadic components because variadic primitives is odd
-                              // components is also easy to implement with a multiple-select dropdown
-                              const type = prop.type.split("vararg ")[1];
-                              console.log(type);
-                              switch (type) {
-                                case "boolean":
-                                case "int":
-                                case "long":
-                                case "double":
-                                case "string":
-                                  return (<span>Vararg primitive types not yet supported</span>);
-                              }
-                              return (
-                                <Autocomplete multiple
-                                              onChange={ (event, newValue: SubsystemComponent[]) => {
-                                                console.log('Selected vararg options', newValue);
-                                                const props = { ...newActuatorProperties }
-                                                props[prop.codeName] = newValue.map(component => component.uuid);
-                                                setNewActuatorProperties(props);
-                                              } }
-                                              options={ subsystem.components.filter(c => c.definition.wpilibApiTypes.find(t => t === type)) }
-                                              getOptionLabel={ (option) => option.name }
-                                              renderInput={ (params) => {
-                                                return <TextField { ...params }
-                                                                  placeholder={ `Select one or more ${ type }` }/>;
-                                              } }
-                                />
-                              );
-                            } else {
-                              // assume it's a custom type - look for components with an API type that matches and offer them in a select box
-                              // TODO: Prevent the same component from being selected for multiple properties
-                              return (
-                                <Select key={ `select-${ prop.name }` } variant="standard" onChange={ (e) => {
-                                  const props = { ...newActuatorProperties };
-                                  props[prop.codeName] = e.target.value;
-                                  setNewActuatorProperties(props);
-                                } }>
-                                  {
-                                    subsystem.components
-                                      .filter(c => c.definition.wpilibApiTypes.find(t => t === prop.type))
-                                      .map(c => {
-                                        return (
-                                          <MenuItem key={ c.uuid } value={ c.uuid }>
-                                            { c.name }
-                                          </MenuItem>
-                                        )
-                                      })
-                                  }
-                                </Select>
-                              )
-                            }
-                        }
-                      })()
-                    ]
-                  );
-                })
-              ) : <></>
-            }
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={ () => setShowNewActuatorDialog(false) }>Cancel</Button>
-          <Button onClick={ () => {
-            if (newActuatorName && newActuatorDefinition && newActuatorProperties) {
-              const newActuator = new SubsystemComponent(newActuatorName, newActuatorDefinition, newActuatorProperties);
-              console.debug('Created new actuator component', newActuator);
-              onChange(actuators.concat(newActuator));
-            } else {
-              console.debug('Not enough information provided, not creating an actuator');
-            }
-            setShowNewActuatorDialog(false);
-          } }>
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
-
 }
 
 function ControlsLane({ subsystem, project }: BasicOpts) {
@@ -266,9 +113,19 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
 
   return (
     <Box className="subsystem-pane" style={ {} }>
-      <SensorsLane sensors={ sensors } onChange={ setSensors }/>
-      <ActuatorsLane subsystem={ subsystem }
-                     actuators={ actuators }
+      <ComponentLane subsystem={ subsystem }
+                     componentType="sensor"
+                     components={ sensors }
+                     onChange={ (newSensors) => {
+                       console.log('Setting sensors to', newSensors);
+                       const added = newSensors.filter(a => !subsystem.components.includes(a))
+                       const removed = subsystem.getSensors().filter(a => !newSensors.includes(a));
+                       subsystem.components = subsystem.components.filter(c => c.type !== "sensor" || !removed.includes(c)).concat(...added);
+                       setSensors(newSensors);
+                     } }/>
+      <ComponentLane subsystem={ subsystem }
+                     componentType="actuator"
+                     components={ actuators }
                      onChange={ (newActuators) => {
                        console.log('Setting actuators to', newActuators);
                        const added = newActuators.filter(a => !subsystem.components.includes(a))
@@ -276,7 +133,16 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                        subsystem.components = subsystem.components.filter(c => c.type !== "actuator" || !removed.includes(c)).concat(...added);
                        setActuators(newActuators);
                      } }/>
-      <ControlsLane subsystem={ subsystem } project={ project }/>
+      <ComponentLane subsystem={ subsystem }
+                     componentType="control"
+                     components={ controls }
+                     onChange={ (newControls) => {
+                       console.log('Setting controls to', newControls);
+                       const added = newControls.filter(a => !subsystem.components.includes(a))
+                       const removed = subsystem.getControls().filter(a => !newControls.includes(a));
+                       subsystem.components = subsystem.components.filter(c => c.type !== "control" || !removed.includes(c)).concat(...added);
+                       setControls(newControls);
+                     } }/>
       <ActionsLane subsystem={ subsystem }
                    actions={ actions }
                    onChange={ (newActions) => {
@@ -320,91 +186,334 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
   );
 }
 
+
+type StepEditorProps = {
+  subsystem: Subsystem,
+  component: SubsystemComponent,
+  methodName: string,
+  params: StepParam[],
+  previousSteps: SubsystemActionStep[];
+  onMethodChange: (component: SubsystemComponent, methodName: string, params: StepParam[]) => void,
+  onParamsChange: (params: StepParam[]) => void
+};
+
+function StepEditor({
+                      subsystem,
+                      component,
+                      methodName,
+                      params,
+                      previousSteps,
+                      onMethodChange,
+                      onParamsChange
+                    }: StepEditorProps) {
+  const toValue = (component, method) => `${ component.uuid }#${ method }`;
+
+  const [configuredParams, setConfiguredParams] = useState(params);
+
+  const toSelectionValue = (argType: string, others: any): StepArgument => {
+    switch (argType) {
+      case "hardcode":
+        return {
+          type: "hardcode",
+          hardcodedValue: others.hardcodedValue
+        };
+      case "define-passthrough-value":
+        return {
+          type: "define-passthrough-value",
+          passthroughArgumentName: others.passthroughArgumentName
+        }
+      case "reference-passthrough-value":
+        return {
+          type: "reference-passthrough-value",
+          step: others.step,
+          paramName: others.param
+        };
+      case "reference-step-output":
+        return {
+          type: "reference-step-output",
+          step: others.step
+        }
+      default:
+        console.warn('Unsupported arg type!', argType);
+        return null;
+    }
+  }
+
+  return (
+    <Box className="step-editor">
+      <FormControl>
+        <InputLabel>
+          Select a component
+        </InputLabel>
+        <Select variant="standard"
+                fullWidth
+                size={ "medium" }
+                defaultValue={ component && methodName ? toValue(component, methodName) : '' }>
+          {/* TODO: Sort the options intelligently! */ }
+          {
+            subsystem.components
+              // .filter(c => c.definition.hints.includes("action") || c.definition.methods.find(m => m.hints.includes("action")))
+              .flatMap(component => {
+                return component.definition.methods.map(method => {
+                  return (
+                    <MenuItem key={ `${ component.uuid }-${ method.codeName }` }
+                              onClick={ () => onMethodChange(component, method.codeName, configuredParams) }
+                              value={ toValue(component, method.name) }>
+                      Execute &nbsp;<code style={ { color: "mediumvioletred" } }>{ method.name }</code>&nbsp; on &nbsp;
+                      <span style={ {
+                        textTransform: "uppercase",
+                        fontWeight: "bold",
+                        color: "mediumseagreen"
+                      } }>{ component.name }</span>
+                    </MenuItem>
+                  );
+                });
+              })
+          }
+        </Select>
+      </FormControl>
+      {
+        component ? (
+          <Tooltip title={
+            component.definition.methods.find(m => m.codeName === methodName).description
+          }>
+        <span>
+          Explain (?)
+        </span>
+          </Tooltip>
+        ) : null
+      }
+      <Box>
+        {
+          component && methodName ?
+            component.definition.methods.find(m => m.codeName === methodName).parameters.map(param => {
+              return (
+                <div>
+                  <span>
+                    <h5>{ param.name }</h5>
+                    <Select variant={ "standard" }
+                            value={ params.find(p => p.paramName === param.codeName) ? JSON.stringify(params.find(p => p.paramName === param.codeName).arg) : `not-a-param:${ param.codeName } not found in ${ params.map(p => p.paramName).join(", ") }` }
+                            onChange={ (e) => {
+                              if (!e.target.value || e.target.value === '') return;
+
+                              const existingParam = configuredParams.find(p => p.paramName === param.codeName);
+                              if (existingParam) {
+                                const arg = existingParam.arg;
+                                const data = JSON.parse(e.target.value);
+                                arg.type = data.type;
+                                if (arg.type === "hardcode") {
+                                  arg.type = "hardcode";
+                                  arg.hardcodedValue = "/* TODO */";
+                                } else if (arg.type === "define-passthrough-value") {
+                                  arg.passthroughArgumentName = param.codeName;
+                                } else if (arg.type === "reference-passthrough-value") {
+                                  arg.step = data.step;
+                                  arg.paramName = data.paramName;
+                                } else if (arg.type === "reference-step-output") {
+                                  arg.step = data.step;
+                                }
+                                console.debug('Updated existing param to', existingParam);
+                                setConfiguredParams([...configuredParams]);
+                                // onParamsChange(configuredParams);
+                                onMethodChange(component, methodName, configuredParams);
+                              } else {
+                                const data = JSON.parse(e.target.value);
+                                const newParam: StepParam = {
+                                  paramName: param.codeName,
+                                  arg: {
+                                    // @ts-ignore
+                                    type: data.type as string
+                                  }
+                                }
+                                const arg = newParam.arg;
+                                if (arg.type === "hardcode") {
+                                  arg.type = "hardcode";
+                                  arg.hardcodedValue = "/* TODO */";
+                                } else if (arg.type === "define-passthrough-value") {
+                                  // TODO: Read this from a text field
+                                  arg.passthroughArgumentName = param.codeName;
+                                } else if (arg.type === "reference-passthrough-value") {
+                                  arg.step = data.step;
+                                  arg.paramName = data.paramName;
+                                } else if (arg.type === "reference-step-output") {
+                                  arg.step = data.step;
+                                }
+                                console.debug('Created new param', newParam);
+                                setConfiguredParams(configuredParams.concat(newParam));
+                                // onParamsChange(configuredParams);
+                                onMethodChange(component, methodName, configuredParams);
+                              }
+                            } }
+                    >
+                      <MenuItem
+                        value={ JSON.stringify(toSelectionValue("define-passthrough-value", { passthroughArgumentName: param.codeName })) }>
+                        {/* TODO: Allow the parameter name to be specified */ }
+                        Set when action is called
+                      </MenuItem>
+
+                      <Divider/>
+
+                      {
+                        previousSteps.flatMap(s => s.params.filter(p => p.arg.type === "define-passthrough-value")).map(previousParam => {
+                          return (
+                            <MenuItem key={ JSON.stringify(previousParam) }
+                                      value={ JSON.stringify(toSelectionValue("reference-passthrough-value", {
+                                        step: previousSteps.find(s => s.params.includes(previousParam)).uuid,
+                                        paramName: previousParam.paramName
+                                      })) }
+                            >
+                              Reuse&nbsp;<span>{ previousParam.paramName }</span>
+                            </MenuItem>
+                          )
+                        })
+                      }
+
+                      <Divider/>
+
+                      {
+                        previousSteps.map((s, index) => {
+                          const component = subsystem.components.find(c => c.uuid === s.component);
+                          return (
+                            <MenuItem key={ `select-output-${ s.uuid }` }
+                                      value={ JSON.stringify(toSelectionValue("reference-step-output", { step: s.uuid })) }>
+                              Use result from&nbsp;
+                              <span>Step { index + 1 }</span>:&nbsp;
+                              <span>{ component.name }</span>&nbsp;
+                              <span>{ component.definition.methods.find(m => m.codeName === s.methodName).name }</span>
+                            </MenuItem>
+                          );
+                        })
+                      }
+                      <Divider/>
+                      <MenuItem value={ JSON.stringify({ type: "hardcode", hardcodedValue: "/* TODO */" }) }>
+                        Hardcode
+                      </MenuItem>
+                    </Select>
+                  </span>
+                </div>
+              );
+            }) : null
+        }
+      </Box>
+    </Box>
+  );
+}
+
+type ActionParams = {
+  name: string;
+  steps: SubsystemActionStep[];
+}
+
+type CreateActionDialogProps = {
+  open: boolean;
+  subsystem: Subsystem;
+  editedAction: SubsystemAction | null;
+  onCancel: () => void;
+  onCreate: (data: ActionParams) => void;
+  onUpdate: (data: ActionParams) => void;
+};
+
+function CreateActionDialog({
+                              open,
+                              subsystem,
+                              editedAction,
+                              onCancel,
+                              onCreate,
+                              onUpdate
+                            }: CreateActionDialogProps) {
+  const [newActionName, setNewActionName] = useState(editedAction?.name ?? null);
+  const [newActionSteps, setNewActionSteps] = useState(editedAction?.steps ?? []);
+
+  useEffect(() => {
+    console.log("Clearing new action name and params");
+    setNewActionName(editedAction?.name ?? null);
+    setNewActionSteps(editedAction?.steps ?? []);
+  }, [open, editedAction]);
+
+  return (
+    <Dialog open={ open }>
+      <DialogTitle>Create Action</DialogTitle>
+      <DialogContent>
+        <Box style={ { display: "flex", flexDirection: "column", gap: "12px" } }>
+          <TextField variant="standard"
+                     value={ newActionName }
+                     onChange={ (e) => setNewActionName(e.target.value) }/>
+          <br/>
+          {
+            newActionSteps.map((step, index) => {
+              return <StepEditor subsystem={ subsystem }
+                                 component={ subsystem.components.find(c => c.uuid === step.component) }
+                                 methodName={ step.methodName }
+                                 previousSteps={ newActionSteps.slice(0, index) }
+                                 onMethodChange={ (component, methodName, params) => {
+                                   step.component = component.uuid;
+                                   step.methodName = methodName;
+                                   step.params = params;
+                                   setNewActionSteps([...newActionSteps]); // rerender
+                                 } }
+                                 onParamsChange={ (newParams) => {
+                                   step.params = [...newParams];
+                                   setNewActionSteps([...newActionSteps]); // rerender
+                                 } }
+                                 params={ step.params }/>
+            })
+          }
+          <br/>
+          <Button onClick={ () => {
+            const newStep = new SubsystemActionStep();
+            setNewActionSteps(newActionSteps.concat(newStep));
+          } }>
+            + Add Step
+          </Button>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={ onCancel }>
+          Cancel
+        </Button>
+        <Button onClick={ () => {
+          const data = { name: newActionName, steps: newActionSteps };
+          !!editedAction ? onUpdate(data) : onCreate(data);
+        } }
+                disabled={ !newActionName || !!newActionSteps.find(s => !s.methodName || !s.component || s.params.find(p => !p.arg.type)) }>
+          OK
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 function ActionsLane({
                        subsystem,
                        actions,
                        onChange
                      }: { subsystem: Subsystem, actions: SubsystemAction[], onChange: (newActions: SubsystemAction[]) => void }) {
   const [showCreateActionDialog, setShowCreateActionDialog] = useState(false);
-  const [newActionName, setNewActionName] = useState(null);
-  const [newActionParams, setNewActionParams] = useState([]);
+  const closeDialog = () => setShowCreateActionDialog(false);
 
-  useEffect(() => {
-    setShowCreateActionDialog(false);
-    setNewActionName(null);
-    setNewActionParams([])
-  }, [subsystem]);
+  useEffect(() => closeDialog(), [subsystem]);
 
-  const createAction = (data) => {
+  const createAction = (data: ActionParams) => {
     console.log(data);
     const newAction = subsystem.createAction(data.name);
-    newAction.params = data.params;
+    newAction.steps = [...data.steps];
+    newAction.regenerateParams(subsystem);
 
     console.debug('Created new action', newAction);
     onChange([...subsystem.actions]);
     closeDialog();
   }
 
-  const closeDialog = () => {
-    setShowCreateActionDialog(false);
-    setNewActionName(null);
-    setNewActionParams([]);
-  }
-
   return (
     <Box className="subsystem-lane actions-lane">
       <h3>Actions</h3>
-      <Dialog open={ showCreateActionDialog }>
-        <DialogTitle>Create Action</DialogTitle>
-        <DialogContent>
-          <TextField label="Name" variant="standard" onChange={ (e) => setNewActionName(e.target.value) }/>
-          {
-            newActionParams.map((param: Param) => {
-              return (
-                <div key={ param.uuid } className="action-param">
-                  <TextField variant="standard"
-                             defaultValue={ param.name ?? '' }
-                             onChange={ (e) => {
-                               param.name = e.target.value;
-                               setNewActionParams([...newActionParams]);
-                             } }/>
-                  <Select variant="standard"
-                          onChange={ (e) => {
-                            param.type = e.target.value as string;
-                            setNewActionParams([...newActionParams]);
-                          } }>
-                    <MenuItem value="int" key={ 'int-select' }>Int</MenuItem>
-                    <MenuItem value="long" key={ 'long-select' }>Long</MenuItem>
-                    <MenuItem value="double" key={ 'double-select' }>Double</MenuItem>
-                    <MenuItem value="boolean" key={ 'boolean-select' }>Boolean</MenuItem>
-                  </Select>
-                  <Button onClick={ () => {
-                    console.log('Deleting param', param);
-                    setNewActionParams(newActionParams.filter(p => p !== param));
-                  } }>
-                    -
-                  </Button>
-                </div>
-              )
-            })
-          }
-          <Button onClick={ () => {
-            const param = new Param();
-            console.log("Adding param", param);
-            setNewActionParams(newActionParams.concat(param));
-          } }>
-            +
-          </Button>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={ () => closeDialog() }>Cancel</Button>
-          <Button onClick={ () => createAction({ name: newActionName, params: newActionParams }) }
-                  disabled={ !newActionName || !!newActionParams.find(p => !p.name || p.name === '' || !p.type || p.type === '') }>
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
       <Box className="subsystem-lane-items">
+        <CreateActionDialog open={ showCreateActionDialog }
+                            subsystem={ subsystem }
+                            editedAction={ null }
+                            onCancel={ closeDialog }
+                            onCreate={ (data) => createAction(data) }
+                            onUpdate={ closeDialog }/>
         {
           actions.map(action => {
             return (
@@ -477,7 +586,7 @@ function CommandsLane({
                       }: { subsystem: Subsystem, commands: AtomicCommand[], onChange: (newCommands: AtomicCommand[]) => void }) {
   const [showCreateCommandDialog, setShowCreateCommandDialog] = useState(false);
   const [commandDialogType, setCommandDialogType] = useState(null);
-  const [editedCommand, setEditedCommand] = useState(null);
+  const [editedCommand, setEditedCommand] = useState(null as AtomicCommand);
   const [canAddCommand, setCanAddCommand] = useState(subsystem.actions.length > 0);
 
   useEffect(() => setCanAddCommand(subsystem.actions.length > 0), [subsystem.actions]);
@@ -486,6 +595,7 @@ function CommandsLane({
     console.log(data);
     if (editedCommand) {
       editedCommand.name = data.name;
+      editedCommand.toInitialize = [...data.initializeActions];
       editedCommand.action = data.action;
       editedCommand.endCondition = data.endCondition;
       editedCommand.params = data.params;
@@ -540,13 +650,15 @@ function CommandsLane({
 class NewCommandData {
   readonly name: string;
   readonly subsystem: string; // UUID
+  readonly initializeActions: string[]; // UUIDs
   readonly action: string; // UUID
   readonly endCondition: EndCondition;
   readonly params: ActionParamCallOption[];
 
-  constructor(name, subsystem, action, endCondition, params) {
+  constructor(name, subsystem, initializeActions, action, endCondition, params) {
     this.name = name;
     this.subsystem = subsystem;
+    this.initializeActions = initializeActions;
     this.action = action;
     this.endCondition = endCondition;
     this.params = params;
@@ -556,11 +668,65 @@ class NewCommandData {
     const command = new AtomicCommand();
     command.name = this.name;
     command.subsystem = this.subsystem;
+    command.toInitialize = [...this.initializeActions];
     command.action = this.action;
     command.endCondition = this.endCondition;
     command.params = [...this.params];
     return command;
   }
+}
+
+function ActionEditor(param: Param, action: SubsystemAction, params: ActionParamCallOption[], setParams: (params) => void) {
+  let hardCodedValue = null;
+  const existingInvocation: ActionParamCallOption | undefined = params.find(p => p.param === param.uuid);
+  console.debug('Rendering controls for existing argument invocation:', existingInvocation);
+
+  return (
+    [
+      <label>{ param.name }</label>,
+      <span>
+          <Select defaultValue={ existingInvocation?.invocationType ?? "" }
+                  value={ existingInvocation?.invocationType ?? "" }
+                  variant="standard"
+                  onChange={ (e) => {
+                    const optType = e.target.value as "hardcode" | "passthrough-value" | "passthrough-supplier";
+
+                    const newInvocation: ActionParamCallOption = new ActionParamCallOption(action, param, optType, hardCodedValue);
+                    const existingIndex = params.findIndex((option) => option.param === param.uuid);
+                    let newParams: ActionParamCallOption[];
+                    if (existingIndex >= 0) {
+                      // replace
+                      params.splice(existingIndex, 1, newInvocation);
+                      newParams = [...params];
+                    } else {
+                      // concat
+                      newParams = params.concat(newInvocation);
+                    }
+                    // sort to keep the parameters in the same order they appear in the action param defs
+                    newParams = newParams.sort((a, b) => action.params.findIndex(p => p.uuid === a.param) - action.params.findIndex(p => p.uuid === b.param));
+                    setParams(newParams);
+                  } }>
+            <MenuItem value={ "hardcode" }>
+              Hardcoded
+            </MenuItem>
+            <MenuItem value={ "passthrough-value" }>
+              Pass through a value
+            </MenuItem>
+            <MenuItem value={ "passthrough-supplier" }>
+              Pass through with a supplier
+            </MenuItem>
+          </Select>
+          <TextField variant="standard"
+                     defaultValue={ existingInvocation?.hardcodedValue ?? "" }
+                     value={ existingInvocation?.hardcodedValue ?? "" }
+                     onChange={ (e) => {
+                       hardCodedValue = e.target.value;
+                       params.find(p => p.param === param.uuid).hardcodedValue = hardCodedValue;
+                       setParams([...params]);
+                     } }/>
+        </span>
+    ]
+  );
 }
 
 
@@ -572,12 +738,14 @@ function CreateCommandDialog({
                                type,
                                editedCommand
                              }: { subsystem: Subsystem, onCancel: () => void, onAccept: (string) => void, defaultOpen: boolean, type: "create" | "edit", editedCommand: AtomicCommand | null }) {
+  const [initializeActions, setInitializeActions] = useState(editedCommand?.toInitialize ?? []);
   const [selectedAction, setSelectedAction] = useState(editedCommand?.action);
   const [endCondition, setEndCondition] = useState(editedCommand?.endCondition);
   const [commandName, setCommandName] = useState(editedCommand?.name);
   const [params, setParams] = useState(editedCommand?.params ?? []);
 
   // doesn't clear properly when hitting +add command, closing, then re-opening
+  useEffect(() => setInitializeActions(editedCommand?.toInitialize ?? []), [editedCommand, subsystem, defaultOpen]);
   useEffect(() => setSelectedAction(editedCommand?.action), [editedCommand, subsystem, defaultOpen]);
   useEffect(() => setEndCondition(editedCommand?.endCondition), [editedCommand, subsystem, defaultOpen]);
   useEffect(() => setCommandName(editedCommand?.name), [editedCommand, subsystem, defaultOpen]);
@@ -593,6 +761,52 @@ function CreateCommandDialog({
             { subsystem.name }
           </span>
           subsystem,
+        </span>
+
+        <span className="initialize-heading">
+          {/* TODO: Support more than one action */}
+          Initialize with the
+          <Select className="action-select"
+                  variant="standard"
+                  defaultValue={ editedCommand?.toInitialize.join(",") ?? "" }
+                  onChange={ (e) => {
+                    const selectedActionUUID = e.target.value;
+                    if (selectedActionUUID && selectedActionUUID.length > 0) {
+                      setInitializeActions([selectedActionUUID]);
+                    } else {
+                      setInitializeActions([]);
+                    }
+                  } }
+          >
+            {
+              subsystem.actions.map(action => {
+                return (
+                  <MenuItem value={ action.uuid }
+                            key={ action.uuid }>
+                    <span className="subsystem-action-name">{ action.name }</span>
+                  </MenuItem>
+                )
+              })
+            }
+            <Divider/>
+            <MenuItem value={""} key={ 'none' }>
+              None
+            </MenuItem>
+          </Select>
+          action
+          {
+            subsystem.actions.find(action => action.uuid === initializeActions[0]) ?
+              (
+                <Box className="params-configuration"
+                     style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
+                  {
+                    subsystem
+                      .actions.find(action => action.uuid === initializeActions[0]).params
+                      .map(p => ActionEditor(p, subsystem.actions.find(a => a.uuid === initializeActions[0]), params, setParams))
+                  }
+                </Box>
+              ) :
+              null}
         </span>
 
         <span className="action-heading">
@@ -660,60 +874,9 @@ function CreateCommandDialog({
               <Box className="params-configuration"
                    style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
                 {
-                  subsystem.actions.find(action => action.uuid === selectedAction).params.map(param => {
-                    const action = subsystem.actions.find(action => action.uuid === selectedAction);
-
-                    let hardCodedValue = null;
-                    const existingInvocation: ActionParamCallOption | undefined = params.find(p => p.param === param.uuid);
-                    console.debug('Rendering controls for existing argument invocation:', existingInvocation);
-
-                    return (
-                      [
-                        <label>{ param.name }</label>,
-                        <span>
-                          <Select defaultValue={ existingInvocation?.invocationType ?? "" }
-                                  value={ existingInvocation?.invocationType ?? "" }
-                                  variant="standard"
-                                  onChange={ (e) => {
-                                    const optType = e.target.value as "hardcode" | "passthrough-value" | "passthrough-supplier";
-
-                                    const newInvocation: ActionParamCallOption = new ActionParamCallOption(action, param, optType, hardCodedValue);
-                                    const existingIndex = params.findIndex((option) => option.param === param.uuid);
-                                    let newParams: ActionParamCallOption[];
-                                    if (existingIndex >= 0) {
-                                      // replace
-                                      params.splice(existingIndex, 1, newInvocation);
-                                      newParams = [...params];
-                                    } else {
-                                      // concat
-                                      newParams = params.concat(newInvocation);
-                                    }
-                                    // sort to keep the parameters in the same order they appear in the action param defs
-                                    newParams = newParams.sort((a, b) => action.params.findIndex(p => p.uuid === a.param) - action.params.findIndex(p => p.uuid === b.param));
-                                    setParams(newParams);
-                                  } }>
-                            <MenuItem value={ "hardcode" }>
-                              Hardcoded
-                            </MenuItem>
-                            <MenuItem value={ "passthrough-value" }>
-                              Pass through a value
-                            </MenuItem>
-                            <MenuItem value={ "passthrough-supplier" }>
-                              Pass through with a supplier
-                            </MenuItem>
-                          </Select>
-                          <TextField variant="standard"
-                                     defaultValue={ existingInvocation?.hardcodedValue ?? "" }
-                                     value={ existingInvocation?.hardcodedValue ?? "" }
-                                     onChange={ (e) => {
-                                       hardCodedValue = e.target.value;
-                                       params.find(p => p.param === param.uuid).hardcodedValue = hardCodedValue;
-                                       setParams([...params]);
-                                     } }/>
-                        </span>
-                      ]
-                    );
-                  })
+                  subsystem
+                    .actions.find(action => action.uuid === selectedAction).params
+                    .map(p => ActionEditor(p, subsystem.actions.find(a => a.uuid === selectedAction), params, setParams))
                 }
               </Box>
             ) :
@@ -724,7 +887,7 @@ function CreateCommandDialog({
             {
               (() => {
                 try {
-                  return generateCommand(commandName, subsystem, selectedAction, endCondition, params);
+                  return generateCommand(commandName, subsystem, selectedAction, endCondition, params, initializeActions, [], []);
                 } catch (e) {
                   console.error(e);
                   return `ERROR: Failed to generate code for command ${ commandName }: ${ e }`;
@@ -740,7 +903,7 @@ function CreateCommandDialog({
         } }>Cancel</Button>
         <Button
           onClick={ () => {
-            onAccept(new NewCommandData(commandName, subsystem.uuid, selectedAction, endCondition, params));
+            onAccept(new NewCommandData(commandName, subsystem.uuid, initializeActions, selectedAction, endCondition, params));
           } }
           disabled={ (() => {
             // console.debug('Checking if the', type, 'command dialog should be submittable');
@@ -818,10 +981,12 @@ const CAN_TALON_FX: ComponentDefinition = {
   hints: ["action", "motor"],
   methods: [
     {
-      name: "set",
+      name: "Set Speed",
+      description: "Sets the speed of the motor as a value from -1 for full reverse to +1 for full forward speed. The actual speed of the motor will depend on the torque load and the voltage supplied by the battery.",
+      codeName: "set",
       hints: ["action", "motor-input"],
       parameters: [
-        { name: "speed", type: "double" }
+        { name: "Speed", description: "", codeName: "speed", type: "double" }
       ],
       returns: "void"
     }
@@ -829,11 +994,14 @@ const CAN_TALON_FX: ComponentDefinition = {
   properties: [
     {
       name: "CAN ID",
+      description: "The ID of the Talon FX on the CAN bus.  This value is set by the Phoenix Tuner tool, and must be unique among ALL Talon FX devices on the bus.",
       codeName: "deviceNumber",
       type: "int",
       setInConstructor: true,
       getter: {
-        name: "getDeviceID",
+        name: "Get Device ID",
+        description: "Gets the configured CAN ID for the Talon FX",
+        codeName: "getDeviceID",
         hints: [],
         parameters: [],
         returns: "int"
@@ -851,10 +1019,12 @@ const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
   hints: ["action"],
   methods: [
     {
-      name: "set",
+      name: "Set Speed",
+      description: "Sets the speed of the motor as a value from -1 for full reverse to +1 for full forward speed. The actual speed of the motor will depend on the torque load and the voltage supplied by the battery.",
+      codeName: "set",
       hints: ["action", "motor-input"],
       parameters: [
-        { name: "speed", type: "double" }
+        { name: "Speed", description: "", codeName: "speed", type: "double" }
       ],
       returns: "void"
     }
@@ -862,12 +1032,198 @@ const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
   properties: [
     {
       name: "Motors",
+      description: "The motors to group together",
       codeName: "motors",
       type: "vararg MotorController",
       setInConstructor: true
     }
   ]
 }
+
+const BASIC_GYRO: ComponentDefinition = {
+  id: "SAMPLE-analoggyro",
+  name: "Analog Gyroscope",
+  fqn: "edu.wpi.first.wpilib.AnalogGyro",
+  className: "AnalogGyro",
+  wpilibApiTypes: ["Gyro"],
+  type: "sensor",
+  hints: ["state"],
+  methods: [
+    {
+      name: "Get Heading",
+      description: "Gets the current angle of the gyro, where 0 is the angle it was at when last reset",
+      codeName: "getAngle",
+      returns: "double",
+      parameters: [],
+      hints: ["controller-setpoint"]
+    }
+  ],
+  properties: [
+    {
+      name: "Analog Port",
+      description: "The analog port the gyro is plugged into on the RoboRIO",
+      codeName: "channel",
+      type: "int",
+      setInConstructor: true
+    }
+  ]
+};
+
+const PID_CONTROLLER: ComponentDefinition = {
+  id: "SAMPLE-pidcontroller",
+  name: "PID Controller",
+  fqn: "edu.wpi.first.math.controller.PIDController",
+  className: "PIDController",
+  wpilibApiTypes: [],
+  type: "control",
+  hints: ["action"],
+  methods: [
+    {
+      name: "Calculate",
+      description: "Calculates the output of the controller based on the current state of the system.  Requires the setpoint to have been set first.",
+      codeName: "calculate",
+      hints: ["action", "motor-input"],
+      parameters: [
+        {
+          name: "Current Position",
+          description: "The current position of the system",
+          codeName: "measurement",
+          type: "double",
+          tags: []
+        }
+      ],
+      returns: "double"
+    },
+    {
+      name: "Set Setpoint",
+      description: "Configures the target setpoint for the controller to reach.  Use Calculate in an action to periodically update the output to get closer to the setpoint",
+      codeName: "setSetpoint",
+      hints: ["housekeeping"],
+      beforeCalling: "reset",
+      parameters: [
+        {
+          name: "Setpoint",
+          description: "The setpoint to target",
+          codeName: "setpoint",
+          type: "double",
+          tags: ["controller-setpoint"]
+        }
+      ],
+      returns: "void"
+    },
+    {
+      name: "Reset",
+      description: "Resets the controller and its internal state.  Use this when changing the setpoint, or if the calculate method may not have been called in a while",
+      codeName: "reset",
+      hints: ["housekeeping"],
+      parameters: [],
+      returns: "void"
+    },
+    {
+      name: "Reached Setpoint",
+      description: "Checks if the controller has reached the setpoint",
+      codeName: "atSetpoint",
+      hints: ["state"],
+      parameters: [],
+      returns: "boolean"
+    }
+  ],
+  properties: [
+    {
+      name: "Proportional Constant",
+      description: "The constant value for the controller to use to determine a motor speed based on how far away the system is from the setpoint",
+      codeName: "kp",
+      type: "double",
+      setInConstructor: true,
+      setter: {
+        name: "Set Proportional Constant",
+        description: "",
+        codeName: "setP",
+        hints: [],
+        returns: "void",
+        parameters: [
+          {
+            name: "Proportional Constant",
+            description: "",
+            codeName: "kp",
+            type: "double",
+            tags: []
+          }
+        ]
+      }
+    },
+    {
+      name: "Integral Constant",
+      description: "The constant value for the controller to use to determine a motor speed based on how long it's been off target.  Useful if the proportional constant get close to the setpoint, but not exactly.  Typically isn't used.",
+      codeName: "ki",
+      type: "double",
+      setInConstructor: true,
+      setter: {
+        name: "Set Integral Constant",
+        description: "",
+        codeName: "setI",
+        hints: [],
+        returns: "void",
+        parameters: [
+          {
+            name: "Integral Constant",
+            description: "",
+            codeName: "ki",
+            type: "double",
+            tags: []
+          }
+        ]
+      }
+    },
+    {
+      name: "Derivative Constant",
+      description: "The constant value for the controller to use to slow motor speed based on how fast it's approaching the setpoint.  Useful to avoid overshoot and oscillations.",
+      codeName: "kd",
+      type: "double",
+      setInConstructor: true,
+      setter: {
+        name: "Set Proportional Constant",
+        description: "",
+        codeName: "setD",
+        hints: [],
+        returns: "void",
+        parameters: [
+          {
+            name: "Derivative Constant",
+            description: "",
+            codeName: "kd",
+            type: "double",
+            tags: []
+          }
+        ]
+      }
+    },
+    {
+      name: "Tolerance",
+      description: "Sets the tolerance of the controller.  Increasing values mean `Reached Setpoint` will be true when the system is farther away from the target setpoint",
+      codeName: "tolerance",
+      type: "double",
+      setInConstructor: false,
+      setter: {
+        name: "Set Tolerance",
+        description: "",
+        codeName: "setTolerance",
+        hints: [],
+        returns: "void",
+        parameters: [
+          {
+            name: "Tolerance",
+            description: "",
+            codeName: "tolerance",
+            type: "double",
+            tags: []
+          }
+        ]
+      }
+    }
+  ]
+}
+
 const DIFFERENTIAL_DRIVE: ComponentDefinition = {
   id: "SAMPLE-differentialdrive",
   name: "Differential Drive",
@@ -878,38 +1234,128 @@ const DIFFERENTIAL_DRIVE: ComponentDefinition = {
   hints: ["action"],
   methods: [
     {
-      name: "arcadeDrive",
+      name: "Arcade Drive",
+      description: "Drives the motors with a single joystick like an arcade game.  Traditionally, moving the joystick forward and back drives straight in those directions, while moving left or right makes the robot turn in place or drive in an arc.  Note that, because most joysticks don't output in a [-1, 1] on both axes simultaneously, the maximum speed is typically lower than tank drive when driving in an arc",
+      codeName: "arcadeDrive",
       hints: ["action", "joystick-input"],
       parameters: [
-        { name: "xSpeed", type: "double" },
-        { name: "zRotation", type: "double" },
-        { name: "squareInputs", type: "boolean", optional: true }
+        {
+          name: "Forward Speed",
+          description: "The speed to apply to straight-line movement.  This is combined with the Turning Speed input to calculate the power needed to output to the left and right side motors.",
+          codeName: "xSpeed",
+          type: "double"
+        },
+        {
+          name: "Turning Speed",
+          description: "The speed to apply to turning.  This is combined with the Forward Speed input to calculate the power needed to output to the left and right side motors.",
+          codeName: "zRotation",
+          type: "double"
+        },
+        {
+          name: "Squared Inputs",
+          description: "Squares the input values to make the response act quadratically rather than linearly for improved control at lower speeds.  Maximum speeds are unaffected.",
+          codeName: "squareInputs",
+          type: "boolean",
+          optional: true
+        }
       ],
       returns: "void"
     },
     {
-      name: "tankDrive",
+      name: "Tank Drive",
+      description: "Drives the motors like a tank, where the driver uses independent joysticks to control the treads on the left and right side independently.",
+      codeName: "tankDrive",
       hints: ["action", "joystick-input"],
       parameters: [
-        { name: "leftSpeed", type: "double" },
-        { name: "rightSpeed", type: "double" },
-        { name: "squareInputs", type: "boolean", optional: true }
+        {
+          name: "Left Speed",
+          description: "The speed to drive the left-side motors at. Ranges from -1 for full speed in reverse to +1 for full speed forward.  Values outside that range will be clamped to be in [-1, 1].",
+          codeName: "leftSpeed",
+          type: "double"
+        },
+        {
+          name: "Right Speed",
+          description: "The speed to drive the right-side motors at.  Ranges from -1 for full speed in reverse to +1 for full speed forward.  Values outside that range will be clamped to be in [-1, 1].",
+          codeName: "rightSpeed",
+          type: "double"
+        },
+        {
+          name: "Squared Inputs",
+          description: "Squares the input values to make the response act quadratically rather than linearly for improved control at lower speeds.  Maximum speeds are unaffected.",
+          codeName: "squareInputs",
+          type: "boolean",
+          optional: true
+        }
       ],
+      returns: "void"
+    },
+    {
+      name: "Stop",
+      codeName: "stopMotor",
+      description: "Immediately stops all motors by setting their speeds to zero.",
+      hints: ["action"],
+      parameters: [],
       returns: "void"
     }
   ],
   properties: [
     {
       name: "Left Motor",
+      description: "The motor that powers the left-side wheels",
       codeName: "leftMotor",
       type: "MotorController",
       setInConstructor: true
     },
     {
       name: "Right Motor",
+      description: "The motor that powers the right-side wheels",
       codeName: "rightMotor",
       type: "MotorController",
       setInConstructor: true
+    },
+    {
+      name: "Deadband",
+      description: "The lower limit on inputs to motor speeds.  Any input speed less than this value will be set to zero instead and the motor will not move.",
+      codeName: "deadband",
+      type: "double",
+      setInConstructor: false,
+      setter: {
+        name: "Set Deadband",
+        description: "Sets the deadband of the drive.  Any motor inputs less than this value will be set to zero instead.",
+        codeName: "setDeadband",
+        hints: [],
+        returns: "void",
+        parameters: [
+          {
+            name: "Deadband",
+            description: "",
+            codeName: "deadband",
+            type: "double"
+          }
+        ]
+      }
+    },
+    {
+      name: "Maximum Output",
+      description: "The maximum motor output.  This is used to scale the output values calculated by the controller. For example, set to 0.5 to make a motor set to a speed of 1.0 turn at only half speed.",
+      codeName: "maxOutput",
+      type: "double",
+      setInConstructor: false,
+      setter: {
+        name: "Set Maximum Output",
+        description: "",
+        codeName: "setMaxOutput",
+        hints: [],
+        returns: "void",
+        parameters: [
+          {
+            name: "Max Output",
+            description: "",
+            codeName: "maxOutput",
+            type: "double"
+          }
+        ]
+      }
     }
   ]
 }
@@ -917,6 +1363,9 @@ const DIFFERENTIAL_DRIVE: ComponentDefinition = {
 COMPONENT_DEFINITIONS.addDefinition(CAN_TALON_FX);
 COMPONENT_DEFINITIONS.addDefinition(MOTOR_CONTROLLER_GROUP);
 COMPONENT_DEFINITIONS.addDefinition(DIFFERENTIAL_DRIVE);
+
+COMPONENT_DEFINITIONS.addDefinition(PID_CONTROLLER);
+COMPONENT_DEFINITIONS.addDefinition(BASIC_GYRO);
 
 function drivebaseTemplate() {
   const drivebase = new Subsystem();
@@ -933,23 +1382,192 @@ function drivebaseTemplate() {
     rightMotor: rightMotorGroup.uuid
   });
 
-  drivebase.components = [frontLeftMotor, backLeftMotor, frontRightMotor, backRightMotor, leftMotorGroup, rightMotorGroup, differentialDrive];
+  const gyro = new SubsystemComponent("Gyro", BASIC_GYRO, { channel: 1 });
+  const turningPIDController = new SubsystemComponent("Turning PID Controller", PID_CONTROLLER, {
+    kp: "10",
+    ki: "0.5",
+    kd: "1",
+    tolerance: "1"
+  })
+
+  drivebase.components = [
+    gyro,
+    frontLeftMotor,
+    backLeftMotor,
+    frontRightMotor,
+    backRightMotor,
+    leftMotorGroup,
+    rightMotorGroup,
+    differentialDrive,
+    turningPIDController
+  ];
 
   const stopAction = drivebase.createAction("Stop");
+  stopAction.steps = [
+    {
+      component: differentialDrive.uuid,
+      methodName: "stopMotor",
+      params: [],
+      uuid: "example-differential-drive-stop-motor"
+    }
+  ]
+
   const tankDriveAction = drivebase.createAction("Tank Drive");
   tankDriveAction.params = [
     Param.create("Left Speed", "double"),
     Param.create("Right Speed", "double"),
     Param.create("Squared Inputs", "boolean")
   ];
+  tankDriveAction.steps = [
+    {
+      component: differentialDrive.uuid,
+      methodName: "tankDrive",
+      params: [
+        {
+          paramName: "leftSpeed",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "Left Speed"
+          }
+        },
+        {
+          paramName: "rightSpeed",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "Right Speed"
+          }
+        },
+        {
+          paramName: "squareInputs",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "Squared Inputs"
+          }
+        }
+      ],
+      uuid: "example-differential-drive-tank-drive"
+    }
+  ]
+
   const arcadeDriveAction = drivebase.createAction("Arcade Drive");
   arcadeDriveAction.params = [
     Param.create("Forward Speed", "double"),
     Param.create("Turning Speed", "double"),
     Param.create("Squared Inputs", "boolean")
   ]
+  arcadeDriveAction.steps = [
+    {
+      component: differentialDrive.uuid,
+      methodName: "arcadeDrive",
+      params: [
+        {
+          paramName: "xSpeed",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "Forward Speed"
+          }
+        },
+        {
+          paramName: "zRotation",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "Turning Speed"
+          }
+        },
+        {
+          paramName: "squareInputs",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "Squared Inputs"
+          }
+        }
+      ],
+      uuid: "example-differential-drive-arcade-drive"
+    }
+  ]
+
+  const turnToAngleAction = drivebase.createAction("Turn to Target Angle");
+  turnToAngleAction.params = [];
+  turnToAngleAction.steps = [
+    {
+      component: gyro.uuid,
+      methodName: "getAngle",
+      params: [],
+      uuid: "example-turn-to-angle-get-angle"
+    },
+    {
+      component: turningPIDController.uuid,
+      methodName: "calculate",
+      params: [
+        {
+          paramName: "measurement",
+          arg: {
+            type: "reference-step-output",
+            step: "example-turn-to-angle-get-angle"
+          }
+        }
+      ],
+      uuid: "example-turn-to-angle-update-pid"
+    },
+    {
+      component: differentialDrive.uuid,
+      methodName: "arcadeDrive",
+      params: [
+        {
+          paramName: "xSpeed",
+          arg: {
+            type: "hardcode",
+            hardcodedValue: "0"
+          }
+        },
+        {
+          paramName: "zRotation",
+          arg: {
+            type: "reference-step-output",
+            step: "example-turn-to-angle-update-pid"
+          }
+        },
+        {
+          paramName: "squareInputs",
+          arg: {
+            type: "hardcode",
+            hardcodedValue: "false"
+          }
+        }
+      ],
+      uuid: "example-turn-to-angle-drive-motors"
+    }
+  ];
+
+  const setTargetTurningAngleAction = drivebase.createAction("Set Target Turning Angle");
+  setTargetTurningAngleAction.params = [
+    Param.create("Target Angle", "double")
+  ];
+  setTargetTurningAngleAction.steps = [
+    {
+      component: turningPIDController.uuid,
+      methodName: "reset",
+      params: [],
+      uuid: "example-set-target-turning-angle-reset-pid"
+    },
+    {
+      component: turningPIDController.uuid,
+      methodName: "setSetpoint",
+      params: [
+        {
+          paramName: "setpoint",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "targetAngle"
+          }
+        }
+      ],
+      uuid: "example-set-target-turning-angle-set-pid-setpoint"
+    },
+  ]
 
   drivebase.createState("Stopped");
+  const atAngleState = drivebase.createState("At Turning Angle");
 
   const stopCommand = drivebase.createCommand("Stop", stopAction, "once");
   const tankDriveCommand = drivebase.createCommand("Drive with Speeds", tankDriveAction, "forever");
@@ -965,6 +1583,14 @@ function drivebaseTemplate() {
     new ActionParamCallOption(arcadeDriveAction, arcadeDriveAction.params[1], "passthrough-supplier"),
     new ActionParamCallOption(arcadeDriveAction, arcadeDriveAction.params[2], "hardcode", "true")
   ];
+
+  const turnToAngleCommand = drivebase.createCommand("Turn To Angle", turnToAngleAction, atAngleState.uuid);
+  turnToAngleCommand.params = [
+    new ActionParamCallOption(setTargetTurningAngleAction, setTargetTurningAngleAction.params[0], "passthrough-value")
+  ];
+  turnToAngleCommand.toInitialize = [setTargetTurningAngleAction.uuid];
+  turnToAngleCommand.toComplete = [stopAction.uuid];
+  turnToAngleCommand.toInterrupt = []; // we could also run the stop action here
 
   return drivebase;
 }

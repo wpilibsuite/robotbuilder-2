@@ -92,7 +92,7 @@ export class SubsystemAction {
    */
   name: string;
 
-  uuid: string;
+  uuid: UUID;
 
   subsystem: SubsystemRef;
 
@@ -101,13 +101,125 @@ export class SubsystemAction {
    */
   params: Param[];
 
+  steps: SubsystemActionStep[]
+
   constructor(name?: string, subsystem?: SubsystemRef) {
     this.name = name;
     this.subsystem = subsystem;
 
     this.uuid = uuidV4();
     this.params = [];
+    this.steps = [];
   }
+
+  /**
+   * Generates new param
+   * @param subsystem
+   */
+  public generateParams(subsystem: Subsystem): Param[] {
+    return this.steps.flatMap(step => {
+      const component = subsystem.components.find(c => c.uuid === step.component);
+      const method = component.definition.methods.find(m => m.codeName === step.methodName);
+      console.debug('Generating param for method', step.methodName, 'on', component);
+
+      return step.params.flatMap(stepParam => {
+        const parameterDefinition = method.parameters.find(p => p.codeName === stepParam.paramName);
+        if (stepParam.arg.type === "define-passthrough-value") {
+          const existingParam = this.params.find(p => p.name === stepParam.paramName);
+          if (existingParam) {
+            // No changes
+            return [existingParam];
+          } else {
+            const newParam = Param.create(stepParam.arg.passthroughArgumentName, parameterDefinition.type);
+            return [newParam];
+          }
+        } else {
+          // The param on the step is hardcoded or references the output of another step, we don't need to bubble up another param
+          return [];
+        }
+      })
+    })
+  }
+
+  public regenerateParams(subsystem: Subsystem): Param[] {
+    this.params = this.generateParams(subsystem);
+    return this.params;
+  }
+}
+
+export type StepParam = {
+  /**
+   * The name of the code param on the method invoked by the step.
+   */
+  paramName: string;
+
+  arg: StepArgument;
+}
+
+export type HardcodedStepArgument = {
+  type: "hardcode";
+  hardcodedValue: string;
+}
+
+export type PassthroughValueStepArgument = {
+  type: "define-passthrough-value";
+
+  /**
+   * The name of the argument to define on the step's method signature.
+   */
+  passthroughArgumentName: string;
+}
+
+export type ReferencePassthroughValueStepArgument = {
+  type: "reference-passthrough-value";
+
+  /**
+   * The UUID of the step that defined the value we're referencing.
+   */
+  step: UUID;
+
+  /**
+   * The name of the parameter on the called method.  Using this because the passthrough parameter name
+   * may change, and it's simpler to reference the immutable name of the parameter on the called method
+   */
+  paramName: string;
+}
+
+export type ReferencePreviousOutputStepArgument = {
+  type: "reference-step-output",
+  step: UUID
+};
+
+export type StepArgument =
+  HardcodedStepArgument |
+  PassthroughValueStepArgument |
+  ReferencePassthroughValueStepArgument |
+  ReferencePreviousOutputStepArgument;
+
+/**
+ * A single step in an action.
+ * A step involves executing a single method from a component in the subsystem and saving its output.
+ * Parameters to the executed method may be hardcoded, reference a method argument (which may be defined by a previous
+ * step), or reference the output of a previous step.
+ */
+export class SubsystemActionStep {
+  /**
+   * The UUID of the step.  May be referenced by later steps in the same action to define an input argument to that
+   * step's method.
+   */
+  uuid: UUID = uuidV4();
+
+  /**
+   * The UUID of the component upon which to invoke a method.
+   */
+  component: UUID;
+
+  /**
+   * The name of the method to invoke.
+   */
+  methodName: string;
+
+  params: StepParam[] = [];
 }
 
 export class SubsystemActionInvocation {
@@ -128,7 +240,7 @@ export class SubsystemState {
    */
   name: string;
 
-  uuid: string;
+  uuid: UUID;
 
   subsystem: SubsystemRef;
 
@@ -306,6 +418,11 @@ export class AtomicCommand {
    * Parameters required to build an instance of the command.
    */
   params: ActionParamCallOption[] = [];
+  toInitialize: UUID[] = [];
+
+  toComplete: UUID[] = [];
+
+  toInterrupt: UUID[] = [];
 
   constructor() {
     this.uuid = uuidV4();
