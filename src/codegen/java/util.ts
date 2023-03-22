@@ -19,6 +19,8 @@ export function removePunctuation(string: string, replacement: string = ' '): st
  * @return the camelcased string
  */
 export function camelCase(string: string, upper: boolean = false): string {
+  if (!string) return null;
+
   string = removePunctuation(string);
   return string.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => {
     if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces

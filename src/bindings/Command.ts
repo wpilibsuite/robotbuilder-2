@@ -220,6 +220,26 @@ export class SubsystemActionStep {
   methodName: string;
 
   params: StepParam[] = [];
+
+  constructor(props) {
+    if (props.hasOwnProperty('uuid')) {
+      this.uuid = props.uuid;
+    }
+    this.component = props.component;
+    this.methodName = props.methodName;
+    if (props.hasOwnProperty('params')) {
+      this.params = [...props?.params];
+    }
+  }
+
+  public clone(): SubsystemActionStep {
+    return new SubsystemActionStep({
+      uuid: this.uuid,
+      component: this.component,
+      methodName: this.methodName,
+      params: this.params.map(p => ({ ...p }))
+    });
+  }
 }
 
 export class SubsystemActionInvocation {

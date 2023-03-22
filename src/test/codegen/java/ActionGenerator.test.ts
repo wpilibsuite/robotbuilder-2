@@ -95,7 +95,7 @@ test("Generates implementation with a passthrough value", () => {
   subsystem.components.push(actuator);
 
   const action = subsystem.createAction("An Action");
-  const step1: SubsystemActionStep = {
+  const step1 = new SubsystemActionStep({
     component: actuator.uuid,
     methodName: "setValue",
     params: [
@@ -108,7 +108,7 @@ test("Generates implementation with a passthrough value", () => {
       }
     ],
     uuid: "step-1-setValue"
-  };
+  });
 
   action.steps = [
     step1
@@ -132,7 +132,7 @@ test("Generates implementation with a hardcoded value", () => {
   subsystem.components.push(actuator);
 
   const action = subsystem.createAction("An Action");
-  const step1: SubsystemActionStep = {
+  const step1 = new SubsystemActionStep({
     component: actuator.uuid,
     methodName: "setValue",
     params: [
@@ -145,7 +145,7 @@ test("Generates implementation with a hardcoded value", () => {
       }
     ],
     uuid: "step-1-setValue"
-  };
+  });
 
   action.steps = [
     step1
@@ -169,7 +169,7 @@ test("Generates implementation that references an argument defined by a prior st
   subsystem.components.push(actuator);
 
   const action = subsystem.createAction("An Action");
-  const step1: SubsystemActionStep = {
+  const step1 = new SubsystemActionStep({
     component: actuator.uuid,
     methodName: "setValue",
     params: [
@@ -182,8 +182,8 @@ test("Generates implementation that references an argument defined by a prior st
       }
     ],
     uuid: "step-1-setValue"
-  };
-  const step2: SubsystemActionStep = {
+  });
+  const step2 = new SubsystemActionStep({
     component: actuator.uuid,
     methodName: "setValue",
     params: [
@@ -197,7 +197,7 @@ test("Generates implementation that references an argument defined by a prior st
       }
     ],
     uuid: "step-2-setValue"
-  }
+  });
 
   action.steps = [
     step1,
@@ -225,13 +225,13 @@ test("Generates an implementation that references the output of a previous step"
   subsystem.components.push(actuator, sensor, controller);
 
   const action = subsystem.createAction("An Action");
-  const step1: SubsystemActionStep = {
+  const step1 = new SubsystemActionStep({
     component: sensor.uuid,
     methodName: "getPosition",
     params: [],
     uuid: "step-1-getPosition"
-  };
-  const step2: SubsystemActionStep = {
+  });
+  const step2 = new SubsystemActionStep({
     component: controller.uuid,
     methodName: "calculate",
     params: [
@@ -244,8 +244,8 @@ test("Generates an implementation that references the output of a previous step"
       }
     ],
     uuid: "step-2-calculate-controller"
-  }
-  const step3: SubsystemActionStep = {
+  });
+  const step3 = new SubsystemActionStep({
     component: actuator.uuid,
     methodName: "setValue",
     params: [
@@ -258,7 +258,7 @@ test("Generates an implementation that references the output of a previous step"
       }
     ],
     uuid: "step-3-setValue"
-  }
+  });
 
   action.steps = [step1, step2, step3];
 

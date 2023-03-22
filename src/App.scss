@@ -303,6 +303,14 @@ div.gutter {
   }
 }
 
+.step-editor {
+  border: 1px solid #e7e7e7;
+  //background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 12px;
+  box-shadow: #ccc 2px 4px 4px;
+}
+
 .action-param {
   display: grid;
   grid-template-columns: 1fr 6em 2em;

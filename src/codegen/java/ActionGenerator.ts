@@ -25,15 +25,19 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
       const component = subsystem.components.find(c => c.uuid === step.component);
       console.debug('  Component:', component);
       if (!component) {
-        throw new Error(`Couldn't find component for UUID ${ step.component } in subsystem components: ${ subsystem.components.map(c => `"${ c.name }"/${ c.uuid }`) }`);
+        // throw new Error(`Couldn't find component for UUID ${ step.component } in subsystem components: ${ subsystem.components.map(c => `"${ c.name }"/${ c.uuid }`) }`);
+        return null;
       }
       const method = component.definition.methods.find(m => m.codeName === step.methodName);
       return params.map(stepParam => {
         const param = method.parameters.find(p => p.codeName === stepParam.paramName);
-        return {
-          type: param.type,
-          name: (stepParam.arg as PassthroughValueStepArgument).passthroughArgumentName
-        };
+        if (param)
+          return {
+            type: param.type,
+            name: (stepParam.arg as PassthroughValueStepArgument).passthroughArgumentName
+          };
+        else
+          return null;
       })
     });
 
@@ -53,7 +57,15 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
 
   const stepInvocations = action.steps.map((step, i) => {
     const component = subsystem.components.find(c => c.uuid === step.component);
-    const methodDef = component.definition.methods.find(m => m.codeName === step.methodName);
+    const methodDef = component?.definition.methods.find(m => m.codeName === step.methodName);
+
+    if (!component || !methodDef) {
+      return null;
+      const componentName = variableName(component?.name) ?? '<unknown component>';
+      const methodName = methodDef?.codeName ?? '<unknown method>';
+      return `this.${ componentName }.${ methodName }();`;
+    }
+
     // Checks if we need to store the output of this step in a variable so later steps can reference it
     const outputRequired = action.steps.slice(i + 1).find((futureStep) => futureStep.params.find(p => p.arg.type === "reference-step-output" && p.arg.step === step.uuid));
     let varDef = '';
@@ -74,7 +86,12 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
         case "reference-passthrough-value":
           const referencedStep = action.steps.find(s => s.uuid === arg.step);
           const referencedParam = referencedStep.params.find(p => p.paramName === arg.paramName);
-          return variableName((referencedParam.arg as PassthroughValueStepArgument).passthroughArgumentName);
+          if (referencedParam)
+            return variableName((referencedParam.arg as PassthroughValueStepArgument).passthroughArgumentName);
+          else {
+            console.error('Undefined param on argument!', arg);
+            return `/* couldn't find param ${ arg.paramName } on ${ referencedStep.methodName } */`;
+          }
         case "reference-step-output":
           return varNameForStepOutput(arg.step);
         default:
@@ -89,8 +106,8 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
 
   return codeBlock(
     `
-    public void ${ methodName(action.name) }(${ paramDefs.map(def => `${ def.type } ${ variableName(def.name) }`).join(", ") }) {
-${ stepInvocations.map(invoke => indent(invoke, 6)).join("\n") }
+    public void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.filter(p => !!p).map(def => `${ def.type } ${ variableName(def.name) }`).join(", ") }) {
+${ stepInvocations.length > 0 ? stepInvocations.filter(i => !!i).map(invoke => indent(invoke, 6)).join("\n") : indent('// Add your custom logic here!', 6) }
     }
     `
   );
