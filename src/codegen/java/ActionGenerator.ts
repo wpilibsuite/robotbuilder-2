@@ -1,5 +1,5 @@
 import { PassthroughValueStepArgument, Subsystem, SubsystemAction, SubsystemActionStep } from "../../bindings/Command";
-import { codeBlock, indent, methodName, unindent, variableName } from "./util";
+import { codeBlock, indent, methodName, variableName } from "./util";
 
 export function generateAction(action: SubsystemAction): string {
   return codeBlock(
@@ -16,8 +16,22 @@ export function generateAction(action: SubsystemAction): string {
   );
 }
 
-export function generateAction_future(action: SubsystemAction, subsystem: Subsystem): string {
-  const paramDefs = action.steps
+const varNameForStepOutput = (stepOrUuid: SubsystemActionStep | string, previousSteps: SubsystemActionStep[], subsystem: Subsystem) => {
+  let step: SubsystemActionStep;
+  if (typeof stepOrUuid === 'string') {
+    step = previousSteps.find(s => s.uuid === stepOrUuid);
+  } else {
+    step = stepOrUuid as SubsystemActionStep;
+  }
+
+  const stepNum = previousSteps.indexOf(step) + 1;
+  const component = subsystem.components.find(c => c.uuid === step.component);
+  // TODO: Better variable names!
+  return variableName(`step${ stepNum } ${ variableName(component.name) } ${ variableName(step.methodName) }`);
+}
+
+export function generateStepParams(steps: SubsystemActionStep[], subsystem: Subsystem): string[] {
+  return steps
     .flatMap(step => {
       console.debug('Generating parameters for step', step);
       const params = step.params.filter(p => p.arg.type === "define-passthrough-value");
@@ -31,49 +45,35 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
       const method = component.definition.methods.find(m => m.codeName === step.methodName);
       return params.map(stepParam => {
         const param = method.parameters.find(p => p.codeName === stepParam.paramName);
-        if (param)
-          return {
-            type: param.type,
-            name: (stepParam.arg as PassthroughValueStepArgument).passthroughArgumentName
-          };
-        else
+        if (param) {
+          return `${ param.type } ${ variableName((stepParam.arg as PassthroughValueStepArgument).passthroughArgumentName) }`;
+        } else {
           return null;
+        }
       })
-    });
+    })
+    .filter(p => !!p);
+}
 
-  const varNameForStepOutput = (stepOrUuid: SubsystemActionStep | string) => {
-    let step: SubsystemActionStep;
-    if (typeof stepOrUuid === 'string') {
-      step = action.steps.find(s => s.uuid === stepOrUuid);
-    } else {
-      step = stepOrUuid as SubsystemActionStep;
-    }
-
-    const stepNum = action.steps.indexOf(step) + 1;
-    const component = subsystem.components.find(c => c.uuid === step.component);
-    // TODO: Better variable names!
-    return variableName(`step${ stepNum } ${ variableName(component.name) } ${ variableName(step.methodName) }`);
-  }
-
-  const stepInvocations = action.steps.map((step, i) => {
+export function generateStepInvocations(steps: SubsystemActionStep[], subsystem: Subsystem): string[] {
+  return steps.map((step, i) => {
     const component = subsystem.components.find(c => c.uuid === step.component);
     const methodDef = component?.definition.methods.find(m => m.codeName === step.methodName);
 
     if (!component || !methodDef) {
+      // not enough info - could be that the user is actively editing the step
+      console.warn('[GENERATE-STEP-INVOCATION] Could not find component and/or method', component, methodDef);
       return null;
-      const componentName = variableName(component?.name) ?? '<unknown component>';
-      const methodName = methodDef?.codeName ?? '<unknown method>';
-      return `this.${ componentName }.${ methodName }();`;
     }
 
     // Checks if we need to store the output of this step in a variable so later steps can reference it
-    const outputRequired = action.steps.slice(i + 1).find((futureStep) => futureStep.params.find(p => p.arg.type === "reference-step-output" && p.arg.step === step.uuid));
+    const outputRequired = steps.slice(i + 1).find((futureStep) => futureStep.params.find(p => p.arg.type === "reference-step-output" && p.arg.step === step.uuid));
     let varDef = '';
     if (outputRequired) {
       // Store output in a final variable
       // Use the return type for clarity - `final var` isn't helpful when a lot of method names don't imply a particular return type
       // (though it's typically going to be doubles)
-      varDef = `final ${ methodDef.returns } ${ varNameForStepOutput(step) } = `;
+      varDef = `final ${ methodDef.returns } ${ varNameForStepOutput(step, steps, subsystem) } = `;
     }
 
     const args = step.params.map(param => {
@@ -84,7 +84,7 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
         case "define-passthrough-value":
           return variableName(arg.passthroughArgumentName);
         case "reference-passthrough-value":
-          const referencedStep = action.steps.find(s => s.uuid === arg.step);
+          const referencedStep = steps.find(s => s.uuid === arg.step);
           const referencedParam = referencedStep.params.find(p => p.paramName === arg.paramName);
           if (referencedParam)
             return variableName((referencedParam.arg as PassthroughValueStepArgument).passthroughArgumentName);
@@ -93,7 +93,7 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
             return `/* couldn't find param ${ arg.paramName } on ${ referencedStep.methodName } */`;
           }
         case "reference-step-output":
-          return varNameForStepOutput(arg.step);
+          return varNameForStepOutput(arg.step, steps, subsystem);
         default:
           return `/* You forgot to specify a value for ${ param.paramName }! */`;
       }
@@ -101,12 +101,18 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
 
     const invocation = `${ step.methodName }(${ args.join(", ") });`;
 
-    return `${varDef}this.${ variableName(component.name) }.${invocation}`;
+    return `${ varDef }this.${ variableName(component.name) }.${ invocation }`;
   });
+}
+
+export function generateAction_future(action: SubsystemAction, subsystem: Subsystem): string {
+  const steps = action.steps;
+  const paramDefs = generateStepParams(steps, subsystem);
+  const stepInvocations = generateStepInvocations(steps, subsystem);
 
   return codeBlock(
     `
-    public void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.filter(p => !!p).map(def => `${ def.type } ${ variableName(def.name) }`).join(", ") }) {
+    public void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.join(", ") }) {
 ${ stepInvocations.length > 0 ? stepInvocations.filter(i => !!i).map(invoke => indent(invoke, 6)).join("\n") : indent('// Add your custom logic here!', 6) }
     }
     `

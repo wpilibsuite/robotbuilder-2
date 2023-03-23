@@ -120,7 +120,7 @@ export class SubsystemAction {
     return this.steps.flatMap(step => {
       const component = subsystem.components.find(c => c.uuid === step.component);
       const method = component.definition.methods.find(m => m.codeName === step.methodName);
-      console.debug('Generating param for method', step.methodName, 'on', component);
+      console.debug('[GENERATE-PARAMS] Generating param for method', step.methodName, 'on', component);
 
       return step.params.flatMap(stepParam => {
         const parameterDefinition = method.parameters.find(p => p.codeName === stepParam.paramName);
@@ -128,17 +128,20 @@ export class SubsystemAction {
           const existingParam = this.params.find(p => p.name === stepParam.paramName);
           if (existingParam) {
             // No changes
+            console.debug('[GENERATE-PARAMS] Found existing param for', stepParam.paramName, '- skipping regeneration', existingParam);
             return [existingParam];
           } else {
             const newParam = Param.create(stepParam.arg.passthroughArgumentName, parameterDefinition.type);
+            console.debug('[GENERATE-PARAMS] Did not find an existing param for', stepParam.paramName, 'in', this.params, '- generated new param:', newParam);
             return [newParam];
           }
         } else {
           // The param on the step is hardcoded or references the output of another step, we don't need to bubble up another param
+          console.debug('[GENERATE-PARAMS] Param', stepParam.paramName, 'does not bubble up to the action definition because its arg type is', stepParam.arg.type);
           return [];
         }
       })
-    })
+    });
   }
 
   public regenerateParams(subsystem: Subsystem): Param[] {
@@ -264,6 +267,8 @@ export class SubsystemState {
 
   subsystem: SubsystemRef;
 
+  step: SubsystemActionStep;
+
   constructor(name?: string, subsystem?: string) {
     this.name = name;
     this.subsystem = subsystem;
@@ -278,8 +283,8 @@ export class SubsystemComponent {
   name: string;
   readonly type: SubsystemType;
   readonly uuid: UUID = uuidV4();
-  readonly definition: ComponentDefinition;
-  readonly properties: object;
+  definition: ComponentDefinition;
+  properties: object;
 
   constructor(name: string, definition: ComponentDefinition, properties: object) {
     this.uuid = uuidV4();
@@ -446,6 +451,14 @@ export class AtomicCommand {
 
   constructor() {
     this.uuid = uuidV4();
+  }
+
+  public callsAction(action: SubsystemAction): boolean {
+    const uuid = action.uuid;
+    return this.action === uuid ||
+      this.toInterrupt.includes(uuid) ||
+      this.toComplete.includes(uuid) ||
+      this.toInterrupt.includes(uuid);
   }
 }
 

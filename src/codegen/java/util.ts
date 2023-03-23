@@ -51,7 +51,7 @@ export function unindent(string: string): string {
 
 export function indent(string: string, indentation: number): string {
   const padding = " ".repeat(indentation);
-  if (string.length === 0) return padding;
+  if (!string || string.length === 0) return padding;
 
   const lines = string.split("\n");
   return lines.map(line => isBlank(line) ? line : `${ padding }${ line }`).join("\n");

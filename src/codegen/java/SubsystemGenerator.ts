@@ -101,7 +101,6 @@ ${ subsystem.components.flatMap(c => generatePropertySetting(subsystem, c)).map(
         setName("${ subsystem.name }");
 
         var commandList = Shuffleboard.getTab("${ subsystem.name }").getLayout("Commands", BuiltInLayouts.kList);
-${ commands.map(c => indent(`commandList.add("${ c.name }", this.${ variableName(c.name) }Command(${ c.params.map(p => `/* ${ subsystem.actions.find(a => a.uuid === p.action).params.find(ap => ap.uuid === p.param).name } */`).join(", ") }));`, 8)).join("\n") }
       }
 
       // ACTIONS
@@ -110,7 +109,7 @@ ${ subsystem.actions.map(a => indent(generateAction_future(a, subsystem), 6)).jo
 
       // STATES
 
-${ subsystem.states.map(s => indent(generateState(s), 6)).join("\n\n") }
+${ subsystem.states.map(s => indent(generateState(s, subsystem), 6)).join("\n\n") }
 
       // COMMANDS
 

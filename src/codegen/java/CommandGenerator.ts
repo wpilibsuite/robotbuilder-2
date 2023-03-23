@@ -4,10 +4,13 @@ import { indent, methodName, unindent, variableName } from "./util";
 export function generateParam(param: Param, invocation: ActionParamCallOption): string {
   switch (invocation.invocationType) {
     case "passthrough-value":
-      console.log('Passthrough by value', param, invocation);
+      console.debug('[GENERATE-PARAM] Passthrough by value', param, invocation);
+      if (!param) {
+        return `[UNKNOWN PARAM]`;
+      }
       return `${ param.type } ${ variableName(param.name) }`;
     case "passthrough-supplier":
-      console.log('Passthrough by supplier', param, invocation);
+      console.debug('[GENERATE-PARAM] Passthrough by supplier', param, invocation);
       let supplierType = `Supplier<${ param.type }>`;
       switch (param.type) {
         case "boolean":
@@ -138,6 +141,8 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
     // Hardcoded values are, obviously, hardcoded in the method body
     paramDefs = commandParams.filter(p => p.invocationType !== "hardcode").map(invocation => {
       const param = subsystem.actions.flatMap(a => a.params).find(p => p.uuid === invocation.param);
+      console.log('Command found param', param, 'for UUID', invocation.param);
+      console.log('Available params:', subsystem.actions.flatMap(a => a.params))
       return generateParam(param, invocation);
     }).join(", ");
   }
@@ -199,6 +204,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
            */
           ${ commandDef } {
             return ${ commandChain };
+          }
           `
         ).trimStart().trimEnd()
       );

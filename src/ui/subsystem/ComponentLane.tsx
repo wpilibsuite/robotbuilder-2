@@ -31,6 +31,7 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
   const [newComponentDefinition, setNewComponentDefinition] = useState(null as ComponentDefinition);
   const [newComponentName, setNewComponentName] = useState(null);
   const [newComponentProperties, setNewComponentProperties] = useState(null);
+  const [editedComponent, setEditedComponent] = useState(null as SubsystemComponent);
 
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
@@ -57,6 +58,15 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                       );
                     } }>
                 { component.name }
+                <Button onClick={ (e) => {
+                  setEditedComponent(component);
+                  setNewComponentDefinition(component.definition);
+                  setNewComponentName(component.name);
+                  setNewComponentProperties({ ...component.properties });
+                  setShowNewComponentDialog(true);
+                } }>
+                  Edit
+                </Button>
               </Card>
             ),
               (
@@ -87,6 +97,7 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
           })
         }
         <Button onClick={ () => {
+          setEditedComponent(null);
           setNewComponentName(null);
           setNewComponentDefinition(null);
           setNewComponentProperties(null);
@@ -103,13 +114,14 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
         <DialogContent>
           <Box style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
             <label>Name</label>
-            <TextField onChange={ (e) => setNewComponentName(e.target.value) } defaultValue={ "" } variant="standard"/>
+            <TextField onChange={ (e) => setNewComponentName(e.target.value) } defaultValue={ newComponentName ?? '' } variant="standard"/>
 
             <label>Choose a type</label>
             <Select onChange={ (e) => {
               setNewComponentDefinition(COMPONENT_DEFINITIONS.forId(e.target.value));
               setNewComponentProperties({}); // clear any saved properties from the previous selection
-            } } defaultValue={ "" } variant="standard">
+            } } defaultValue={ newComponentDefinition?.id ?? '' }
+                    variant="standard">
               { COMPONENT_DEFINITIONS.definitions.filter(d => d.type === componentType).map(definition => {
                 return (
                   <MenuItem value={ definition.id } key={ definition.id }>
@@ -140,7 +152,7 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                           case "double":
                             // TODO: Allow integer only input for int/long.  Maybe allow props to define pass/reject functions?
                             // TODO: Checkbox or toggle for booleans?
-                            return <Input type="number" key={ `prop-input-${ prop.name }` } onChange={ (e) => {
+                            return <Input type="number" key={ `prop-input-${ prop.name }` } defaultValue={ newComponentProperties[prop.codeName] ?? '' } onChange={ (e) => {
                               const props = { ...newComponentProperties };
                               props[prop.codeName] = e.target.value;
                               setNewComponentProperties(props);
@@ -168,6 +180,7 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                                                 setNewComponentProperties(props);
                                               } }
                                               options={ subsystem.components.filter(c => c.definition.wpilibApiTypes.find(t => t === type)) }
+                                              defaultValue={ subsystem.components.filter(c => newComponentProperties[prop.codeName].includes(c.uuid)) }
                                               getOptionLabel={ (option) => option.name }
                                               renderInput={ (params) => {
                                                 return <TextField { ...params }
@@ -179,11 +192,14 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                               // assume it's a custom type - look for components with an API type that matches and offer them in a select box
                               // TODO: Prevent the same component from being selected for multiple properties
                               return (
-                                <Select key={ `select-${ prop.name }` } variant="standard" onChange={ (e) => {
+                                <Select key={ `select-${ prop.name }` }
+                                        variant="standard"
+                                        onChange={ (e) => {
                                   const props = { ...newComponentProperties };
                                   props[prop.codeName] = e.target.value;
                                   setNewComponentProperties(props);
-                                } }>
+                                } }
+                                defaultValue={ newComponentProperties[prop.codeName] ?? '' }>
                                   {
                                     subsystem.components
                                       .filter(c => c.definition.wpilibApiTypes.find(t => t === prop.type))
@@ -213,9 +229,17 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
           </Button>
           <Button onClick={ () => {
             if (newComponentName && newComponentDefinition && newComponentProperties) {
-              const newComponent = new SubsystemComponent(newComponentName, newComponentDefinition, newComponentProperties);
-              console.debug('Created new', componentType, 'component:', newComponent);
-              onChange(components.concat(newComponent));
+              if (editedComponent) {
+                // Edit the existing component in-place
+                editedComponent.name = newComponentName;
+                editedComponent.definition = newComponentDefinition;
+                editedComponent.properties = newComponentProperties;
+                onChange([...components]);
+              } else {
+                const newComponent = new SubsystemComponent(newComponentName, newComponentDefinition, newComponentProperties);
+                console.debug('Created new', componentType, 'component:', newComponent);
+                onChange(components.concat(newComponent));
+              }
             } else {
               console.debug('Not enough information provided, not creating a component');
             }

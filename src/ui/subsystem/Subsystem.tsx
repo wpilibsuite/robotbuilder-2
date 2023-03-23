@@ -39,6 +39,7 @@ import { generateSubsystem } from "../../codegen/java/SubsystemGenerator";
 import { ComponentLane } from "./ComponentLane";
 import { v4 as uuidV4 } from "uuid"
 import { generateAction_future } from "../../codegen/java/ActionGenerator";
+import { generateState } from "../../codegen/java/StateGenerator";
 
 
 type BasicOpts = {
@@ -194,6 +195,14 @@ type StepEditorProps = {
   methodName: string,
   params: StepParam[],
   previousSteps: SubsystemActionStep[];
+  /**
+   * An optional callback to use to filter and sort components for display in the editor.
+   */
+  componentMapper?: (allComponents: SubsystemComponent[]) => SubsystemComponent[];
+  /**
+   * An optional callback to use to filter and sort methods for display in the editor.
+   */
+  methodMapper?: (allMethods: MethodDefinition[]) => MethodDefinition[];
   onMethodChange: (component: SubsystemComponent, methodName: string, params: StepParam[]) => void,
 };
 
@@ -203,8 +212,16 @@ function StepEditor({
                       methodName,
                       params,
                       previousSteps,
+                      componentMapper,
+                      methodMapper,
                       onMethodChange
                     }: StepEditorProps) {
+
+  if (!componentMapper) componentMapper = (components) => components;
+  if (!methodMapper) methodMapper = (methods) => methods;
+
+  const availableComponents = componentMapper(subsystem.components).filter(c => methodMapper(c.definition.methods).length > 0);
+  const availableMethods = component ? methodMapper(component.definition.methods) : [];
 
   const buildDummyParams = (component: SubsystemComponent, methodName: string): StepParam[] => {
     const method = component.definition.methods.find(m => m.codeName === methodName);
@@ -230,7 +247,7 @@ function StepEditor({
       <span>
         Using
         <Select variant="standard"
-                style={{ margin: "0 8px" }}
+                style={ { margin: "0 8px" } }
                 value={ component?.uuid ?? '' }
                 onChange={ (e) => {
                   const componentUuid = e.target.value;
@@ -238,10 +255,10 @@ function StepEditor({
                   onMethodChange(newComponent, null, []);
                 } }>
           {
-            subsystem.components.map(c => {
+            availableComponents.map(c => {
               return (
                 <MenuItem key={ c.uuid } value={ c.uuid }>
-                  <span style={{ textTransform: "uppercase", color: "blue" }}>
+                  <span style={ { textTransform: "uppercase", color: "blue" } }>
                     { c.name }
                   </span>
                 </MenuItem>
@@ -252,20 +269,20 @@ function StepEditor({
 
         , call
         <Select variant="standard"
-                style={{ margin: "0 8px" }}
+                style={ { margin: "0 8px" } }
                 value={ methodName ?? '' }
                 onChange={ (e) => onMethodChange(component, e.target.value, buildDummyParams(component, e.target.value)) }
         >
           {
-            component?.definition.methods.map(method => {
+            availableMethods.map(method => {
               return (
                 <MenuItem key={ method.codeName } value={ method.codeName }>
-                  <span style={{ textTransform: "uppercase", color: "blue" }}>
+                  <span style={ { textTransform: "uppercase", color: "blue" } }>
                     { method.name }
                   </span>
                 </MenuItem>
               );
-            }) ?? null
+            })
           }
         </Select>
       </span>
@@ -274,7 +291,7 @@ function StepEditor({
           <Tooltip title={
             component.definition.methods.find(m => m.codeName === methodName).description
           }>
-        <span style={{ fontSize: "10pt", color: "lightslategray" }}>
+        <span style={ { fontSize: "10pt", color: "lightslategray" } }>
           (?)
         </span>
           </Tooltip>
@@ -378,7 +395,7 @@ function StepParameterEditor({
                       arg.type = "hardcode";
                       arg.hardcodedValue = "";
                     } else if (arg.type === "define-passthrough-value") {
-                      arg.passthroughArgumentName = param.name;
+                      arg.passthroughArgumentName = param.codeName;
                     } else if (arg.type === "reference-passthrough-value") {
                       arg.step = data.step;
                       arg.paramName = data.paramName;
@@ -390,9 +407,9 @@ function StepParameterEditor({
                   } }
           >
             <MenuItem
-              value={ JSON.stringify(toSelectionValue("define-passthrough-value", { passthroughArgumentName: param.name })) }>
+              value={ JSON.stringify(toSelectionValue("define-passthrough-value", { passthroughArgumentName: stepParam.paramName })) }>
               {/* TODO: Allow the parameter name to be specified */ }
-              Set when action is called
+              Provided when the action is run
             </MenuItem>
 
             <Divider/>
@@ -426,9 +443,12 @@ function StepParameterEditor({
                   <MenuItem key={ `select-output-${ s.uuid }` }
                             value={ JSON.stringify(toSelectionValue("reference-step-output", { step: s.uuid })) }>
                     The result of&nbsp;
-                    <span style={{ textTransform: "uppercase", color: "blue" }}>{ component.definition.methods.find(m => m.codeName === s.methodName)?.name ?? '[UNDEFINED METHOD]' }</span>&nbsp;
+                    <span style={ {
+                      textTransform: "uppercase",
+                      color: "blue"
+                    } }>{ component.definition.methods.find(m => m.codeName === s.methodName)?.name ?? '[UNDEFINED METHOD]' }</span>&nbsp;
                     on&nbsp;
-                    <span style={{ textTransform: "uppercase", color: "blue" }}>{ component.name }</span>&nbsp;
+                    <span style={ { textTransform: "uppercase", color: "blue" } }>{ component.name }</span>&nbsp;
                     <span>in step { index + 1 }</span>&nbsp;
                   </MenuItem>
                 );
@@ -447,7 +467,7 @@ function StepParameterEditor({
               <span>
                 to&nbsp;
                 <TextField defaultValue={ stepParam.arg.hardcodedValue }
-                           variant={"standard"}
+                           variant={ "standard" }
                            onChange={ (e) => {
                              const { paramName } = stepParam;
                              onParamChange({
@@ -457,7 +477,7 @@ function StepParameterEditor({
                                  hardcodedValue: e.target.value
                                }
                              })
-                } } />
+                           } }/>
               </span>
               : null
           }
@@ -492,9 +512,10 @@ function CreateActionDialog({
   const [steps, setSteps] = useState(editedAction?.steps.map(s => s.clone()) ?? []);
 
   useEffect(() => {
-    console.log("Clearing new action name and params");
-    setActionName(editedAction?.name ?? null);
-    setSteps(editedAction?.steps.map(s => s.clone()) ?? []);
+    const pullEditedData = open && !!editedAction;
+    setActionName(pullEditedData ? editedAction.name : null);
+    setSteps(pullEditedData ? editedAction.steps.map(s => s.clone()) : []);
+    console.debug("[CREATE-ACTION-DIALOG] Reset new action name and params to", actionName, steps);
   }, [open, editedAction]);
 
   return (
@@ -591,11 +612,28 @@ function ActionsLane({
                             onCancel={ closeDialog }
                             onCreate={ (data) => createAction(data) }
                             onUpdate={ ({ name, steps }) => {
+                              closeDialog();
                               editedAction.name = name;
                               editedAction.steps = [...steps];
                               editedAction.regenerateParams(subsystem);
+
+                              // Find the command that use the edited action, then remove any of their defined parameters that
+                              // pass through to a no longer defined param on the action.
+                              // Otherwise commands would have dangling references to nonexistent action params with no way to remove them
+                              subsystem.commands.filter(c => c.callsAction(editedAction)).forEach(command => {
+                                // Make sure any calling commands are updated to account for the action changes to the action
+                                console.debug('[ACTION-UPDATE] Updating command', command.name, 'to account for parameters possibly going away');
+                                command.params = command.params.filter(commandParamDef => {
+                                  const references = commandParamDef.action === editedAction.uuid && !editedAction.params.find(ap => ap.uuid === commandParamDef.param);
+                                  if (references) {
+                                    // The command references a parameter that no longer exists on the action!
+                                    console.debug('[ACTION-UPDATE] Parameter', commandParamDef.param, 'went away!');
+                                  }
+                                  return references;
+                                });
+                              })
                               onChange([...subsystem.actions]);
-                              closeDialog();
+                              setEditedAction(null);
                             } }/>
         {
           actions.map(action => {
@@ -629,28 +667,89 @@ function StatesLane({
                       onChange
                     }: { subsystem: Subsystem, states: SubsystemState[], onChange: (newStates: SubsystemState[]) => void }) {
   const [showCreateStateDialog, setShowCreateStateDialog] = useState(false);
-  const [newStateName, setNewStateName] = useState(null);
+  const [editedState, setEditedState] = useState(null as SubsystemState);
+  const [newStateName, setNewStateName] = useState(null as string);
+  const [newStateComponent, setNewStateComponent] = useState(null as SubsystemComponent);
+  const [newStateMethod, setNewStateMethod] = useState(null as string);
+  const [newStateParams, setNewStateParams] = useState([] as StepParam[]);
 
-  const createState = (data) => {
-    console.log(data);
-    const newState = subsystem.createState(data.name);
+  const createState = () => {
+    if (editedState) {
+      editedState.name = newStateName;
+      editedState.step = editedState.step?.clone() ?? new SubsystemActionStep({});
+      editedState.step.component = newStateComponent?.uuid;
+      editedState.step.methodName = newStateMethod;
+      editedState.step.params = [...newStateParams];
+    } else {
+      const newState = subsystem.createState(newStateName);
+      newState.step = new SubsystemActionStep({
+        component: newStateComponent.uuid,
+        methodName: newStateMethod,
+        params: newStateParams
+      });
+      console.debug('[STATES-LANE] Created new state', newState);
+    }
     onChange([...subsystem.states]);
-    console.debug('Created new state', newState);
-    setNewStateName(null);
+    closeDialog();
+  }
+
+  const closeDialog = () => {
     setShowCreateStateDialog(false);
+    setEditedState(null);
+    setNewStateName(null);
+    setNewStateComponent(null);
+    setNewStateMethod(null);
+    setNewStateParams([]);
   }
 
   return (
     <Box className="subsystem-lane states-lane">
       <h3>States</h3>
       <Dialog open={ showCreateStateDialog }>
-        <DialogTitle>Create State</DialogTitle>
+        <DialogTitle>{ editedState ? 'Edit ' : 'Create '} State</DialogTitle>
         <DialogContent>
-          <TextField label="Name" variant="standard" onChange={ (e) => setNewStateName(e.target.value) }/>
+          <TextField label="Name"
+                     variant="standard"
+                     value={ newStateName }
+                     onChange={ (e) => setNewStateName(e.target.value) }/>
+          <StepEditor subsystem={ subsystem }
+                      component={ newStateComponent }
+                      methodName={ newStateMethod }
+                      params={ newStateParams }
+                      previousSteps={ [] }
+                      componentMapper={ null }
+                      methodMapper={ (methods) => {
+                        const nonVoidMethods = methods.filter(m => m.returns !== 'void');
+                        const booleansFirst = (a: MethodDefinition, b: MethodDefinition): number => {
+                          return ((b.hints.includes("state") as unknown as number) - (a.hints.includes("state") as unknown as number)) ||
+                            (((b.returns === "boolean") as unknown as number) - ((a.returns === "boolean") as unknown as number)) ||
+                            (((b.returns === "double") as unknown as number) - ((a.returns === "double") as unknown as number)) ||
+                            0;
+                        }
+                        const sortedMethods = nonVoidMethods.sort(booleansFirst);
+                        console.debug('Sorted methods', sortedMethods.map(m => m.name));
+                        return sortedMethods;
+                      } }
+                      onMethodChange={ (component, methodName, params) => {
+                        setNewStateComponent(component);
+                        setNewStateMethod(methodName);
+                        setNewStateParams(params);
+                      } }/>
+          <SyntaxHighlighter language="java" style={ SyntaxHighlightStyles.vs }>
+            { (() => {
+              const dummyState = new SubsystemState(newStateName ?? 'Unnamed State', subsystem.uuid);
+              dummyState.step = new SubsystemActionStep({
+                component: newStateComponent?.uuid,
+                methodName: newStateMethod,
+                params: newStateParams
+              });
+              return generateState(dummyState, subsystem);
+            })() }
+          </SyntaxHighlighter>
         </DialogContent>
         <DialogActions>
-          <Button onClick={ () => setShowCreateStateDialog(false) }>Cancel</Button>
-          <Button onClick={ () => createState({ name: newStateName }) } disabled={ !newStateName }>OK</Button>
+          <Button onClick={ closeDialog }>Cancel</Button>
+          <Button onClick={ () => createState() } disabled={ !newStateName }>OK</Button>
         </DialogActions>
       </Dialog>
       <Box className="subsystem-lane-items">
@@ -659,6 +758,18 @@ function StatesLane({
             return (
               <Card key={ state.uuid } className="subsystem-lane-item" component={ Paper }>
                 { state.name }
+                <Button onClick={ () => {
+                  setNewStateName(state.name);
+                  if (state.step) {
+                    setNewStateComponent(subsystem.components.find(c => c.uuid === state.step.component));
+                    setNewStateMethod(state.step.methodName);
+                    setNewStateParams([...state.step.params]);
+                  }
+                  setEditedState(state);
+                  setShowCreateStateDialog(true);
+                } }>
+                  Edit
+                </Button>
               </Card>
             )
           })
@@ -1511,9 +1622,9 @@ function drivebaseTemplate() {
 
   const tankDriveAction = drivebase.createAction("Tank Drive");
   tankDriveAction.params = [
-    Param.create("Left Speed", "double"),
-    Param.create("Right Speed", "double"),
-    Param.create("Squared Inputs", "boolean")
+    Param.create("leftSpeed", "double"),
+    Param.create("rightSpeed", "double"),
+    Param.create("squareInputs", "boolean")
   ];
   tankDriveAction.steps = [
     new SubsystemActionStep({
@@ -1524,21 +1635,21 @@ function drivebaseTemplate() {
           paramName: "leftSpeed",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "Left Speed"
+            passthroughArgumentName: "leftSpeed"
           }
         },
         {
           paramName: "rightSpeed",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "Right Speed"
+            passthroughArgumentName: "rightSpeed"
           }
         },
         {
           paramName: "squareInputs",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "Squared Inputs"
+            passthroughArgumentName: "squareInputs"
           }
         }
       ],
@@ -1548,9 +1659,9 @@ function drivebaseTemplate() {
 
   const arcadeDriveAction = drivebase.createAction("Arcade Drive");
   arcadeDriveAction.params = [
-    Param.create("Forward Speed", "double"),
-    Param.create("Turning Speed", "double"),
-    Param.create("Squared Inputs", "boolean")
+    Param.create("xSpeed", "double"),
+    Param.create("zRotation", "double"),
+    Param.create("squareInputs", "boolean")
   ]
   arcadeDriveAction.steps = [
     new SubsystemActionStep({
@@ -1561,21 +1672,21 @@ function drivebaseTemplate() {
           paramName: "xSpeed",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "Forward Speed"
+            passthroughArgumentName: "xSpeed"
           }
         },
         {
           paramName: "zRotation",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "Turning Speed"
+            passthroughArgumentName: "zRotation"
           }
         },
         {
           paramName: "squareInputs",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "Squared Inputs"
+            passthroughArgumentName: "squareInputs"
           }
         }
       ],
@@ -1638,7 +1749,7 @@ function drivebaseTemplate() {
 
   const setTargetTurningAngleAction = drivebase.createAction("Set Target Turning Angle");
   setTargetTurningAngleAction.params = [
-    Param.create("Target Angle", "double")
+    Param.create("setpoint", "double")
   ];
   setTargetTurningAngleAction.steps = [
     new SubsystemActionStep({
@@ -1655,7 +1766,7 @@ function drivebaseTemplate() {
           paramName: "setpoint",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "Target Angle"
+            passthroughArgumentName: "setpoint"
           }
         }
       ],
@@ -1665,6 +1776,11 @@ function drivebaseTemplate() {
 
   drivebase.createState("Stopped");
   const atAngleState = drivebase.createState("At Turning Angle");
+  atAngleState.step = new SubsystemActionStep({
+    component: turningPIDController.uuid,
+    methodName: 'atSetpoint',
+    params: []
+  });
 
   const stopCommand = drivebase.createCommand("Stop", stopAction, "once");
   const tankDriveCommand = drivebase.createCommand("Drive with Speeds", tankDriveAction, "forever");
