@@ -114,7 +114,8 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
         <DialogContent>
           <Box style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
             <label>Name</label>
-            <TextField onChange={ (e) => setNewComponentName(e.target.value) } defaultValue={ newComponentName ?? '' } variant="standard"/>
+            <TextField onChange={ (e) => setNewComponentName(e.target.value) } defaultValue={ newComponentName ?? '' }
+                       variant="standard"/>
 
             <label>Choose a type</label>
             <Select onChange={ (e) => {
@@ -130,6 +131,8 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                 )
               }) }
             </Select>
+
+            <h5>Properties</h5><span></span>
 
             {
               newComponentDefinition ? (
@@ -152,11 +155,13 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                           case "double":
                             // TODO: Allow integer only input for int/long.  Maybe allow props to define pass/reject functions?
                             // TODO: Checkbox or toggle for booleans?
-                            return <Input type="number" key={ `prop-input-${ prop.name }` } defaultValue={ newComponentProperties[prop.codeName] ?? '' } onChange={ (e) => {
-                              const props = { ...newComponentProperties };
-                              props[prop.codeName] = e.target.value;
-                              setNewComponentProperties(props);
-                            } }/>
+                            return <Input type="number" key={ `prop-input-${ prop.name }` }
+                                          defaultValue={ newComponentProperties[prop.codeName] ?? '' }
+                                          onChange={ (e) => {
+                                            const props = { ...newComponentProperties };
+                                            props[prop.codeName] = e.target.value;
+                                            setNewComponentProperties(props);
+                                          } }/>
                           default:
                             if (prop.type.startsWith("vararg")) {
                               // assume variadic components because variadic primitives is odd
@@ -188,6 +193,29 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                                               } }
                                 />
                               );
+                            } else if (prop.options?.length > 0) {
+                              // The definition specifies a set of options that can be selected from
+                              return (
+                                <Select key={ `select-${ prop.name } ` }
+                                        defaultValue={ newComponentProperties[prop.codeName] ?? '' }
+                                        variant="standard"
+                                        onChange={ (e) => {
+                                          const props = { ...newComponentProperties };
+                                          props[prop.codeName] = e.target.value;
+                                          setNewComponentProperties(props);
+                                        } }
+                                >
+                                  {
+                                    prop.options.map((option, index) => {
+                                        return (
+                                          <MenuItem key={ index } value={ option.codeName }>
+                                            { option.name }
+                                          </MenuItem>
+                                        )
+                                      })
+                                  }
+                                </Select>
+                              );
                             } else {
                               // assume it's a custom type - look for components with an API type that matches and offer them in a select box
                               // TODO: Prevent the same component from being selected for multiple properties
@@ -195,11 +223,11 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                                 <Select key={ `select-${ prop.name }` }
                                         variant="standard"
                                         onChange={ (e) => {
-                                  const props = { ...newComponentProperties };
-                                  props[prop.codeName] = e.target.value;
-                                  setNewComponentProperties(props);
-                                } }
-                                defaultValue={ newComponentProperties[prop.codeName] ?? '' }>
+                                          const props = { ...newComponentProperties };
+                                          props[prop.codeName] = e.target.value;
+                                          setNewComponentProperties(props);
+                                        } }
+                                        defaultValue={ newComponentProperties[prop.codeName] ?? '' }>
                                   {
                                     subsystem.components
                                       .filter(c => c.definition.wpilibApiTypes.find(t => t === prop.type))

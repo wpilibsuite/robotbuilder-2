@@ -52,6 +52,21 @@ export type ComponentDefinition = {
   methods: MethodDefinition[];
 }
 
+type ConstantRef = {
+  /**
+   * The human-readable name of the constant value.
+   */
+  name: string;
+  /**
+   * A description of the constant value.
+   */
+  description: string;
+  /**
+   * The name of the constant as it appears in code.
+   */
+  codeName: string;
+}
+
 export type Property = {
   /**
    * The name of the property in a human-readable format.
@@ -66,9 +81,27 @@ export type Property = {
    * constructor or the setter method.
    */
   codeName: string;
+  /**
+   * The type of the property. This can be a primitive like "double", or the FULLY-QUALIFIED NAME of a class.
+   * If the class is an enum, or otherwise defines a set of constant values as the only set of valid options that may
+   * be set, define those options in the `options` array.
+   */
   type: string;
+  /**
+   * A set of valid options that the property can be set to.
+   */
+  options?: ConstantRef[];
+  /**
+   * Flags the property as a required constructor argument.
+   */
   setInConstructor: boolean;
+  /**
+   * The method to set this property outside the constructor, if such a method exists.
+   */
   setter?: MethodDefinition;
+  /**
+   * The method to retrieve the value of this property.
+   */
   getter?: MethodDefinition;
 }
 
