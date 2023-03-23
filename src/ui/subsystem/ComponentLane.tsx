@@ -1,5 +1,5 @@
 import { Subsystem, SubsystemComponent } from "../../bindings/Command";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ComponentDefinition, ComponentType, MethodDefinition } from "../../components/ComponentDefinition";
 import {
   Autocomplete,
@@ -27,10 +27,6 @@ type ComponentLaneProps = {
 
 export function ComponentLane({ subsystem, componentType, components, onChange }: ComponentLaneProps) {
   const [showNewComponentDialog, setShowNewComponentDialog] = useState(false);
-
-  const [newComponentDefinition, setNewComponentDefinition] = useState(null as ComponentDefinition);
-  const [newComponentName, setNewComponentName] = useState(null);
-  const [newComponentProperties, setNewComponentProperties] = useState(null);
   const [editedComponent, setEditedComponent] = useState(null as SubsystemComponent);
 
   const [contextMenu, setContextMenu] = useState<{
@@ -60,9 +56,6 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                 { component.name }
                 <Button onClick={ (e) => {
                   setEditedComponent(component);
-                  setNewComponentDefinition(component.definition);
-                  setNewComponentName(component.name);
-                  setNewComponentProperties({ ...component.properties });
                   setShowNewComponentDialog(true);
                 } }>
                   Edit
@@ -98,185 +91,232 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
         }
         <Button onClick={ () => {
           setEditedComponent(null);
-          setNewComponentName(null);
-          setNewComponentDefinition(null);
-          setNewComponentProperties(null);
           setShowNewComponentDialog(true);
         } }>
           + Add { componentType }
         </Button>
       </Box>
 
-      <Dialog open={ showNewComponentDialog }>
-        <DialogTitle>
-          Add New { componentType }
-        </DialogTitle>
-        <DialogContent>
-          <Box style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
-            <label>Name</label>
-            <TextField onChange={ (e) => setNewComponentName(e.target.value) } defaultValue={ newComponentName ?? '' }
-                       variant="standard"/>
-
-            <label>Choose a type</label>
-            <Select onChange={ (e) => {
-              setNewComponentDefinition(COMPONENT_DEFINITIONS.forId(e.target.value));
-              setNewComponentProperties({}); // clear any saved properties from the previous selection
-            } } defaultValue={ newComponentDefinition?.id ?? '' }
-                    variant="standard">
-              { COMPONENT_DEFINITIONS.definitions.filter(d => d.type === componentType).map(definition => {
-                return (
-                  <MenuItem value={ definition.id } key={ definition.id }>
-                    { definition.name }
-                  </MenuItem>
-                )
-              }) }
-            </Select>
-
-            <h5>Properties</h5><span></span>
-
-            {
-              newComponentDefinition ? (
-                newComponentDefinition.properties.map(prop => {
-                  return (
-                    [
-                      <Tooltip title={
-                        <span>
-                          { prop.description }
-                        </span>
-                      }>
-                        <label key={ `prop-label-${ prop.name }` }>
-                          { prop.name }
-                        </label>
-                      </Tooltip>,
-                      (() => {
-                        switch (prop.type) {
-                          case "int":
-                          case "long":
-                          case "double":
-                            // TODO: Allow integer only input for int/long.  Maybe allow props to define pass/reject functions?
-                            // TODO: Checkbox or toggle for booleans?
-                            return <Input type="number" key={ `prop-input-${ prop.name }` }
-                                          defaultValue={ newComponentProperties[prop.codeName] ?? '' }
-                                          onChange={ (e) => {
-                                            const props = { ...newComponentProperties };
-                                            props[prop.codeName] = e.target.value;
-                                            setNewComponentProperties(props);
-                                          } }/>
-                          default:
-                            if (prop.type.startsWith("vararg")) {
-                              // assume variadic components because variadic primitives is odd
-                              // components is also easy to implement with a multiple-select dropdown
-                              const type = prop.type.split("vararg ")[1];
-                              console.log(type);
-                              switch (type) {
-                                case "boolean":
-                                case "int":
-                                case "long":
-                                case "double":
-                                case "string":
-                                  return (<span>Vararg primitive types not yet supported</span>);
-                              }
-                              return (
-                                <Autocomplete multiple
-                                              onChange={ (event, newValue: SubsystemComponent[]) => {
-                                                console.log('Selected vararg options', newValue);
-                                                const props = { ...newComponentProperties }
-                                                props[prop.codeName] = newValue.map(component => component.uuid);
-                                                setNewComponentProperties(props);
-                                              } }
-                                              options={ subsystem.components.filter(c => c.definition.wpilibApiTypes.find(t => t === type)) }
-                                              defaultValue={ subsystem.components.filter(c => newComponentProperties[prop.codeName].includes(c.uuid)) }
-                                              getOptionLabel={ (option) => option.name }
-                                              renderInput={ (params) => {
-                                                return <TextField { ...params }
-                                                                  placeholder={ `Select one or more ${ type }` }/>;
-                                              } }
-                                />
-                              );
-                            } else if (prop.options?.length > 0) {
-                              // The definition specifies a set of options that can be selected from
-                              return (
-                                <Select key={ `select-${ prop.name } ` }
-                                        defaultValue={ newComponentProperties[prop.codeName] ?? '' }
-                                        variant="standard"
-                                        onChange={ (e) => {
-                                          const props = { ...newComponentProperties };
-                                          props[prop.codeName] = e.target.value;
-                                          setNewComponentProperties(props);
-                                        } }
-                                >
-                                  {
-                                    prop.options.map((option, index) => {
-                                        return (
-                                          <MenuItem key={ index } value={ option.codeName }>
-                                            { option.name }
-                                          </MenuItem>
-                                        )
-                                      })
-                                  }
-                                </Select>
-                              );
-                            } else {
-                              // assume it's a custom type - look for components with an API type that matches and offer them in a select box
-                              // TODO: Prevent the same component from being selected for multiple properties
-                              return (
-                                <Select key={ `select-${ prop.name }` }
-                                        variant="standard"
-                                        onChange={ (e) => {
-                                          const props = { ...newComponentProperties };
-                                          props[prop.codeName] = e.target.value;
-                                          setNewComponentProperties(props);
-                                        } }
-                                        defaultValue={ newComponentProperties[prop.codeName] ?? '' }>
-                                  {
-                                    subsystem.components
-                                      .filter(c => c.definition.wpilibApiTypes.find(t => t === prop.type))
-                                      .map(c => {
-                                        return (
-                                          <MenuItem key={ c.uuid } value={ c.uuid }>
-                                            { c.name }
-                                          </MenuItem>
-                                        )
-                                      })
-                                  }
-                                </Select>
-                              )
-                            }
-                        }
-                      })()
-                    ]
-                  );
-                })
-              ) : <></>
-            }
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={ () => setShowNewComponentDialog(false) }>
-            Cancel
-          </Button>
-          <Button onClick={ () => {
-            if (newComponentName && newComponentDefinition && newComponentProperties) {
-              if (editedComponent) {
-                // Edit the existing component in-place
-                editedComponent.name = newComponentName;
-                editedComponent.definition = newComponentDefinition;
-                editedComponent.properties = newComponentProperties;
-                onChange([...components]);
-              } else {
-                const newComponent = new SubsystemComponent(newComponentName, newComponentDefinition, newComponentProperties);
-                console.debug('Created new', componentType, 'component:', newComponent);
-                onChange(components.concat(newComponent));
-              }
-            } else {
-              console.debug('Not enough information provided, not creating a component');
-            }
-            setShowNewComponentDialog(false);
-          } }>
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ComponentDialog open={ showNewComponentDialog }
+                       componentType={ componentType }
+                       subsystem={ subsystem }
+                       editedComponent={ editedComponent }
+                       onChange={ (changedComponent) => {
+                         setShowNewComponentDialog(false);
+                         if (components.includes(changedComponent)) {
+                           // was edited in place, just bubble up an alert about the change
+                           onChange([...components]);
+                         } else {
+                           // new component, just stick it on the end of the list
+                           onChange(components.concat(changedComponent));
+                         }
+                       } }
+                       onCancel={ () => setShowNewComponentDialog(false) }
+      />
     </Box>
   );
+}
+
+type ComponentDialogProps = {
+  open: boolean;
+  componentType: string;
+  subsystem: Subsystem;
+  editedComponent: SubsystemComponent | null;
+  onChange: (changedComponent: SubsystemComponent) => void;
+  onCancel: () => void;
+}
+
+function ComponentDialog({
+                           open,
+                           componentType,
+                           subsystem,
+                           editedComponent,
+                           onChange,
+                           onCancel
+                         }: ComponentDialogProps) {
+  const [newComponentName, setNewComponentName] = useState(null);
+  const [newComponentDefinition, setNewComponentDefinition] = useState(null as ComponentDefinition);
+  const [newComponentProperties, setNewComponentProperties] = useState(null);
+
+  useEffect(() => {
+    console.debug(`[COMPONENT-DIALOG] Updating component name, definition, and properties after a change was detected.`, editedComponent);
+    setNewComponentName(editedComponent?.name ?? '');
+    setNewComponentDefinition(editedComponent?.definition ?? null);
+    setNewComponentProperties(editedComponent ? { ...editedComponent.properties } : null);
+  }, [open]);
+
+  return (
+    <Dialog open={ open }>
+      <DialogTitle>
+        { editedComponent ? `Edit ${ componentType }` : `Create ${ componentType }` }
+      </DialogTitle>
+      <DialogContent>
+        <Box style={ { display: "grid", gridTemplateColumns: "150px minmax(200px, 1fr)" } }>
+          <label>Name</label>
+          <TextField onChange={ (e) => setNewComponentName(e.target.value) }
+                     value={ newComponentName ?? '' }
+                     variant="standard"/>
+
+          <label>Choose a type</label>
+          <Select onChange={ (e) => {
+            setNewComponentDefinition(COMPONENT_DEFINITIONS.forId(e.target.value));
+            setNewComponentProperties({}); // clear any saved properties from the previous selection
+          } } value={ newComponentDefinition?.id ?? '' }
+                  variant="standard">
+            { COMPONENT_DEFINITIONS.definitions.filter(d => d.type === componentType).map(definition => {
+              return (
+                <MenuItem value={ definition.id } key={ definition.id }>
+                  { definition.name }
+                </MenuItem>
+              )
+            }) }
+          </Select>
+
+          <h5>Properties</h5><span></span>
+
+          {
+            newComponentDefinition ? (
+              newComponentDefinition.properties.map(prop => {
+                return (
+                  [
+                    <Tooltip title={
+                      <span>
+                          { prop.description }
+                        </span>
+                    }>
+                      <label key={ `prop-label-${ prop.name }` }>
+                        { prop.name }
+                      </label>
+                    </Tooltip>,
+                    (() => {
+                      switch (prop.type) {
+                        case "int":
+                        case "long":
+                        case "double":
+                          // TODO: Allow integer only input for int/long.  Maybe allow props to define pass/reject functions?
+                          // TODO: Checkbox or toggle for booleans?
+                          return <Input type="number"
+                                        key={ `prop-input-${ prop.name }` }
+                                        value={ newComponentProperties[prop.codeName] ?? '' }
+                                        onChange={ (e) => {
+                                          const props = { ...newComponentProperties };
+                                          props[prop.codeName] = e.target.value;
+                                          setNewComponentProperties(props);
+                                        } }/>
+                        default:
+                          if (prop.type.startsWith("vararg")) {
+                            // assume variadic components because variadic primitives is odd
+                            // components is also easy to implement with a multiple-select dropdown
+                            const type = prop.type.split("vararg ")[1];
+                            console.log(type);
+                            switch (type) {
+                              case "boolean":
+                              case "int":
+                              case "long":
+                              case "double":
+                              case "string":
+                                return (<span>Vararg primitive types not yet supported</span>);
+                            }
+                            return (
+                              <Autocomplete multiple
+                                            onChange={ (event, newValue: SubsystemComponent[]) => {
+                                              console.log('Selected vararg options', newValue);
+                                              const props = { ...newComponentProperties }
+                                              props[prop.codeName] = newValue.map(component => component.uuid);
+                                              setNewComponentProperties(props);
+                                            } }
+                                            options={ subsystem.components.filter(c => c.definition.wpilibApiTypes.find(t => t === type)) }
+                                            value={ subsystem.components.filter(c => newComponentProperties[prop.codeName].includes(c.uuid)) }
+                                            getOptionLabel={ (option) => option.name }
+                                            renderInput={ (params) => {
+                                              return <TextField { ...params }
+                                                                placeholder={ `Select one or more ${ type }` }/>;
+                                            } }
+                              />
+                            );
+                          } else if (prop.options?.length > 0) {
+                            // The definition specifies a set of options that can be selected from
+                            return (
+                              <Select key={ `select-${ prop.name } ` }
+                                      value={ newComponentProperties[prop.codeName] ?? '' }
+                                      variant="standard"
+                                      onChange={ (e) => {
+                                        const props = { ...newComponentProperties };
+                                        props[prop.codeName] = e.target.value;
+                                        setNewComponentProperties(props);
+                                      } }
+                              >
+                                {
+                                  prop.options.map((option, index) => {
+                                    return (
+                                      <MenuItem key={ index } value={ option.codeName }>
+                                        { option.name }
+                                      </MenuItem>
+                                    )
+                                  })
+                                }
+                              </Select>
+                            );
+                          } else {
+                            // assume it's a custom type - look for components with an API type that matches and offer them in a select box
+                            // TODO: Prevent the same component from being selected for multiple properties
+                            return (
+                              <Select key={ `select-${ prop.name }` }
+                                      variant="standard"
+                                      onChange={ (e) => {
+                                        const props = { ...newComponentProperties };
+                                        props[prop.codeName] = e.target.value;
+                                        setNewComponentProperties(props);
+                                      } }
+                                      value={ newComponentProperties[prop.codeName] ?? '' }>
+                                {
+                                  subsystem.components
+                                    .filter(c => c.definition.wpilibApiTypes.find(t => t === prop.type))
+                                    .map(c => {
+                                      return (
+                                        <MenuItem key={ c.uuid } value={ c.uuid }>
+                                          { c.name }
+                                        </MenuItem>
+                                      )
+                                    })
+                                }
+                              </Select>
+                            )
+                          }
+                      }
+                    })()
+                  ]
+                );
+              })
+            ) : <></>
+          }
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={ onCancel }>
+          Cancel
+        </Button>
+        <Button onClick={ () => {
+          if (newComponentName && newComponentDefinition && newComponentProperties) {
+            if (editedComponent) {
+              // Edit the existing component in-place
+              editedComponent.name = newComponentName;
+              editedComponent.definition = newComponentDefinition;
+              editedComponent.properties = newComponentProperties;
+              onChange(editedComponent);
+            } else {
+              const newComponent = new SubsystemComponent(newComponentName, newComponentDefinition, newComponentProperties);
+              console.debug('Created new', componentType, 'component:', newComponent);
+              onChange(newComponent);
+            }
+          } else {
+            console.debug('Not enough information provided, not creating a component');
+            onCancel();
+          }
+        } }>
+          OK
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
 }
