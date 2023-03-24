@@ -1,4 +1,60 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ActionTemplate, ComponentDefinition } from "../ComponentDefinition";
+
+const STOP_MOVING_ACTION: ActionTemplate = {
+  name: "Stop Moving",
+  description: "Sets the wheel speeds to zero to stop the robot from moving",
+  params: [], // no parameters
+  steps: [
+    // one step - "$self.stopMotor()", where $self will be replaced by the name of the generated component
+    {
+      type: "method-call",
+      target: "$self",
+      methodName: "stopMotor",
+      params: []
+    }
+  ]
+};
+
+const TANK_DRIVE_ACTION: ActionTemplate = {
+  name: "Tank Drive",
+  description: "Drives the robot by setting speeds for the left-side and right-side motors. If this is used for driver control, set squareInputs to true for better control at low speeds.",
+  params: [
+    { name: "leftSpeed", type: "double" },
+    { name: "rightSpeed", type: "double" },
+    { name: "squareInputs", type: "boolean" }
+  ],
+  steps: [
+    // one step - "$self.tankDrive(leftSpeed, rightSpeed, squareInputs)", where $self will be replaced by the name of the generated component
+    {
+      type: "method-call",
+      target: "$self",
+      methodName: "tankDrive",
+      params: [
+        {
+          paramName: "leftSpeed",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "leftSpeed"
+          }
+        },
+        {
+          paramName: "rightSpeed",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "rightSpeed"
+          }
+        },
+        {
+          paramName: "squareInputs",
+          arg: {
+            type: "define-passthrough-value",
+            passthroughArgumentName: "squareInputs"
+          }
+        }
+      ]
+    }
+  ]
+};
 
 export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
   id: "SAMPLE-differentialdrive",
@@ -133,5 +189,52 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
         ]
       }
     }
-  ]
+  ],
+
+  templates: {
+    states: [], // no states
+    actions: [
+      STOP_MOVING_ACTION,
+      TANK_DRIVE_ACTION
+    ],
+    commands: [
+      {
+        name: "Stop Driving",
+        description: "Immediately sets the wheel speeds to zero and exits.",
+        toInitialize: [],
+        toExecute: {
+          actionName: STOP_MOVING_ACTION.name,
+          params: []
+        },
+        endCondition: "once"
+      },
+      {
+        name: "Tank Drive with Joysticks",
+        description: "Drives the robot using joystick inputs, with separate joysticks controlling the left-side and right-side wheels",
+        toInitialize: [],
+        toExecute: {
+          actionName: TANK_DRIVE_ACTION.name,
+          params: [
+            {
+              // left speed
+              paramName: TANK_DRIVE_ACTION.params[0].name,
+              invocationType: "passthrough-supplier"
+            },
+            {
+              // right speed
+              paramName: TANK_DRIVE_ACTION.params[1].name,
+              invocationType: "passthrough-supplier"
+            },
+            {
+              // squared inputs
+              paramName: TANK_DRIVE_ACTION.params[2].name,
+              invocationType: "hardcode",
+              hardcodedValue: "true"
+            },
+          ]
+        },
+        endCondition: "forever"
+      }
+    ]
+  }
 };

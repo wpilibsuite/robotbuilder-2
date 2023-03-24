@@ -1,7 +1,105 @@
+import { ActionParamCallOptionInvocationType, StepParam } from "../bindings/Command";
+
 export type ComponentType =
   "sensor" |
   "actuator" |
   "control";
+
+type Templates = {
+  states?: StateTemplate[];
+  actions: ActionTemplate[];
+  commands?: CommandTemplate[];
+}
+
+type ParameterTemplate = {
+  name: string;
+  type: string;
+}
+
+type StepTemplate =
+  MethodCallStepTemplate;
+
+type MethodCallStepTemplate = {
+  type: "method-call";
+  target: string;
+  methodName: string;
+  params: StepParam[];
+}
+
+export type StateTemplate = {
+  name: string;
+  description?: string;
+}
+
+export type ActionTemplate = {
+  /**
+   * The name of the action to generate.
+   */
+  name: string;
+
+  /**
+   * A description of the action and how it can be used.  This may be included in generated code documentation.
+   */
+  description?: string;
+
+  /**
+   * The parameters to the action method.
+   */
+  params: ParameterTemplate[];
+
+  /**
+   * The steps for the action to execute.
+   */
+  steps: StepTemplate[];
+}
+
+type ActionInvocationTemplate = {
+  /**
+   * The name of the action to invoke.
+   */
+  actionName: string;
+
+  params: ActionParamCallOptionTemplate[];
+}
+
+type ActionParamCallOptionTemplate = {
+  paramName: string;
+  invocationType: ActionParamCallOptionInvocationType;
+  hardcodedValue?: string;
+}
+
+export type CommandTemplate = {
+  /**
+   * The name of the command to generate
+   */
+  name: string;
+
+  /**
+   * A description of what the command does.
+   */
+  description?: string;
+
+  /**
+   * The names of the actions to invoke for command initialization.
+   * Available actions are limited to the ones defined by the `actions` templates.
+   */
+  toInitialize: ActionInvocationTemplate[];
+
+  /**
+   * The name of the action to invoke for command execution.
+   * Available actions are limited to the ones defined by the `actions` templates.
+   */
+  toExecute: ActionInvocationTemplate;
+
+  // TODO: toComplete/toInterrupt
+
+  /**
+   * The end condition of the generated command.  This can be "once" for an InstantCommand,
+   * "forever" for a command that runs until interrupted or canceled, or the name of a state. Available states
+   * are limited to the ones defined by the `states` templates.
+   */
+  endCondition: "once" | "forever" | string;
+}
 
 export type ComponentDefinition = {
   /**
@@ -50,6 +148,13 @@ export type ComponentDefinition = {
    * aren't necessary - though they should be used when constructing the component, if they're relevant to that task.
    */
   methods: MethodDefinition[];
+
+  /**
+   * An optional set of templates defined by the component.  When a new component is created with this definition,
+   * the UI will prompt users to also generate the states, actions, and commands available in the templates. If
+   * an action is opted out of, any commands that use that action will be made unavailable for templating.
+   */
+  templates?: Templates;
 }
 
 type ConstantRef = {

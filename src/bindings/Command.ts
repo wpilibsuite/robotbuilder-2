@@ -392,7 +392,7 @@ export type Command =
 
 type SubsystemRef = UUID;
 
-type ActionParamCallOptionInvocationType = "hardcode" | "passthrough-value" | "passthrough-supplier";
+export type ActionParamCallOptionInvocationType = "hardcode" | "passthrough-value" | "passthrough-supplier";
 export class ActionParamCallOption {
 
   action: UUID; // the action
