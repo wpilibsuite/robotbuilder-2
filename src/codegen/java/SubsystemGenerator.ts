@@ -101,6 +101,7 @@ ${ subsystem.components.flatMap(c => generatePropertySetting(subsystem, c)).map(
         setName("${ subsystem.name }");
 
         var commandList = Shuffleboard.getTab("${ subsystem.name }").getLayout("Commands", BuiltInLayouts.kList);
+${ subsystem.commands.filter(c => c.params.length === 0).map(c => indent(`commandList.add("${ c.name }", this.${ methodName(c.name) }Command());`, 8)).join("\n") }
       }
 
       // ACTIONS
