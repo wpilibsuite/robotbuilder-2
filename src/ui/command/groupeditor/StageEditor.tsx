@@ -1,20 +1,21 @@
 import { findCommand, Project } from "../../../bindings/Project";
 import { Command } from "../../../bindings/Command";
 import React, { useEffect, useState } from "react";
-import { EditorStage } from "../CommandGroupEditor";
+import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
 import { CommandTile } from "./CommandTile";
 import { AddCommandDropTarget } from "./AddCommandDropTarget";
 import { ReactSVG } from "react-svg";
 import { Button, Divider, InputLabel } from "@mui/material";
 
 type StageEditorProps = {
+  sequence: EditorCommandGroup;
   stage: EditorStage;
   project: Project;
   onDelete: (stage: EditorStage) => void;
   onChange: (stage: EditorStage) => void
 };
 
-export function StageEditor({ stage, project, onDelete, onChange }: StageEditorProps) {
+export function StageEditor({ sequence, stage, project, onDelete, onChange }: StageEditorProps) {
   const entryType = (group: EditorStage, command: Command) => {
     const endCond = group.endCondition;
     switch (endCond) {
@@ -91,7 +92,7 @@ export function StageEditor({ stage, project, onDelete, onChange }: StageEditorP
                                 entryType={ entryType(stage, command) }/>
           } else {
             return (
-              <AddCommandDropTarget stage={ stage } subsystem={ subsystem } project={ project } onChange={ onChange }/>
+              <AddCommandDropTarget sequence={ sequence } stage={ stage } subsystem={ subsystem } project={ project } onChange={ onChange }/>
             )
           }
         })

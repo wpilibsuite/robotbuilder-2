@@ -146,6 +146,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
           group.stages.map((stage, index) => {
             return (
               <StageEditor key={ JSON.stringify(stage) + `${ index }` }
+                           sequence={ group }
                            stage={ stage }
                            project={ project }
                            onDelete={ (stage) => {

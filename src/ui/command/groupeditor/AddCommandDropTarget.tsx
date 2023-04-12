@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Command, CommandGroup, ParallelGroup, SequentialGroup, Subsystem } from "../../../bindings/Command";
 import Menu from "@mui/material/Menu";
 import { Button, Divider, MenuItem } from "@mui/material";
-import { EditorStage } from "../CommandGroupEditor";
+import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
 
 
 function findUsedSubsystems(command: Command, project: Project): string[] {
@@ -16,6 +16,7 @@ function findUsedSubsystems(command: Command, project: Project): string[] {
 }
 
 type AddCommandDropTargetProps = {
+  sequence: EditorCommandGroup;
   stage: EditorStage;
   subsystem: Subsystem;
   project: Project;
@@ -43,7 +44,7 @@ function xor<T>(a1: T[], a2: T[]): T[] {
   return items;
 }
 
-export function AddCommandDropTarget({ stage, subsystem, project, onChange }: AddCommandDropTargetProps) {
+export function AddCommandDropTarget({ sequence, stage, subsystem, project, onChange }: AddCommandDropTargetProps) {
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
     mouseY: number;
@@ -73,8 +74,9 @@ export function AddCommandDropTarget({ stage, subsystem, project, onChange }: Ad
   // TODO: Kick out the top-level command group that's being edited!
   const availableCommandsToAdd =
     allCommands
-      .filter(c => c.uuid !== stage.group?.uuid)
-      .filter(c => !stage.commands.find(sc => c.runsCommand(project, sc))) // exclude any groups that include (even implicitly) the group we'd be adding to
+      .filter(c => c.uuid !== stage.group?.uuid && c.uuid !== sequence.groupId) // exclude the currently edited command to avoid infinite recursion
+      .filter(c => !findCommand(project, sequence.groupId) || !c.runsCommand(project, findCommand(project, sequence.groupId))) // exclude any commands that run the currently edited command to avoid infinite recursion
+      .filter(c => !stage.commands.find(sc => c.runsCommand(project, sc))) // exclude any groups that include (even implicitly) any of the commands already in the group
       .filter(c => c.usedSubsystems(project).includes(subsystem.uuid)) // only allow the commands that use the subsystem we're on
       .filter(c => stage.commands.length === 0 || xor(c.usedSubsystems(project), stage.commands.flatMap(sc => sc.usedSubsystems(project))).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
 
