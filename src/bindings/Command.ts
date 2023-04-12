@@ -1,5 +1,6 @@
 import { v4 as uuidV4 } from "uuid"
 import { ComponentDefinition } from "../components/ComponentDefinition";
+import { findCommand, Project } from "./Project";
 
 /**
  * The possible types that can be passed as arguments to an action invocation.
@@ -390,6 +391,10 @@ export type Command =
   | SequentialGroup
   | ParallelGroup;
 
+export type CommandGroup =
+  | SequentialGroup
+  | ParallelGroup;
+
 type SubsystemRef = UUID;
 
 export type ActionParamCallOptionInvocationType = "hardcode" | "passthrough-value" | "passthrough-supplier";
@@ -422,7 +427,7 @@ export class AtomicCommand {
 
   uuid: string;
 
-  type: string = "Atomic";
+  type: "Atomic";
 
   /**
    * The subsystem that the command manipulates.
@@ -451,6 +456,7 @@ export class AtomicCommand {
 
   constructor() {
     this.uuid = uuidV4();
+    this.type = "Atomic";
   }
 
   public callsAction(action: SubsystemAction): boolean {
@@ -460,6 +466,10 @@ export class AtomicCommand {
       this.toComplete.includes(uuid) ||
       this.toInterrupt.includes(uuid);
   }
+
+  usedSubsystems(): SubsystemRef[] {
+    return [this.subsystem];
+  }
 }
 
 /**
@@ -468,7 +478,12 @@ export class AtomicCommand {
 export class SequentialGroup {
   name: string;
   uuid: string;
-  commands: UUID[];
+  commands: (Command | UUID)[];
+
+  /**
+   * Parameters required to build an instance of the command.
+   */
+  params: ActionParamCallOption[] = [];
   type: "SequentialGroup";
 
   constructor() {
@@ -480,9 +495,19 @@ export class SequentialGroup {
   addCommand(command: Command) {
     this.commands.push(command.uuid);
   }
+
+  usedSubsystems(context: Project): SubsystemRef[] {
+    return [
+      ...new Set(
+        this.commands.flatMap((uuid) => {
+          return findCommand(context, uuid)?.usedSubsystems(context) ?? [];
+        })
+      )
+    ];
+  }
 }
 
-type ParallelEndCondition =
+export type ParallelEndCondition =
   "any" |
   "all" |
   UUID;
@@ -490,18 +515,33 @@ type ParallelEndCondition =
 export class ParallelGroup {
   name: string;
   uuid: string;
-  commands: UUID[];
+  commands: (Command | UUID)[];
+
+  /**
+   * Parameters required to build an instance of the command.
+   */
+  params: ActionParamCallOption[] = [];
   endCondition: ParallelEndCondition;
   type: "ParallelGroup";
 
   constructor() {
     this.uuid = uuidV4();
-    this.endCondition = "any";
+    this.endCondition = "all";
     this.commands = [];
     this.type = "ParallelGroup";
   }
 
   addCommand(command: Command) {
     this.commands.push(command.uuid);
+  }
+
+  usedSubsystems(context: Project): SubsystemRef[] {
+    return [
+      ...new Set(
+        this.commands.flatMap((uuid) => {
+          return findCommand(context, uuid)?.usedSubsystems(context) ?? [];
+        })
+      )
+    ];
   }
 }

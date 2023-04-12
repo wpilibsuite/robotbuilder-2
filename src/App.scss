@@ -323,7 +323,30 @@ div.gutter {
 }
 
 .sequential-group-editor {
-  background-color: #222
+  background-color: #222;
+
+  .MuiFormLabel-root, .MuiInputLabel-root {
+    font-weight: 500;
+    font-size: 12pt;
+    color: #ddd;
+  }
+
+  .MuiInputBase-root {
+    font-weight: bold;
+    font-size: 12pt;
+    color: #eee;
+    //width: 100%;
+
+    input {
+      width: 100%;
+      padding: 0;
+      //text-align: center;
+
+      &::selection {
+        background: mediumslateblue; /* WebKit/Blink Browsers */
+      }
+    }
+  }
 }
 
 .sequential-group-title {
@@ -336,7 +359,7 @@ div.gutter {
 .sequential-group-editor-commands {
   display: flex;
   flex-direction: row;
-  gap: 18px;
+  gap: 1px;
   padding: 8px 16px;
   border-bottom: 2px solid #111;
 
@@ -349,11 +372,11 @@ div.gutter {
 
     .command-drop-target {
       width: 100%;
-      height: 30px; // mui likes to subtract 10 pixels for SOME REASON
+      height: 36px; // mui likes to subtract 10 pixels for SOME REASON
       //margin-top: 8px;
       background-color: #1f1f1f;
-      padding: 4px;
-      border-radius: 4px;
+      //padding: 4px;
+      border-radius: 0px;
       border: 1px dashed #444;
 
       color: #666;
@@ -365,6 +388,7 @@ div.gutter {
     width: 100%;
     justify-content: center;
     display: flex;
+    flex-direction: row;
     border-bottom: 1px solid #666;
 
     .MuiFormLabel-root, .MuiInputLabel-root {
@@ -387,6 +411,17 @@ div.gutter {
     }
   }
 
+  .subsystem-tile {
+    //width: 100%;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+
+    color: #eeeeee;
+    background-color: #333333;
+  }
+
   .command-tile {
     //width: 100%;
     height: 20px;
@@ -395,7 +430,7 @@ div.gutter {
     padding: 8px;
 
     &:hover {
-      transform: scale(1.05);
+      //transform: scale(1.05);
       cursor: pointer;
     }
 

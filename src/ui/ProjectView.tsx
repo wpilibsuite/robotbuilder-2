@@ -37,7 +37,7 @@ function mapToClass<T>(data: Object, clazz: any): T {
 }
 
 const loadProject = (file: File): Promise<Project> => {
-  console.log('loadProject(', file, ')');
+  console.log('[LOAD-PROJECT] loadProject(', file, ')');
   return file.text()
     .then(text => {
       console.log(text);
@@ -50,7 +50,7 @@ const loadProject = (file: File): Promise<Project> => {
           case "ParallelGroup":
             return true;
           default:
-            console.error('Unexpected command type', command.type, 'was not one of "Atomic", "SequentialGroup", "ParallelGroup" - deleting');
+            console.error('Unexpected command type', (command as any).type, 'was not one of "Atomic", "SequentialGroup", "ParallelGroup" - deleting');
             return false;
         }
       }).map(commandData => {
@@ -72,11 +72,12 @@ const loadProject = (file: File): Promise<Project> => {
           return action;
         });
         subsystemObj.states = subsystemData.states.map((data) => mapToClass(data, SubsystemState));
+        subsystemObj.commands = subsystemData.commands.map(c => mapToClass(c, AtomicCommand));
         return subsystemObj;
       });
       // Controllers don't have classes, just a shape - so no prototype assignment is necessary
 
-      console.log(project);
+      console.log('[LOAD-PROJECT]', project);
       return project;
     });
 }

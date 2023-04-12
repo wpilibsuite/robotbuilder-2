@@ -2,7 +2,7 @@ import {
   Box,
   Card,
   CardContent,
-  CardHeader,
+  CardHeader, Divider,
   FormControl, ListSubheader,
   MenuItem,
   Paper,
@@ -73,6 +73,14 @@ function CommandSelectBox({ project, initialCommand, onChange }: CommandSelectBo
                 )
               })
             );
+          })
+        }
+        <Divider/>
+        {
+          project.commands.map(command => {
+            return (
+              <MenuItem value={ command.uuid} key={ command.uuid }>{ command.name }</MenuItem>
+            )
           })
         }
       </Select>
