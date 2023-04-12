@@ -2,7 +2,7 @@ import {
   Command,
   CommandGroup,
   ParallelEndCondition,
-  ParallelGroup
+  ParallelGroup, SequentialGroup
 } from "../../bindings/Command";
 import React, { useEffect, useState } from "react";
 import { findCommand, Project } from "../../bindings/Project";
@@ -89,7 +89,11 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
   const [generatedCode, setGeneratedCode] = useState((() => {
     const projectCopy = JSON.parse(JSON.stringify(project));
     saveEditorGroup(projectCopy, group);
-    return generateCommandGroup(findCommand(projectCopy, group.groupId) as CommandGroup, projectCopy);
+    const existingGroup = findCommand(projectCopy, group.groupId) as CommandGroup;
+    if (existingGroup)
+      return generateCommandGroup(existingGroup, projectCopy);
+    else
+      return generateCommandGroup(new SequentialGroup(), projectCopy);
   })());
 
   useEffect(() => regenerateCode(), [group]);
@@ -97,7 +101,11 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
   const regenerateCode = () => {
     const projectCopy = JSON.parse(JSON.stringify(project));
     saveEditorGroup(projectCopy, group);
-    setGeneratedCode(generateCommandGroup(findCommand(projectCopy, group.groupId) as CommandGroup, projectCopy));
+    const existingGroup = findCommand(projectCopy, group.groupId) as CommandGroup;
+    if (existingGroup)
+      setGeneratedCode(generateCommandGroup(existingGroup, projectCopy));
+    else
+      setGeneratedCode(generateCommandGroup(new SequentialGroup(), projectCopy));
   }
 
   return (
