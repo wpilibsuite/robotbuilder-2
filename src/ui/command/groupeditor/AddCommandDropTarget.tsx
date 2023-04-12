@@ -22,6 +22,27 @@ type AddCommandDropTargetProps = {
   onChange: (stage: EditorStage) => void
 };
 
+/**
+ * Performs a logical XOR on two arrays of items.  Returns an array of the items that only appear in one array or the
+ * other, but not both.
+ *
+ * @example
+ * xor([1, 2], [1, 2]) // => []
+ * xor([1, 2], [1, 3]) // => [2, 3]
+ * xor([1, 2], [3, 4]) // => [1, 2, 3, 4]
+ *
+ * @param a1 the first array of items
+ * @param a2 the second array of items
+ */
+function xor<T>(a1: T[], a2: T[]): T[] {
+  let items = a1.concat(...a2);
+
+  // kick out anything that appears more than once
+  items = items.filter(i => items.indexOf(i) === items.lastIndexOf(i));
+
+  return items;
+}
+
 export function AddCommandDropTarget({ stage, subsystem, project, onChange }: AddCommandDropTargetProps) {
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
@@ -54,7 +75,8 @@ export function AddCommandDropTarget({ stage, subsystem, project, onChange }: Ad
     allCommands
       .filter(c => c.uuid !== stage.group?.uuid)
       .filter(c => !stage.commands.find(sc => c.runsCommand(project, sc))) // exclude any groups that include (even implicitly) the group we'd be adding to
-      .filter(c => c.usedSubsystems(project).includes(subsystem.uuid)); // only allow the commands that use the subsystem we're on
+      .filter(c => c.usedSubsystems(project).includes(subsystem.uuid)) // only allow the commands that use the subsystem we're on
+      .filter(c => stage.commands.length === 0 || xor(c.usedSubsystems(project), stage.commands.flatMap(sc => sc.usedSubsystems(project))).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
 
   console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd);
 
