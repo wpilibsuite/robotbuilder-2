@@ -470,6 +470,10 @@ export class AtomicCommand {
   usedSubsystems(): SubsystemRef[] {
     return [this.subsystem];
   }
+
+  runsCommand(_context: Project, command: Command): boolean {
+    return command.uuid === this.uuid;
+  }
 }
 
 /**
@@ -505,6 +509,17 @@ export class SequentialGroup {
       )
     ];
   }
+
+  runsCommand(context: Project, command: Command): boolean {
+    if (this.commands.length === 0) return false;
+
+    const commands = this.commands.map(c => findCommand(context, c));
+
+    return !!commands.find(c => c.uuid === command.uuid) ||
+      !!commands
+        .filter(c => c.type === "SequentialGroup" || c.type === "ParallelGroup")
+        .find(group => (group as CommandGroup).runsCommand(context, command));
+  }
 }
 
 export type ParallelEndCondition =
@@ -539,9 +554,20 @@ export class ParallelGroup {
     return [
       ...new Set(
         this.commands.flatMap((uuid) => {
-          return findCommand(context, uuid)?.usedSubsystems(context) ?? [];
+          return findCommand(context, uuid)?.usedSubsystems(context);
         })
       )
     ];
+  }
+
+  runsCommand(context: Project, command: Command): boolean {
+    if (this.commands.length === 0) return false;
+
+    const commands = this.commands.map(c => findCommand(context, c));
+
+    return !!commands.find(c => c.uuid === command.uuid) ||
+      !!commands
+        .filter(c => c.type === "SequentialGroup" || c.type === "ParallelGroup")
+        .find(group => (group as CommandGroup).runsCommand(context, command));
   }
 }

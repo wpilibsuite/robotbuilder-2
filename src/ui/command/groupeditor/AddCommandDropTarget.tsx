@@ -1,6 +1,6 @@
 import { findCommand, Project } from "../../../bindings/Project";
 import React, { useState } from "react";
-import { Command, ParallelGroup, SequentialGroup, Subsystem } from "../../../bindings/Command";
+import { Command, CommandGroup, ParallelGroup, SequentialGroup, Subsystem } from "../../../bindings/Command";
 import Menu from "@mui/material/Menu";
 import { Button, Divider, MenuItem } from "@mui/material";
 import { EditorStage } from "../CommandGroupEditor";
@@ -13,28 +13,6 @@ function findUsedSubsystems(command: Command, project: Project): string[] {
     case "ParallelGroup":
       return command.commands.flatMap(uuid => findUsedSubsystems(findCommand(project, uuid), project));
   }
-}
-
-function commandIncludes(group: SequentialGroup | ParallelGroup, command: Command, project: Project): boolean {
-  if (group === command) {
-    // As far as we're concerned, a group includes itself
-    return true;
-  }
-
-  // FIXME: If A -> B -> C, command C is not considered a child of A!
-
-  // A: The group's commands directly include the given command
-  const directChild = !!group.commands.find(c => c === command.uuid);
-  if (directChild) return true;
-
-  // B: The group's nested groups include the given command
-  const nestedGroups = group.commands.map(uuid => project.commands.find(c => c.uuid === uuid))
-    .filter(c => c.type === "SequentialGroup" || c.type === "ParallelGroup");
-
-  // Not a direct child and no nested groups to continue looking in
-  if (nestedGroups.length === 0) return false;
-
-  return !!nestedGroups.find(nestedGroup => commandIncludes(nestedGroup as SequentialGroup | ParallelGroup, command, project));
 }
 
 type AddCommandDropTargetProps = {
@@ -71,12 +49,14 @@ export function AddCommandDropTarget({ stage, subsystem, project, onChange }: Ad
   const allCommands = project.commands.concat(project.subsystems.flatMap(s => s.commands));
   console.log('[ADD-COMMAND-DROP-TARGET] All commands:', allCommands);
 
+  // TODO: Kick out the top-level command group that's being edited!
   const availableCommandsToAdd =
     allCommands
       .filter(c => c.uuid !== stage.group?.uuid)
-      // .filter(c => c.type === "Atomic" || (stage.group && !commandIncludes(stage.group as SequentialGroup | ParallelGroup, stage.group, project))) // exclude any groups that include (even implicitly) the group we'd be adding to
-      .filter(c => !c.usedSubsystems(project).includes(subsystem.uuid));
-  console.log('[ADD-COMMAND-DROP-TARGET] Available commands:', allCommands);
+      .filter(c => !stage.commands.find(sc => c.runsCommand(project, sc))) // exclude any groups that include (even implicitly) the group we'd be adding to
+      .filter(c => c.usedSubsystems(project).includes(subsystem.uuid)); // only allow the commands that use the subsystem we're on
+
+  console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd);
 
   return (
     <div>
