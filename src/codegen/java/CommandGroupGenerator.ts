@@ -60,7 +60,7 @@ export function generateParallelCommand(group: ParallelGroup, project: Project):
 export function generateSequentialCommand(group: SequentialGroup, project: Project): string {
   return unindent(
     `
-    public SequentialCommandGroup ${ methodName(group.name) }() {
+    public CommandBase ${ methodName(group.name) }() {
       return ${ commandRef(findCommand(project, group.commands[0]), project) }
 ${ group.commands.slice(1).map(uuid => `        .andThen(${ commandRef(findCommand(project, uuid), project) })`).join('\n') };
     }
