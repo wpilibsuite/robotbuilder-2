@@ -116,7 +116,7 @@ function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: s
  * )
  *
  * Generates this code:
- * public CommandBase fooCommand(double x, double y) {
+ * public CommandBase foo(double x, double y) {
  *   return this.run(() -> this.fooAction(x, y));
  * }
  */
@@ -148,7 +148,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
   }
 
   // Return a CommandBase because it implements the Sendable interface, while Command doesn't
-  const commandDef = `public CommandBase ${ variableName(name) }Command(${ paramDefs })`;
+  const commandDef = `public CommandBase ${ variableName(name) }(${ paramDefs })`;
   const actionInvocation = generateActionInvocationLambda(action, subsystemVar, commandParams);
 
   let initializeLambda = null;
