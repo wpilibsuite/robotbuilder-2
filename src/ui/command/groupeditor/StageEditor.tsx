@@ -1,19 +1,20 @@
 import { findCommand, Project } from "../../../bindings/Project";
 import { Command } from "../../../bindings/Command";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { EditorStage } from "../CommandGroupEditor";
 import { CommandTile } from "./CommandTile";
 import { AddCommandDropTarget } from "./AddCommandDropTarget";
 import { ReactSVG } from "react-svg";
-import { InputLabel } from "@mui/material";
+import { Button, Divider, InputLabel } from "@mui/material";
 
 type StageEditorProps = {
   stage: EditorStage;
   project: Project;
+  onDelete: (stage: EditorStage) => void;
   onChange: (stage: EditorStage) => void
 };
 
-export function StageEditor({ stage, project, onChange }: StageEditorProps) {
+export function StageEditor({ stage, project, onDelete, onChange }: StageEditorProps) {
   const entryType = (group: EditorStage, command: Command) => {
     const endCond = group.endCondition;
     switch (endCond) {
@@ -32,6 +33,11 @@ export function StageEditor({ stage, project, onChange }: StageEditorProps) {
         }
     }
   }
+
+  const [pendingDelete, setPendingDelete] = useState(false);
+
+  // reset if the component is reused for a stage that was just deleted
+  useEffect(() => setPendingDelete(false), [stage]);
 
   return (
     <div className={ "parallel-group-editor" }>
@@ -63,6 +69,15 @@ export function StageEditor({ stage, project, onChange }: StageEditorProps) {
                         } }/>
             </>
             : null
+        }
+        {
+          pendingDelete ?
+            <Button style={{ height: "23px" }} onBlur={ () => setPendingDelete(false) } onClick={ () => onDelete(stage) }>
+              Bye
+            </Button> :
+            <Button style={{ height: "23px" }} onClick={ () => stage.commands.length > 0 ? setPendingDelete(true) : onDelete(stage) }>
+              Delete
+            </Button>
         }
       </div>
       {
