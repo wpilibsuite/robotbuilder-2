@@ -2,7 +2,7 @@ import { findCommand, Project } from "../../../bindings/Project";
 import React, { useState } from "react";
 import { Command, ParallelGroup, SequentialGroup, Subsystem } from "../../../bindings/Command";
 import Menu from "@mui/material/Menu";
-import { Button, MenuItem } from "@mui/material";
+import { Button, Divider, MenuItem } from "@mui/material";
 import { EditorStage } from "../CommandGroupEditor";
 
 
@@ -68,15 +68,15 @@ export function AddCommandDropTarget({ stage, subsystem, project, onChange }: Ad
     };
   }
 
+  const allCommands = project.commands.concat(project.subsystems.flatMap(s => s.commands));
+  console.log('[ADD-COMMAND-DROP-TARGET] All commands:', allCommands);
+
   const availableCommandsToAdd =
-    (project.commands.concat(project.subsystems.flatMap(s => s.commands)))
+    allCommands
       .filter(c => c.uuid !== stage.group?.uuid)
-      .filter(c => c.type === "Atomic" || (stage.group && !commandIncludes(stage.group as SequentialGroup | ParallelGroup, stage.group, project))) // exclude any groups that include (even implicitly) the group we'd be adding to
+      // .filter(c => c.type === "Atomic" || (stage.group && !commandIncludes(stage.group as SequentialGroup | ParallelGroup, stage.group, project))) // exclude any groups that include (even implicitly) the group we'd be adding to
       .filter(c => !c.usedSubsystems(project).includes(subsystem.uuid));
-      // .filter(c => !stage.commands.find(groupedCommand => groupedCommand.uuid === c.uuid)) // kick out any command that's already in the command group
-      // // .filter(c => c.uuid !== stage) // exclude the group itself
-      // // .filter(c => c.type === "Atomic" || !commandIncludes(c as SequentialGroup | ParallelGroup, stage, project))
-      // .filter(c => !findUsedSubsystems(c, project).find(s => usedSubsystems.includes(s)));
+  console.log('[ADD-COMMAND-DROP-TARGET] Available commands:', allCommands);
 
   return (
     <div>
@@ -102,6 +102,7 @@ export function AddCommandDropTarget({ stage, subsystem, project, onChange }: Ad
             )
           })
         }
+        <Divider/>
         <MenuItem onClick={ handleClose }>
           Close
         </MenuItem>
