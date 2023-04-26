@@ -388,12 +388,6 @@ export type EndCondition =
 
 export type Command =
   | AtomicCommand
-  | SequentialGroup
-  | ParallelGroup;
-
-export type CommandGroup =
-  | SequentialGroup
-  | ParallelGroup;
 
 type SubsystemRef = UUID;
 
@@ -402,18 +396,83 @@ export class ActionParamCallOption {
 
   action: UUID; // the action
 
+  uuid: UUID = uuidV4();
+
+  name: string;
+
   param: UUID; // the specific param on the action to configure
 
   invocationType: ActionParamCallOptionInvocationType = "hardcode";
 
   hardcodedValue?: string = null
 
-  constructor(action: SubsystemAction, param: Param, invocationType: ActionParamCallOptionInvocationType, hardcodedValue: string = null) {
-    this.action = action.uuid;
-    this.param = param.uuid;
+  constructor(action: UUID, param: UUID, name: string, invocationType: ActionParamCallOptionInvocationType, hardcodedValue: string = null) {
+    this.action = action;
+    this.param = param;
+    this.name = name;
     this.invocationType = invocationType;
     this.hardcodedValue = hardcodedValue;
   }
+
+  static fromObjects(action: SubsystemAction, param: Param, invocationType: ActionParamCallOptionInvocationType, hardcodedValue: string = null) {
+    return new ActionParamCallOption(action.uuid, param.uuid, param.name, invocationType, hardcodedValue)
+  }
+}
+
+/**
+ * A parameter invocation to pass to a specific parameter when invoking a command from a command group.
+ */
+export type CommandParamInvocation = {
+  /**
+   * The command that holds the param.
+   */
+  command: UUID;
+
+  /**
+   * The ID of the invocation.
+   */
+  uuid: UUID;
+
+  /**
+   * The ID of the param being configured
+   */
+  param: UUID;
+
+  /**
+   * The name of the param as declared in the command's signature. Only used when the invocation type is a pass-through.
+   */
+  name: string;
+
+  paramType: ParamType;
+
+  /**
+   * How the param should be invoked.
+   */
+  invocationType: ActionParamCallOptionInvocationType;
+
+  /**
+   * The hardcoded value.
+   */
+  hardcodedValue?: string;
+}
+
+/**
+ * A command invocation is a reference to a specific command and a list of parameters to pass to that command
+ * when invoked.
+ *
+ * @example
+ *    A command invocation that looks like { command: "some-command-uuid", params: [{ }] }
+ */
+export type CommandInvocation = {
+  /**
+   * The command being invoked.
+   */
+  command: Command | UUID;
+
+  /**
+   * Invocations for all the parameters on the command.
+   */
+  params: CommandParamInvocation[];
 }
 
 /**
@@ -467,107 +526,15 @@ export class AtomicCommand {
       this.toInterrupt.includes(uuid);
   }
 
+  requirements() {
+    return [this.subsystem];
+  }
+
   usedSubsystems(): SubsystemRef[] {
     return [this.subsystem];
   }
 
-  runsCommand(_context: Project, command: Command): boolean {
-    return command.uuid === this.uuid;
-  }
-}
-
-/**
- * Sequential command group - runs all commands in the group in sequential order.
- */
-export class SequentialGroup {
-  name: string;
-  uuid: string;
-  commands: (Command | UUID)[];
-
-  /**
-   * Parameters required to build an instance of the command.
-   */
-  params: ActionParamCallOption[] = [];
-  type: "SequentialGroup";
-
-  constructor() {
-    this.uuid = uuidV4();
-    this.commands = [];
-    this.type = "SequentialGroup";
-  }
-
-  addCommand(command: Command) {
-    this.commands.push(command.uuid);
-  }
-
-  usedSubsystems(context: Project): SubsystemRef[] {
-    return [
-      ...new Set(
-        this.commands.flatMap((uuid) => {
-          return findCommand(context, uuid)?.usedSubsystems(context) ?? [];
-        })
-      )
-    ];
-  }
-
-  runsCommand(context: Project, command: Command): boolean {
-    if (this.commands.length === 0) return false;
-
-    const commands = this.commands.map(c => findCommand(context, c));
-
-    return !!commands.find(c => c.uuid === command.uuid) ||
-      !!commands
-        .filter(c => c.type === "SequentialGroup" || c.type === "ParallelGroup")
-        .find(group => (group as CommandGroup).runsCommand(context, command));
-  }
-}
-
-export type ParallelEndCondition =
-  "any" |
-  "all" |
-  UUID;
-
-export class ParallelGroup {
-  name: string;
-  uuid: string;
-  commands: (Command | UUID)[];
-
-  /**
-   * Parameters required to build an instance of the command.
-   */
-  params: ActionParamCallOption[] = [];
-  endCondition: ParallelEndCondition;
-  type: "ParallelGroup";
-
-  constructor() {
-    this.uuid = uuidV4();
-    this.endCondition = "all";
-    this.commands = [];
-    this.type = "ParallelGroup";
-  }
-
-  addCommand(command: Command) {
-    this.commands.push(command.uuid);
-  }
-
-  usedSubsystems(context: Project): SubsystemRef[] {
-    return [
-      ...new Set(
-        this.commands.flatMap((uuid) => {
-          return findCommand(context, uuid)?.usedSubsystems(context);
-        })
-      )
-    ];
-  }
-
-  runsCommand(context: Project, command: Command): boolean {
-    if (this.commands.length === 0) return false;
-
-    const commands = this.commands.map(c => findCommand(context, c));
-
-    return !!commands.find(c => c.uuid === command.uuid) ||
-      !!commands
-        .filter(c => c.type === "SequentialGroup" || c.type === "ParallelGroup")
-        .find(group => (group as CommandGroup).runsCommand(context, command));
+  runsCommand(command: string): boolean {
+    return command === this.uuid;
   }
 }

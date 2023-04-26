@@ -1,11 +1,11 @@
-import { findCommand, Project } from "../../../bindings/Project";
-import { Command } from "../../../bindings/Command";
+import { Project } from "../../../bindings/Project";
+import * as IR from "../../../bindings/ir";
 import React, { useEffect, useState } from "react";
 import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
 import { CommandTile } from "./CommandTile";
 import { AddCommandDropTarget } from "./AddCommandDropTarget";
 import { ReactSVG } from "react-svg";
-import { Button, Divider, InputLabel } from "@mui/material";
+import { Button, InputLabel } from "@mui/material";
 
 type StageEditorProps = {
   sequence: EditorCommandGroup;
@@ -16,22 +16,17 @@ type StageEditorProps = {
 };
 
 export function StageEditor({ sequence, stage, project, onDelete, onChange }: StageEditorProps) {
-  const entryType = (group: EditorStage, command: Command) => {
-    const endCond = group.endCondition;
+  const entryType = (stage: EditorStage, command: IR.CommandInvocation) => {
+    const endCond = stage.group.endCondition;
     switch (endCond) {
       case "all":
         return "full";
       case "any":
         return "racer";
-      case command.uuid:
+      case command.command:
         return "leader";
       default:
-        if (findCommand(project, endCond)) {
-          return "follower";
-        } else {
-          console.error("Parallel group end condition is not an expected value!", endCond);
-          return "full";
-        }
+        return "follower";
     }
   }
 
@@ -43,29 +38,28 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
   return (
     <div className={ "parallel-group-editor" }>
       <div className={ "group-header" }>
-        {/* TODO: Right-click on this for a context menu - contains options to change the end condition (at the very least, change from "all" to "any") and to remove the group outright from the sequence */ }
         <InputLabel>
           { stage.name }
         </InputLabel>
         {
-          stage.commands.length > 1 ?
+          stage.group.commands.length > 1 ?
             <>
               <ReactSVG src={ 'icons/parallel-group-all-commands.svg' }
                         style={ {
                           cursor: "pointer",
-                          transform: `scale(${ stage.endCondition === "all" ? '112.5%' : '100%' })`
+                          transform: `scale(${ stage.group.endCondition === "all" ? '112.5%' : '100%' })`
                         } }
                         onClick={ () => {
-                          stage.endCondition = "all";
+                          stage.group.endCondition = "all";
                           onChange(stage);
                         } }/>
               <ReactSVG src={ 'icons/parallel-group-any-commands.svg' }
                         style={ {
                           cursor: "pointer",
-                          transform: `scale(${ stage.endCondition === "any" ? '112.5%' : '100%' })`
+                          transform: `scale(${ stage.group.endCondition === "any" ? '112.5%' : '100%' })`
                         } }
                         onClick={ () => {
-                          stage.endCondition = "any";
+                          stage.group.endCondition = "any";
                           onChange(stage);
                         } }/>
             </>
@@ -76,16 +70,17 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
             <Button style={{ height: "23px" }} onBlur={ () => setPendingDelete(false) } onClick={ () => onDelete(stage) }>
               Bye
             </Button> :
-            <Button style={{ height: "23px" }} onClick={ () => stage.commands.length > 0 ? setPendingDelete(true) : onDelete(stage) }>
+            <Button style={{ height: "23px" }} onClick={ () => stage.group.commands.length > 0 ? setPendingDelete(true) : onDelete(stage) }>
               Delete
             </Button>
         }
       </div>
       {
         project.subsystems.map((subsystem) => {
-          const command = stage.commands.find(c => c.usedSubsystems(project).find(u => subsystem.uuid === u));
+          const command = stage.group.commands.find(c => c instanceof IR.CommandInvocation && c.requirements().includes(subsystem.uuid)) as IR.CommandInvocation;
           if (command) {
             return <CommandTile key={ subsystem.uuid }
+                                project={ project }
                                 command={ command }
                                 stage={ stage }
                                 onChange={ onChange }

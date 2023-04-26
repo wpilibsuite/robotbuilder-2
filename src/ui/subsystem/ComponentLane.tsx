@@ -544,7 +544,7 @@ function buildCommandFromTemplate(
         console.debug(`[BUILD-COMMAND-FROM-TEMPLATE] Could not find param "${ pt.paramName }" on action "${ action.name }", skipping...`);
         return null;
       }
-      return new ActionParamCallOption(action, param, pt.invocationType, pt.hardcodedValue);
+      return ActionParamCallOption.fromObjects(action, param, pt.invocationType, pt.hardcodedValue);
     });
 
     commandParams.push(...params);
@@ -570,7 +570,7 @@ function buildCommandFromTemplate(
       console.debug(`[BUILD-COMMAND-FROM-TEMPLATE] Could not find param "${ pt.paramName }" on action "${ executeAction.name }", skipping...`);
       return null;
     }
-    return new ActionParamCallOption(executeAction, param, pt.invocationType, pt.hardcodedValue);
+    return ActionParamCallOption.fromObjects(executeAction, param, pt.invocationType, pt.hardcodedValue);
   });
 
   commandParams.push(...executeParams);

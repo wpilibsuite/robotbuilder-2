@@ -6,9 +6,9 @@ import React, { useState } from 'react';
 import { makeNewProject, Project } from "../bindings/Project";
 import $ from "jquery";
 import {
-  AtomicCommand, Command, CommandGroup,
-  ParallelGroup, Param,
-  SequentialGroup,
+  AtomicCommand,
+  Command,
+  Param,
   Subsystem,
   SubsystemAction,
   SubsystemState
@@ -37,26 +37,30 @@ function mapToClass<T>(data: Object, clazz: any): T {
 }
 
 function loadCommand(command: Command): Command {
-  if (command.type === "Atomic") {
-    return mapToClass<AtomicCommand>(command, AtomicCommand);
-  } else {
-    switch (command.type) {
-      case "SequentialGroup":
-        command = mapToClass<SequentialGroup>(command, SequentialGroup);
-        break;
-      case "ParallelGroup":
-        command = mapToClass<ParallelGroup>(command, ParallelGroup);
-        break;
-    }
-
-    command.commands = command.commands.map(c => {
-      if (typeof c === 'string') return c; // pass UUIDs through
-
-      return loadCommand(c);
-    });
-
-    return command;
-  }
+  return command;
+  // if (command.type === "Atomic") {
+  //   return mapToClass<AtomicCommand>(command, AtomicCommand);
+  // } else {
+  //   switch (command.type) {
+  //     case "SequentialGroup":
+  //       command = mapToClass<SequentialGroup>(command, SequentialGroup);
+  //       break;
+  //     case "ParallelGroup":
+  //       command = mapToClass<ParallelGroup>(command, ParallelGroup);
+  //       break;
+  //   }
+  //
+  //   command.commands = command.commands.map(ci => {
+  //     if (typeof ci.command === "string") return ci;
+  //
+  //     return {
+  //       command: loadCommand(ci.command),
+  //       params: ci.params
+  //     }
+  //   });
+  //
+  //   return command;
+  // }
 }
 
 const loadProject = (file: File): Promise<Project> => {
@@ -66,17 +70,16 @@ const loadProject = (file: File): Promise<Project> => {
       console.log(text);
       const project: Project = JSON.parse(text);
       console.log(project);
-      project.commands = project.commands.filter(command => {
-        switch (command.type) {
-          case "Atomic":
-          case "SequentialGroup":
-          case "ParallelGroup":
-            return true;
-          default:
-            console.error('Unexpected command type', (command as any).type, 'was not one of "Atomic", "SequentialGroup", "ParallelGroup" - deleting');
-            return false;
-        }
-      }).map(commandData => loadCommand(commandData))
+      // project.commands = project.commands.filter(command => {
+      //   switch (command.type) {
+      //     case "SequentialGroup":
+      //     case "ParallelGroup":
+      //       return true;
+      //     default:
+      //       console.error('Unexpected command type', (command as any).type, 'was not one of "Atomic", "SequentialGroup", "ParallelGroup" - deleting');
+      //       return false;
+      //   }
+      // }).map(commandData => loadCommand(commandData) as CommandGroup)
       project.subsystems = project.subsystems.map(subsystemData => {
         const subsystemObj = new Subsystem();
         Object.assign(subsystemObj, subsystemData);

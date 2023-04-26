@@ -220,21 +220,21 @@ export function differentialDrivebaseTemplate() {
   const stopCommand = drivebase.createCommand("Stop", stopAction, "once");
   const tankDriveCommand = drivebase.createCommand("Drive with Speeds", tankDriveAction, "forever");
   tankDriveCommand.params = [
-    new ActionParamCallOption(tankDriveAction, tankDriveAction.params[0], "passthrough-value"),
-    new ActionParamCallOption(tankDriveAction, tankDriveAction.params[1], "passthrough-value"),
-    new ActionParamCallOption(tankDriveAction, tankDriveAction.params[2], "hardcode", "false")
+    ActionParamCallOption.fromObjects(tankDriveAction, tankDriveAction.params[0], "passthrough-value"),
+    ActionParamCallOption.fromObjects(tankDriveAction, tankDriveAction.params[1], "passthrough-value"),
+    ActionParamCallOption.fromObjects(tankDriveAction, tankDriveAction.params[2], "hardcode", "false")
   ];
 
   const arcadeDriveCommand = drivebase.createCommand("Arcade Drive with Joysticks", arcadeDriveAction, "forever");
   arcadeDriveCommand.params = [
-    new ActionParamCallOption(arcadeDriveAction, arcadeDriveAction.params[0], "passthrough-supplier"),
-    new ActionParamCallOption(arcadeDriveAction, arcadeDriveAction.params[1], "passthrough-supplier"),
-    new ActionParamCallOption(arcadeDriveAction, arcadeDriveAction.params[2], "hardcode", "true")
+    ActionParamCallOption.fromObjects(arcadeDriveAction, arcadeDriveAction.params[0], "passthrough-supplier"),
+    ActionParamCallOption.fromObjects(arcadeDriveAction, arcadeDriveAction.params[1], "passthrough-supplier"),
+    ActionParamCallOption.fromObjects(arcadeDriveAction, arcadeDriveAction.params[2], "hardcode", "true")
   ];
 
   const turnToAngleCommand = drivebase.createCommand("Turn To Angle", turnToAngleAction, atAngleState.uuid);
   turnToAngleCommand.params = [
-    new ActionParamCallOption(setTargetTurningAngleAction, setTargetTurningAngleAction.params[0], "passthrough-value")
+    ActionParamCallOption.fromObjects(setTargetTurningAngleAction, setTargetTurningAngleAction.params[0], "passthrough-value")
   ];
   turnToAngleCommand.toInitialize = [setTargetTurningAngleAction.uuid];
   turnToAngleCommand.toComplete = [stopAction.uuid];

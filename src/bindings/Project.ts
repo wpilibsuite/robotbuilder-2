@@ -1,12 +1,13 @@
 import { Controller } from "./Controller";
-import { Command, Subsystem } from "./Command";
+import { AtomicCommand, Subsystem } from "./Command";
 import { v4 as uuidV4 } from "uuid";
+import * as IR from '../bindings/ir'
 
 export type Project = {
   name: string;
   controllers: Controller[];
   subsystems: Subsystem[];
-  commands: Command[];
+  commands: IR.Group[];
 };
 
 export const makeNewProject = (): Project => {
@@ -20,11 +21,10 @@ export const makeNewProject = (): Project => {
   };
 };
 
-export function findCommand(project: Project, commandOrId: Command | string): Command | null {
-  if (commandOrId.hasOwnProperty('type') &&
-      ['Atomic', 'SequentialGroup', 'ParallelGroup'].includes(commandOrId['type'])) {
+export function findCommand(project: Project, commandOrId: AtomicCommand | IR.Group | string): AtomicCommand | IR.Group | null {
+  if (commandOrId instanceof AtomicCommand || commandOrId instanceof IR.Group) {
     // Passed in a command object, return it
-    return commandOrId as Command;
+    return commandOrId;
   }
 
   const projectCommand = project.commands.find(c => c.uuid === commandOrId);

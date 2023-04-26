@@ -1,11 +1,13 @@
 import React from "react";
-import { Command, CommandGroup } from "../../bindings/Command";
+import { AtomicCommand } from "../../bindings/Command";
 import { Button, Card, CardContent, CardHeader, Paper } from "@mui/material";
+
+import * as IR from '../../bindings/ir'
 
 type CommandListProps = {
   title: string;
-  commands: Command[];
-  requestEdit: (group: CommandGroup) => void;
+  commands: (AtomicCommand | IR.Group)[];
+  requestEdit: (group: IR.Group) => void;
 }
 
 export function CommandList({ title, commands, requestEdit }: CommandListProps) {
@@ -21,11 +23,11 @@ export function CommandList({ title, commands, requestEdit }: CommandListProps) 
               <div key={command.uuid}>
                 { command.name }
                 {
-                  command.type === "SequentialGroup" || command.type === "ParallelGroup" ?
+                  (command instanceof IR.Group) ?
                     <Button onClick={ () => requestEdit(command) }>
                       Edit
                     </Button>
-                    : <></>
+                    : <></> // not a group, can't edit
                 }
               </div>
             );
