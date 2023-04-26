@@ -4,6 +4,7 @@ import { MenuItem } from "@mui/material";
 import { EditorStage } from "../CommandGroupEditor";
 import * as IR from '../../../bindings/ir'
 import { findCommand, Project } from "../../../bindings/Project";
+import { AtomicCommand } from "../../../bindings/Command";
 
 type CommandTypeProps = {
   project: Project;
@@ -100,8 +101,10 @@ export function CommandTile({ project, command, stage, entryType, onChange }: Co
     onChange(stage);
   }
 
+  const calledCommand = findCommand(project, command.command);
+
   return (
-    <div className={ `command-tile ${ entryType }-group-entry` }
+    <div className={ `command-tile ${ entryType }-group-entry ${ calledCommand instanceof AtomicCommand ? 'basic-command' : calledCommand instanceof IR.SeqGroup ? 'sequence-group' : calledCommand instanceof IR.ParGroup ? 'parallel-group' : 'unknown-type' }` }
          key={ command.command }
          onContextMenu={ handleContextMenu }>
       { icon }

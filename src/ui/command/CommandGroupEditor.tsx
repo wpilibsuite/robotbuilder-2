@@ -95,6 +95,8 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
   const regenerateCode = () => {
     const ir = editorGroupToIR(project, group);
     setGeneratedCode(commandMethod(group.name, ir, project));
+    // Restart background animations when elements are added or removed
+    document.getAnimations().forEach(a => a.startTime = 0);
   }
 
   return (
