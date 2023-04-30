@@ -160,7 +160,7 @@ function CommandTileDetails({ command, stage, group, entryType, onChange, hide }
                     newGroupCommand.addPassthrough(invocationParam);
                   }
                   onChange(stage);
-                } } defaultValue={ invocationParam.name } >
+                } } defaultValue={ currentGroupParam.name } >
                   {
                     // exclude params with hardcoded values
                     // exclude params without any current passthroughs, /except/ for the original param this was linked to
