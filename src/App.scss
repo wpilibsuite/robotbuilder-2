@@ -317,12 +317,11 @@ div.gutter {
 }
 
 .commands {
-  padding: 16px 0;
   height: 100%;
-
 }
 
 .sequential-group-editor {
+  padding-top: 15px;
   background-color: #222;
 
   .MuiFormLabel-root, .MuiInputLabel-root {
@@ -380,6 +379,11 @@ div.gutter {
       border: 1px dashed #444;
 
       color: #666;
+
+      &.idle {
+        border: 1px dashed #f44;
+        color: #f44;
+      }
     }
   }
 
@@ -422,12 +426,18 @@ div.gutter {
     background-color: #333333;
   }
 
+  .command-tile-wrapper {
+    width: 200px;
+  }
+
   .command-tile {
-    //width: 100%;
-    height: 20px;
+    width: calc(100% - 16px); // remove 8px from left and right to keep the element at 100% width with padding
+    height: 20px; // actual height is 36px with 8px padding on top and bottom
     display: flex;
+    flex-direction: column;
     justify-content: left;
     padding: 8px;
+    background-color: #FF7F00;
 
     &:hover {
       //transform: scale(1.05);
@@ -437,29 +447,36 @@ div.gutter {
     .command-title {
       margin-bottom: 0;
       color: #111;
-      width: 100%;
+      //width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     &.full-group-entry {
-      background-color: #FF7F00;
-      //background: linear-gradient(to bottom, #c00, #4b3817);
+      //background-color: #FF7F00;
     }
 
     &.racer-group-entry {
-      background-color: #007900;
-      //background: linear-gradient(to bottom, #31bf31, #007900);
-      // TODO: Make the right end pointed
+      background-color: #FF7F00;
+
+      // clip the top-right and bottom-right corners so we get an arrow shape
+      clip-path: polygon(
+                      0 0,
+                      95% 0,
+                      100% 50%,
+                      95% 100%,
+                      0 100%,
+                      0 0
+      );
     }
 
     &.leader-group-entry {
-      background-color: #FF7F00;
+      //background-color: #FF7F00;
       //background: linear-gradient(to bottom, #fff17e, #788613);
-      display: flex;
-      flex-direction: row;
-      padding-left: 0;
+      //display: flex;
+      //flex-direction: row;
+      //padding-left: 0;
 
       .leader-icon {
         margin: 0 4px;
@@ -470,10 +487,40 @@ div.gutter {
     }
 
     &.follower-group-entry {
-      //background: linear-gradient(to bottom, #31bf31, #007900);
-      background-color: #007900;
+      //background-color: #007900;
       margin-left: 20px;
-      // TODO: Make the right end pointed
+
+      // clip the top-right and bottom-right corners so we get an arrow shape
+      clip-path: polygon(
+                      0 0,
+                      95% 0,
+                      100% 50%,
+                      95% 100%,
+                      0 100%,
+                      0 0
+      );
+    }
+
+    &.sequence-group, &.parallel-group {
+      //width: 100%;
+      background: repeating-linear-gradient(to right, maroon 0%, lighten(indigo, 20%) 50%, maroon 100%) 0 100%;
+      background-size: 200% auto;
+      animation: scroll-gradient 8s infinite;
+      animation-timing-function: linear;
+      animation-fill-mode: forwards;
+
+      .command-title {
+        color: #cccccc;
+      }
+
+      @keyframes scroll-gradient {
+        0% {
+          background-position: 0 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
     }
   }
 }

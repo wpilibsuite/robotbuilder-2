@@ -1,9 +1,3 @@
-import {
-  Command,
-  CommandGroup,
-  ParallelEndCondition,
-  ParallelGroup, SequentialGroup
-} from "../../bindings/Command";
 import React, { useEffect, useState } from "react";
 import { findCommand, Project } from "../../bindings/Project";
 import { Button, InputLabel } from "@mui/material";
@@ -11,24 +5,27 @@ import { StageEditor } from "./groupeditor/StageEditor";
 import EditableLabel from "../EditableLabel";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import {
-  generateCommandGroup
-} from "../../codegen/java/CommandGroupGenerator";
-import { saveEditorGroup } from "./Commands";
+import { commandMethod } from "../../codegen/java/CommandGroupGenerator";
+import { editorGroupToIR } from "./Commands";
+import * as IR from "../../bindings/ir";
 
 export class EditorCommandGroup {
   name: string;
   groupId: string;
   stages: EditorStage[] = [];
 
-  static fromGroup(project: Project, group: CommandGroup): EditorCommandGroup {
+  static fromGroup(project: Project, group: IR.Group): EditorCommandGroup {
     console.log('EditorSequence.fromGroup(', group, ')');
     const sequence = new EditorCommandGroup();
     sequence.name = group.name;
     sequence.groupId = group.uuid;
-    if (group.type === "SequentialGroup") {
-      sequence.stages = group.commands.map(uuid => EditorStage.fromCommand(project, findCommand(project, uuid)));
-    } else if (group.type === "ParallelGroup") {
+    if (group instanceof IR.SeqGroup) {
+      sequence.stages = group.commands.map((c, i) => {
+        const stage = EditorStage.fromCommand(project, c);
+        stage.group.name ??= `Stage ${ i }`;
+        return stage;
+      });
+    } else if (group instanceof IR.ParGroup) {
       sequence.stages = [EditorStage.fromCommand(project, group)];
     } else {
       // ... shouldn't happen
@@ -41,28 +38,23 @@ export class EditorCommandGroup {
 
 export class EditorStage {
   name: string;
-  group: ParallelGroup;
-  commands: Command[] = [];
-  endCondition: ParallelEndCondition;
+  group: IR.ParGroup;
 
-  static fromCommand(project: Project, command: Command): EditorStage {
+  static fromCommand(project: Project, command: IR.Invocation): EditorStage {
     const stage = new EditorStage();
-    stage.endCondition = "all";
 
-    switch (command.type) {
-      case "ParallelGroup":
-        stage.group = command;
-        stage.commands = command.commands.map(uuid => findCommand(project, uuid));
-        stage.endCondition = command.endCondition;
-        break;
-      case "SequentialGroup":
-        stage.commands = [command];
-        break;
-      case "Atomic":
-        stage.commands = [command];
-        break;
-      default:
-        throw new Error(`Bad command: ${ JSON.stringify(command) }`);
+    if (command instanceof IR.ParGroup) {
+      stage.group = command;
+    } else if (command instanceof IR.SeqGroup) {
+      stage.group = IR.parallel("all", (p) => {
+        p.commands.push(command);
+      });
+    } else if (command instanceof IR.CommandInvocation) {
+      stage.group = IR.parallel("all", (p) => {
+        p.commands.push(command);
+      });
+    } else {
+      throw new Error(`Bad command: ${ JSON.stringify(command) }`);
     }
 
     return stage;
@@ -80,32 +72,33 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
   const addStage = () => {
     const newStage = new EditorStage();
     newStage.name = `Stage ${ group.stages.length + 1 }`;
-    newStage.endCondition = "all";
+    newStage.group = new IR.ParGroup("all");
     group.stages.push(newStage);
     onChange(group);
     regenerateCode();
   }
 
   const [generatedCode, setGeneratedCode] = useState((() => {
-    const projectCopy = JSON.parse(JSON.stringify(project));
-    saveEditorGroup(projectCopy, group);
-    const existingGroup = findCommand(projectCopy, group.groupId) as CommandGroup;
-    if (existingGroup)
-      return generateCommandGroup(existingGroup, projectCopy);
-    else
-      return generateCommandGroup(new SequentialGroup(), projectCopy);
+    const existingGroup = findCommand(project, group.groupId) as IR.Group;
+    if (existingGroup) {
+      const ir = editorGroupToIR(project, group);
+      return commandMethod(group.name, ir, project);
+    } else {
+      const ir = new IR.SeqGroup();
+      return commandMethod(group.name, ir, project);
+    }
   })());
 
   useEffect(() => regenerateCode(), [group]);
 
   const regenerateCode = () => {
-    const projectCopy = JSON.parse(JSON.stringify(project));
-    saveEditorGroup(projectCopy, group);
-    const existingGroup = findCommand(projectCopy, group.groupId) as CommandGroup;
-    if (existingGroup)
-      setGeneratedCode(generateCommandGroup(existingGroup, projectCopy));
-    else
-      setGeneratedCode(generateCommandGroup(new SequentialGroup(), projectCopy));
+    const ir = editorGroupToIR(project, group);
+    setGeneratedCode(commandMethod(group.name, ir, project));
+    // Restart background animations when elements are added or removed
+    if (document.getAnimations) {
+      // `getAnimations` is undefined in tests
+      document.getAnimations().forEach(a => a.startTime = 0);
+    }
   }
 
   return (
@@ -145,7 +138,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
         {
           group.stages.map((stage, index) => {
             return (
-              <StageEditor key={ JSON.stringify(stage) + `${ index }` }
+              <StageEditor key={ `${ stage.name} | ${ index }` }
                            sequence={ group }
                            stage={ stage }
                            project={ project }

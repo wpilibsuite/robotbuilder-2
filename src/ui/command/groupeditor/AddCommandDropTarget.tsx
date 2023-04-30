@@ -1,19 +1,11 @@
 import { findCommand, Project } from "../../../bindings/Project";
 import React, { useState } from "react";
-import { Command, CommandGroup, ParallelGroup, SequentialGroup, Subsystem } from "../../../bindings/Command";
+import { AtomicCommand, Subsystem } from "../../../bindings/Command";
 import Menu from "@mui/material/Menu";
 import { Button, Divider, MenuItem } from "@mui/material";
 import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
-
-
-function findUsedSubsystems(command: Command, project: Project): string[] {
-  switch (command.type) {
-    case "Atomic":
-      return [command.subsystem];
-    case "ParallelGroup":
-      return command.commands.flatMap(uuid => findUsedSubsystems(findCommand(project, uuid), project));
-  }
-}
+import * as IR from '../../../bindings/ir'
+import { variableName } from "../../../codegen/java/util";
 
 type AddCommandDropTargetProps = {
   sequence: EditorCommandGroup;
@@ -60,37 +52,70 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
   };
   const handleClose = () => setContextMenu(null);
 
-  const addCommand = (command: Command) => {
+  const addCommand = (command: AtomicCommand | IR.Group) => {
     return () => {
-      stage.commands.push(command);
+      let wrapper: IR.CommandInvocation;
+      if (command instanceof AtomicCommand) {
+        // wrap in a command invocation
+        // TODO: Prevent name collisions
+        wrapper = IR.CommandInvocation.fromAtomicCommand(command);
+      } else {
+        console.log('Wrapping', command);
+        wrapper = new IR.CommandInvocation(
+          command.requirements(),
+          command.uuid,
+          command.params
+            .filter(p => p.appearsOnFactory())
+            .map(p => {
+              let varname = variableName(p.name);
+              const existingParamNames = sequence.stages.flatMap(s => s.group.params).map(p => variableName(p.name));
+              let i = 2;
+              let needsSuffix = false;
+              while (existingParamNames.includes(varname)) {
+                // conflict! increment a number suffix until we get a unique name
+                // TODO: Maybe track index numbers separately?
+                varname = `${ variableName(p.name) }${ i }`;
+                i++;
+                needsSuffix = true;
+              }
+              return new IR.ParamPlaceholder((needsSuffix ? `${ p.name } ${ i }` : p.name), p.original, [p], null);
+            })
+        )
+      }
+      stage.group.commands.push(wrapper);
+      // bubble up any required params
+      stage.group.params.push(...wrapper.params.map(p => {
+        return new IR.ParamPlaceholder(p.name, p.original, [p], null);
+      }));
       onChange(stage);
       handleClose();
     };
   }
 
-  const allCommands = project.commands.concat(project.subsystems.flatMap(s => s.commands));
+  const allCommands = (project.commands as (IR.Group | AtomicCommand)[]).concat(project.subsystems.flatMap(s => s.commands));
   console.log('[ADD-COMMAND-DROP-TARGET] All commands:', allCommands);
 
-  // TODO: Kick out the top-level command group that's being edited!
   const availableCommandsToAdd =
     allCommands
       .filter(c => c.uuid !== stage.group?.uuid && c.uuid !== sequence.groupId) // exclude the currently edited command to avoid infinite recursion
-      .filter(c => !findCommand(project, sequence.groupId) || !c.runsCommand(project, findCommand(project, sequence.groupId))) // exclude any commands that run the currently edited command to avoid infinite recursion
-      .filter(c => !stage.commands.find(sc => c.runsCommand(project, sc))) // exclude any groups that include (even implicitly) any of the commands already in the group
-      .filter(c => c.usedSubsystems(project).includes(subsystem.uuid)) // only allow the commands that use the subsystem we're on
-      .filter(c => stage.commands.length === 0 || xor(c.usedSubsystems(project), stage.commands.flatMap(sc => sc.usedSubsystems(project))).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
+      .filter(c => !findCommand(project, sequence.groupId) || !c.runsCommand(sequence.groupId)) // exclude any commands that run the currently edited command to avoid infinite recursion
+      .filter(c => c instanceof AtomicCommand || !stage.group.runsCommand(c.uuid)) // exclude any groups that include (even implicitly) any of the commands already in the group
+      .filter(c => c.requirements().includes(subsystem.uuid)) // only allow the commands that use the subsystem we're on
+      .filter(c => stage.group.commands.length === 0 || xor(c.requirements(), stage.group.commands.flatMap(sc => sc.requirements())).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
 
   console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd);
 
+  const inUse = !!sequence.stages.find(s => s.group.requirements().includes(subsystem.uuid));
+
   return (
     <div>
-      <Button className={ "command-drop-target" }
+      <Button className={ `command-drop-target ${ inUse ? 'idle' : 'open' }` }
               onClick={ handleContextMenu }
               disabled={ availableCommandsToAdd.length < 1 }>
         {
-          availableCommandsToAdd.length > 0 ?
+          availableCommandsToAdd.length > 0 && !inUse ?
             '+ Add Command' :
-            '' // No commands available for this subsystem
+            'Idle' // No commands available for this subsystem
         }
       </Button>
 

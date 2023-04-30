@@ -32,7 +32,7 @@ const EditableLabel = ({
   };
 
   const handleEditState = () => {
-    if(!isTextValueValid()) return;
+    // if(!isTextValueValid()) return;
     setEditing(prev => !prev);
   };
 
@@ -55,9 +55,7 @@ const EditableLabel = ({
     );
   }
 
-  const labelText = isTextValueValid()
-    ? value
-    : props.labelPlaceHolder || DEFAULT_LABEL_PLACEHOLDER;
+  const labelText = (isTextValueValid() && value) || DEFAULT_LABEL_PLACEHOLDER;
 
   return <InputLabel onClick={handleFocus}>{labelText}</InputLabel>;
 };

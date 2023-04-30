@@ -846,7 +846,7 @@ function ActionInvocationEditor(param: Param, action: SubsystemAction, params: A
                   onChange={ (e) => {
                     const optType = e.target.value as "hardcode" | "passthrough-value" | "passthrough-supplier";
 
-                    const newInvocation: ActionParamCallOption = new ActionParamCallOption(action, param, optType, hardCodedValue);
+                    const newInvocation: ActionParamCallOption = ActionParamCallOption.fromObjects(action, param, optType, hardCodedValue);
                     const existingIndex = params.findIndex((option) => option.param === param.uuid);
                     let newParams: ActionParamCallOption[];
                     if (existingIndex >= 0) {
@@ -876,7 +876,7 @@ function ActionInvocationEditor(param: Param, action: SubsystemAction, params: A
                      value={ existingInvocation?.hardcodedValue ?? "" }
                      onChange={ (e) => {
                        hardCodedValue = e.target.value;
-                       const newParam = new ActionParamCallOption(action, param, "hardcode", hardCodedValue);
+                       const newParam = ActionParamCallOption.fromObjects(action, param, "hardcode", hardCodedValue);
                        const existingParam = params.find(p => p.param === param.uuid);
 
                        console.debug('Replacing existing param', existingParam, 'with new param', newParam);

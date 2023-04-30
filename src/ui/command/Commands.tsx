@@ -1,55 +1,28 @@
 import { Project } from "../../bindings/Project";
 import React, { useState } from "react";
 import { CommandList } from "./CommandList";
-import { CommandGroupEditor, EditorCommandGroup } from "./CommandGroupEditor";
-import { CommandGroup, ParallelGroup, SequentialGroup } from "../../bindings/Command";
+import { CommandGroupEditor, EditorCommandGroup, EditorStage } from "./CommandGroupEditor";
 import { Button } from "@mui/material";
+import * as IR from '../../bindings/ir';
 
-function createParallelGroup(project: Project, editorGroup: EditorCommandGroup): CommandGroup {
-  // exactly one stage
-  // special case and save as a parallel group
-
-  const group = new ParallelGroup();
-  group.name = editorGroup.name;
-  group.uuid = editorGroup.groupId;
+function createParallelGroup(project: Project, editorGroup: EditorCommandGroup): IR.ParGroup {
   const stage = editorGroup.stages[0];
-  group.commands = stage.commands.map(c => c.uuid);
-  group.endCondition = stage.endCondition;
-
+  const group = stage.group;
+  group.name = editorGroup.name;
   return group;
 }
 
-function createSequentialGroup(project: Project, editorGroup: EditorCommandGroup): CommandGroup {
-  // two or more stages
-  // if a stage has one command, inline that command instead of wrapping in a parallel group
+function createSequentialGroup(project: Project, editorGroup: EditorCommandGroup): IR.SeqGroup {
+  return IR.sequence((s) => {
+    s.name = editorGroup.name;
+    s.uuid = editorGroup.groupId;
 
-  const group = new SequentialGroup();
-  group.name = editorGroup.name;
-  group.uuid = editorGroup.groupId;
-
-  const stageCommands =
-    editorGroup.stages
-      .filter(s => s.commands.length > 0)
-      .map(stage => {
-        if (stage.commands.length === 1) {
-          // inline
-          return stage.commands[0];
-        } else {
-          // wrap in a parallel group
-          const parallelGroup = new ParallelGroup();
-          parallelGroup.name = `${ editorGroup.name } ${ stage.name }`;
-          parallelGroup.commands = stage.commands.map(c => c.uuid);
-          parallelGroup.endCondition = stage.endCondition;
-          return parallelGroup;
-        }
-      });
-
-  (group as any).commands = stageCommands.map(c => {
-    if (c.type === "Atomic") return c.uuid; // reference the command
-    return c; // inline it
-  });
-
-  return group;
+    const relevantGroups = editorGroup.stages.map(stage => stage.group).filter(g => g.commands.length > 0);
+    s.commands.push(...relevantGroups);
+    s.params.push(...s.commands.flatMap(c => c.params).flatMap(filterAs(IR.ParamPlaceholder)));
+    console.log('Relevant groups', relevantGroups);
+    console.log('Group params', s.params);
+  })
 }
 
 function replace<T>(arr: T[], finder: (T) => boolean, newValue: T): T[] {
@@ -58,12 +31,12 @@ function replace<T>(arr: T[], finder: (T) => boolean, newValue: T): T[] {
   return arr;
 }
 
-export function saveEditorGroup(project: Project, editorGroup: EditorCommandGroup): CommandGroup {
+export function saveEditorGroup(project: Project, editorGroup: EditorCommandGroup): IR.Group {
   console.log('[SAVE-SEQUENCE] Sequence:', editorGroup);
-  let group;
+  let group: IR.Group = editorGroupToIR(project, editorGroup);
   if (editorGroup.stages.length === 0) {
-    group = new SequentialGroup();
-    group.name = editorGroup.name;
+    // empty group, just have something basic
+    group = IR.sequence((s) => s.name = editorGroup.name);
   } else if (editorGroup.stages.length === 1) {
     group = createParallelGroup(project, editorGroup);
   } else {
@@ -81,11 +54,33 @@ export function saveEditorGroup(project: Project, editorGroup: EditorCommandGrou
   return group;
 }
 
+export function editorGroupToIR(project: Project, editorGroup: EditorCommandGroup): IR.Group {
+  const relevantStages = editorGroup.stages.filter(s => s.group.commands.length > 0);
+
+  if (relevantStages.length === 0) {
+    return IR.sequence((s) => s.name = editorGroup.name);
+  } else if (relevantStages.length === 1) {
+    return createParallelGroup(project, editorGroup);
+  } else {
+    return createSequentialGroup(project, editorGroup);
+  }
+}
+
+function filterAs<T>(type: new (...a: any) => T): (value: any) => [T] | [] {
+  return (value: any): [T] | [] => {
+    if (value instanceof type) {
+      return [value as unknown as T];
+    }
+
+    return [];
+  }
+}
+
 export function Commands({ project }: { project: Project }) {
   const [editedSequence, setEditedSequence] = useState(null as EditorCommandGroup);
   const [sequenceSaved, setSequenceSaved] = useState(true);
 
-  const requestGroupEdit = (group: CommandGroup) => {
+  const requestGroupEdit = (group: IR.Group) => {
     if (sequenceSaved) {
       setEditedSequence(EditorCommandGroup.fromGroup(project, group));
     } else {
@@ -124,9 +119,11 @@ export function Commands({ project }: { project: Project }) {
           <CommandList title={ "Command Groups" }
                        commands={ project.commands }
                        requestEdit={ requestGroupEdit }/>
-          <Button onClick={ () => {
-            const group = new SequentialGroup();
-            group.name = "New Command Group";
+          <Button id="new-command-group-button" onClick={ () => {
+            const group = IR.sequence((s) => {
+              s.name = "New Command Group";
+              s.parallel("all", (p) => p.name = "Stage 1")
+            })
             requestGroupEdit(group);
           } }>
             Create New Group

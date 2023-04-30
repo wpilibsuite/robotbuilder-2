@@ -7,7 +7,7 @@
  * @return the cleaned up string without punctuation
  */
 export function removePunctuation(string: string, replacement: string = ' '): string {
-  return string.replaceAll(/[^a-zA-Z0-9]/ig, replacement);
+  return string.replaceAll(/[^a-zA-Z0-9_]/ig, replacement);
 }
 
 /**

@@ -1,99 +1,193 @@
-import { Command, CommandGroup, ParallelGroup, SequentialGroup } from "../../bindings/Command";
+import { ActionParamCallOption, Param } from "../../bindings/Command";
 import { findCommand, Project } from "../../bindings/Project";
-import { methodName, unindent, variableName } from "./util";
+import { indent, methodName, supplierFunctionType, unindent, variableName } from "./util";
+import * as IR from '../../bindings/ir'
+import { ParamPlaceholder } from "../../bindings/ir";
 
-function commandRef(command: Command, project: Project): string {
-  if (!command) {
-    // probably doesn't exist yet. show a dummy for now
-    return '<unknown command>()';
+const flattenCommands = (allCommands: IR.CommandInvocation[], group: IR.Group) => {
+  allCommands.push(...group.commands.filter(c => c instanceof IR.CommandInvocation) as IR.CommandInvocation[]);
+  group.commands.filter(c => c instanceof IR.Group).forEach(g => {
+    flattenCommands(allCommands, g as IR.Group);
+  })
+  return allCommands;
+}
+
+function findParamType(invokedCommands: IR.CommandInvocation[], p: ParamPlaceholder, project: Project): string {
+  const realParam = p.original;
+  if (realParam) {
+    const actionParam = project.subsystems.flatMap(s => s.actions).find(a => a.uuid === realParam.action).params.find(p => p.uuid === realParam.param);
+    switch (realParam.invocationType) {
+      case "passthrough-value":
+        return actionParam.type;
+      case "passthrough-supplier":
+        return supplierFunctionType(actionParam.type);
+      case "hardcode":
+        // shouldn't get here
+        throw new Error(`Passing a value for parameter ${ actionParam.name } when it's already hardcoded to ${ realParam.hardcodedValue }`)
+      default:
+        throw new Error(`Unknown invocation type ${ realParam.invocationType }`);
+    }
+  }
+  return '/* unknown */';
+}
+
+export function commandMethod(name: string, command: IR.Group, project: Project): string {
+  console.log('[COMMAND-METHOD] Generating factory method for command group', command);
+  const invokedCommands = flattenCommands([], command);
+
+  const params = command.params.filter(p => p.appearsOnFactory()).map(p => {
+    const paramType = findParamType(invokedCommands, p, project);
+    return `${ paramType } ${ variableName(p.name) }`;
+  }).join(', ');
+
+  const stageLine = (line, lineno) => {
+    if (lineno === 0) {
+      return line;
+    } else {
+      const baseIndentation = 6 + 'return '.length;
+      return indent(line, baseIndentation + 2);
+    }
+  };
+
+  let body = '/* Add some commands! */';
+  if (command.commands.length > 0) {
+    body = 'return ' + commandBody(command, command, project).split('\n').map(stageLine).join('\n');
   }
 
-  if (command.type === "Atomic") {
-    // comes from a subsystem
-    const subsystem = project.subsystems.find(s => s.uuid === command.subsystem);
-    return `${ variableName(subsystem.name) }.${ methodName(command.name) }()`;
+  return unindent(
+    `
+    public CommandBase ${ methodName(name) }(${ params }) {
+      ${ body };
+    }
+  `).trim();
+}
+
+function decorators(decorators: IR.Decorator[]): string {
+  if (decorators.length === 0) {
+    return null;
+  }
+
+  return decorators.map(d => {
+    switch (d.type) {
+      case "duration":
+        return `withTimeout(${ d.duration } /* seconds */)`;
+      case "until":
+        return `until(${ d.until })`;
+      case "unless":
+        return `unless(${ d.unless })`;
+      case "repeat":
+        return `repeatedly()`;
+      default:
+        // unsupported
+        return null;
+    }
+  }).filter(d => !!d).join('.');
+}
+
+function generateOwnerRef(command: IR.CommandInvocation, project: Project, forMainRobot: boolean = true): string {
+  if (forMainRobot && command.subsystems.length === 1) {
+    const subsystem = project.subsystems.find(s => s.uuid === command.subsystems[0]);
+    if (subsystem.commands.map(c => c.uuid).includes(command.command)) {
+      // the command is defined within a subsystem and we're generating code for the main robot class
+      return `${ variableName(subsystem.name) }.`;
+    } else {
+      // probably a command group that only uses commands that use a single subsystem (eg drive and then stop)
+      return '';
+    }
   } else {
-    // defined in the robot container
-    if (command.type === "SequentialGroup") {
-
-    } else if (command.type === "ParallelGroup") {
-      return generateParallelCommandBody(command, project);
-    }
-    return `${ methodName(command.name) }()`;
+    // defined in the same scope, no owner necessary
+    return '';
   }
 }
 
-export function generateParallelCommandBody(group: ParallelGroup, project: Project): string {
-  let seedCommand: Command;
-  let decoratorMethod: string;
-  switch (group.endCondition) {
-    case "all":
-      seedCommand = findCommand(project, group.commands[0]);
-      decoratorMethod = "alongWith";
-      break;
-    case "any":
-      seedCommand = findCommand(project, group.commands[0]);
-      decoratorMethod = "raceWith";
-      break;
+function commandBody(topLevelGroup: IR.Group, command: IR.Invocation, project: Project): string {
+  const decoratorCalls = decorators(command.decorators);
+
+  let base = '';
+  if (command instanceof IR.CommandInvocation) {
+    const ownerRef = generateOwnerRef(command, project);
+    const params = command.params.map(p => {
+      if (p.hardcodedValue) {
+        return p.hardcodedValue;
+      } else {
+        const args = topLevelGroup.params.filter(a => a.passesThroughTo(p));
+
+        if (args.length === 1) {
+          return variableName(args[0].name);
+        } else {
+          // This shouldn't happen, but just in case the validation checks fall through...
+          return `/* ${ args.length } passthroughs to ${ p.name }! ${ args.map(a => a.name).join(' and ') } */`
+        }
+      }
+    }).join(', ');
+
+    const calledCommand = findCommand(project, command.command);
+    base = `${ ownerRef }${ methodName(calledCommand?.name ?? 'unknown command') }(${ params })`;
+  } else if (command instanceof IR.SeqGroup) {
+    base = seqBody(topLevelGroup, command, project);
+  } else if (command instanceof IR.ParGroup) {
+    base = parBody(topLevelGroup, command, project);
+  }
+
+  if (decoratorCalls) {
+    return base + '.' + decoratorCalls;
+  } else {
+    return base;
+  }
+}
+
+function seqBody(topLevelGroup: IR.Group, group: IR.SeqGroup, project: Project): string {
+  switch (group.commands.length) {
+    case 0:
+      return '(/* empty group */)';
+    case 1:
+      return commandBody(topLevelGroup, group.commands[0], project);
     default:
-      // assume a UUID
-      seedCommand = findCommand(project, group.endCondition);
-      decoratorMethod = "deadlineWith";
-      break;
+      return `${ commandBody(topLevelGroup, group.commands[0], project) }${ group.commands.slice(1).map(c => commandBody(topLevelGroup, c, project)).map(c => `\n.andThen(${ c })`).join('') }`
   }
-
-  // return a single line
-  // leave formatting/indentation to the caller
-  return`${ commandRef(seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(uuid => uuid !== seedCommand.uuid).map(uuid => findCommand(project, uuid)).map(c => commandRef(c, project)).join(', ') })`;
 }
 
-export function generateParallelCommand(group: ParallelGroup, project: Project): string {
-  return unindent(
-    `
-    public CommandBase ${ methodName(group.name) }() {
-      return ${ generateParallelCommandBody(group, project) };
-    }
-    `
-  ).trimStart().trimEnd();
-}
-
-export function generateSequentialCommand(group: SequentialGroup, project: Project): string {
-  return unindent(
-    `
-    public CommandBase ${ methodName(group.name) }() {
-      return ${ commandRef(findCommand(project, group.commands[0]), project) }
-${ group.commands.slice(1).map(uuid => `        .andThen(${ commandRef(findCommand(project, uuid), project) })`).join('\n') };
-    }
-    `
-  ).trimStart().trimEnd();
-}
-
-export function generateCommandGroup(group: CommandGroup, project: Project): string {
-  if (group.commands.length === 0) {
-    // nothing here
-    return unindent(
-      `
-      public CommandBase ${ methodName(group.name) }() {
-        // Add a command to this group!
+function findSeedCommand(group: IR.ParGroup): IR.Invocation {
+  switch (group.commands.length) {
+    case 0:
+      return null;
+    case 1:
+      return group.commands[0];
+    default:
+      switch (group.endCondition) {
+        case "all":
+        case "any":
+          return group.commands[0];
+        default:
+          const uuid = group.endCondition;
+          return group.commands.find(c => c instanceof IR.CommandInvocation && c.command === uuid);
       }
-      `
-    ).trimStart().trimEnd();
-  }
-
-  if (group.commands.length === 1) {
-    return unindent(
-      `
-      public CommandBase ${ methodName(group.name) }() {
-        return ${ commandRef(findCommand(project, group.commands[0]), project) };
-      }
-      `
-    ).trimStart().trimEnd();
-  }
-
-  switch (group.type) {
-    case "SequentialGroup":
-      return generateSequentialCommand(group, project);
-    case "ParallelGroup":
-      return generateParallelCommand(group, project);
   }
 }
+
+function parBody(topLevelGroup: IR.Group, group: IR.ParGroup, project: Project): string {
+  switch (group.commands.length) {
+    case 0:
+      return '(/* empty group */)';
+    case 1:
+      return commandBody(topLevelGroup, group.commands[0], project);
+    default:
+      let decoratorMethod: string;
+      switch (group.endCondition) {
+        case "all":
+          decoratorMethod = "alongWith";
+          break;
+        case "any":
+          decoratorMethod = "raceWith";
+          break;
+        default:
+          decoratorMethod = "deadlineWith";
+          break;
+      }
+
+      const seedCommand = findSeedCommand(group);
+
+      return `${ commandBody(topLevelGroup, seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(c => c !== seedCommand).map(c => commandBody(topLevelGroup, c, project)).join(', ') })`
+  }
+}
+
