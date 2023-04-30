@@ -118,15 +118,82 @@ export type Invocation = CommandInvocation | Group;
  */
 export class ParamPlaceholder {
   readonly name: string;
-  readonly original?: ActionParamCallOption;
 
-  constructor(name: string, original?: ActionParamCallOption) {
+  readonly uuid: UUID<ParamPlaceholder> = uuidV4();
+
+  /**
+   * The base param on the command this param actually passes down to
+   */
+  readonly original: ActionParamCallOption;
+
+  /**
+   * The param(s) that this one is passed to within the command group.
+   *
+   * sequence((s, angle) => {
+   *   s.run("arm", "to-angle", angle)
+   * })
+   *
+   * the "angle" param on the "to-angle" command is pass through to the "angle" param on the sequence and is stored
+   * there
+   *
+   * Do not write to this array! Use #addPassthrough or #removePassthrough
+   */
+  readonly passthroughs: ParamPlaceholder[] = [];
+
+  /**
+   * The IDs of the passthrough params.  This is mostly used because checking for object equality inclusion in the
+   * passthroughs array tends to fail, resulting in passthroughs not getting removed/being added multiple times
+   * when they shouldn't be.
+   */
+  readonly passthroughIds: UUID<ParamPlaceholder>[] = [];
+
+  /**
+   * The hardcoded value for this placeholder.
+   */
+  hardcodedValue: string = null;
+
+  constructor(name: string, original: ActionParamCallOption, passthroughs: ParamPlaceholder[], hardcodedValue?: string) {
     this.name = name;
     this.original = original;
+    this.hardcodedValue = hardcodedValue ?? null;
+    passthroughs.forEach(p => this.addPassthrough(p));
   }
 
-  clone(): ParamPlaceholder {
-    return new ParamPlaceholder(this.name, this.original);
+  /**
+   * Checks if this param should appear on a command factory method.
+   */
+  appearsOnFactory(): boolean {
+    if (this.hardcodedValue) {
+      // Has a hardcoded value on the invocation
+      return false;
+    } else {
+      // Not hardcoded, but not used by any invocations under the hood
+      return this.passthroughs.length > 0;
+    }
+  }
+
+  addPassthrough(passthrough: ParamPlaceholder) {
+    if (this.passthroughs.includes(passthrough) || this.passthroughIds.includes(passthrough.uuid)) {
+      throw new Error(`Param "${ passthrough.name }"/${ passthrough.uuid } is already passed through!`);
+    }
+
+    this.passthroughs.push(passthrough);
+    this.passthroughIds.push(passthrough.uuid);
+  }
+
+  removePassthrough(passthrough: ParamPlaceholder): boolean {
+    if (!this.passesThroughTo(passthrough)) {
+      return false;
+    }
+
+    const index = this.passthroughIds.indexOf(passthrough.uuid);
+    this.passthroughs.splice(index, 1);
+    this.passthroughIds.splice(index, 1);
+    return true;
+  }
+
+  passesThroughTo(other: ParamPlaceholder): boolean {
+    return this.passthroughs.includes(other) || this.passthroughIds.includes(other.uuid);
   }
 }
 
@@ -141,16 +208,16 @@ export class CommandInvocation extends Decorable {
   /**
    * The UUID of the command being invoked.
    */
-  readonly command: UUID<CommandInvocation>;
+  readonly command: UUID<AtomicCommand | Group>;
 
   /**
    * The params to pass to the command. These are assumed to match 1-1 with the declared arguments to the command
    * factory. These can either be the param placeholders defined at the top-level group, or be arbitrary hardcoded
    * values.
    */
-  readonly params: (ParamPlaceholder | string)[] = [];
+  readonly params: ParamPlaceholder[] = [];
 
-  constructor(subsystems: UUID<Subsystem>[], command: UUID<CommandInvocation>, params: (ParamPlaceholder | string)[]) {
+  constructor(subsystems: UUID<Subsystem>[], command: UUID<CommandInvocation>, params: ParamPlaceholder[]) {
     super();
     this.subsystems = subsystems;
     this.command = command;
@@ -164,7 +231,7 @@ export class CommandInvocation extends Decorable {
       command.uuid,
       command.params
         .filter(p => p.invocationType !== "hardcode")
-        .map(p => new ParamPlaceholder(p.name, p))
+        .map(p => new ParamPlaceholder(p.name, p, [], null))
     )
   }
 
@@ -269,7 +336,7 @@ export class Group extends Decorable {
 
   runsCommand(command: UUID<AtomicCommand | Invocation>): boolean {
     return command === this.uuid ||
-           !!this.commands.find(c => c.runsCommand(command));
+      !!this.commands.find(c => c.runsCommand(command));
   }
 
   private addCommand(child: Invocation) {
@@ -323,7 +390,7 @@ type ConfigClosure<T> = (group: T, ...params: ParamPlaceholder[]) => void;
 export const sequence = function (configure: ConfigClosure<SeqGroup>): SeqGroup {
   const sequentialGroup = new SeqGroup();
   const params = getParams(configure).slice(1); // drop first param since it's the group. everything after is a param we want to capture
-  sequentialGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null)));
+  sequentialGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null, [])));
 
   configure(sequentialGroup, ...sequentialGroup.params);
   return sequentialGroup;
@@ -340,7 +407,7 @@ export const sequence = function (configure: ConfigClosure<SeqGroup>): SeqGroup 
 export const parallel = function (endCondition: ParallelEndCondition, configure: ConfigClosure<ParGroup>): ParGroup {
   const parallelGroup = new ParGroup(endCondition);
   const params = getParams(configure).slice(1); // drop first param since it's the group. everything after is a param we want to capture
-  parallelGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null)));
+  parallelGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null, [])));
 
   configure(parallelGroup, ...parallelGroup.params);
   return parallelGroup;

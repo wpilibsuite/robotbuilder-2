@@ -145,9 +145,9 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
         <Box>
           <Tabs centered value={ selectedTab } onChange={ handleChange }>
-            <Tab label="Subsystems" value={ "subsystems" }/>
-            <Tab label="Commands" value={ "commands" }/>
-            <Tab label="Controllers" value={ "controllers" }/>
+            <Tab id={ "robot-subsystems-tab" } label="Subsystems" value={ "subsystems" }/>
+            <Tab id={ "robot-commands-tab"} label="Commands" value={ "commands" }/>
+            <Tab id={ "robot-controllers-tab" } label="Controllers" value={ "controllers" }/>
           </Tabs>
         </Box>
       </Box>

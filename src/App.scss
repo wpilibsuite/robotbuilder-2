@@ -379,6 +379,11 @@ div.gutter {
       border: 1px dashed #444;
 
       color: #666;
+
+      &.idle {
+        border: 1px dashed #f44;
+        color: #f44;
+      }
     }
   }
 
@@ -421,10 +426,15 @@ div.gutter {
     background-color: #333333;
   }
 
+  .command-tile-wrapper {
+    width: 200px;
+  }
+
   .command-tile {
-    //width: 100%;
-    height: 20px;
+    width: calc(100% - 16px); // remove 8px from left and right to keep the element at 100% width with padding
+    height: 20px; // actual height is 36px with 8px padding on top and bottom
     display: flex;
+    flex-direction: column;
     justify-content: left;
     padding: 8px;
     background-color: #FF7F00;
@@ -437,7 +447,7 @@ div.gutter {
     .command-title {
       margin-bottom: 0;
       color: #111;
-      width: 100%;
+      //width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -464,9 +474,9 @@ div.gutter {
     &.leader-group-entry {
       //background-color: #FF7F00;
       //background: linear-gradient(to bottom, #fff17e, #788613);
-      display: flex;
-      flex-direction: row;
-      padding-left: 0;
+      //display: flex;
+      //flex-direction: row;
+      //padding-left: 0;
 
       .leader-icon {
         margin: 0 4px;

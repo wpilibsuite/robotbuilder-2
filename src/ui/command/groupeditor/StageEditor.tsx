@@ -83,6 +83,7 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
                                 project={ project }
                                 command={ command }
                                 stage={ stage }
+                                group={ sequence }
                                 onChange={ onChange }
                                 entryType={ entryType(stage, command) }/>
           } else {

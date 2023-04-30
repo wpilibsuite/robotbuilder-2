@@ -27,7 +27,6 @@ export class EditorCommandGroup {
       });
     } else if (group instanceof IR.ParGroup) {
       sequence.stages = [EditorStage.fromCommand(project, group)];
-      sequence.stages[0].name = group.name;
     } else {
       // ... shouldn't happen
     }
@@ -96,7 +95,10 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
     const ir = editorGroupToIR(project, group);
     setGeneratedCode(commandMethod(group.name, ir, project));
     // Restart background animations when elements are added or removed
-    document.getAnimations().forEach(a => a.startTime = 0);
+    if (document.getAnimations) {
+      // `getAnimations` is undefined in tests
+      document.getAnimations().forEach(a => a.startTime = 0);
+    }
   }
 
   return (
@@ -136,7 +138,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
         {
           group.stages.map((stage, index) => {
             return (
-              <StageEditor key={ JSON.stringify(stage) + `${ index }` }
+              <StageEditor key={ `${ stage.name} | ${ index }` }
                            sequence={ group }
                            stage={ stage }
                            project={ project }

@@ -12,7 +12,7 @@ const flattenCommands = (allCommands: IR.CommandInvocation[], group: IR.Group) =
   return allCommands;
 }
 
-function findParamTypes(invokedCommands: IR.CommandInvocation[], p: ParamPlaceholder, project: Project): string {
+function findParamType(invokedCommands: IR.CommandInvocation[], p: ParamPlaceholder, project: Project): string {
   const realParam = p.original;
   if (realParam) {
     const actionParam = project.subsystems.flatMap(s => s.actions).find(a => a.uuid === realParam.action).params.find(p => p.uuid === realParam.param);
@@ -32,11 +32,12 @@ function findParamTypes(invokedCommands: IR.CommandInvocation[], p: ParamPlaceho
 }
 
 export function commandMethod(name: string, command: IR.Group, project: Project): string {
+  console.log('[COMMAND-METHOD] Generating factory method for command group', command);
   const invokedCommands = flattenCommands([], command);
 
-  const params = command.params.map(p => {
-    const paramType = findParamTypes(invokedCommands, p, project);
-    return `${ paramType } ${ p.name }`;
+  const params = command.params.filter(p => p.appearsOnFactory()).map(p => {
+    const paramType = findParamType(invokedCommands, p, project);
+    return `${ paramType } ${ variableName(p.name) }`;
   }).join(', ');
 
   const stageLine = (line, lineno) => {
@@ -44,28 +45,13 @@ export function commandMethod(name: string, command: IR.Group, project: Project)
       return line;
     } else {
       const baseIndentation = 6 + 'return '.length;
-      if (command.commands[0] instanceof IR.CommandInvocation) {
-        const ownerRef = generateOwnerRef(command.commands[0], project);
-        return indent(line, baseIndentation + ownerRef.length - 1 + (ownerRef === '' ? 2 : 0));
-      } else if (command.commands[0] instanceof IR.ParGroup) {
-        // incorrect, since the first command in the nested group may not be the seed command!
-        let seed = findSeedCommand(command.commands[0]);
-        while (seed instanceof IR.ParGroup) {
-          seed = findSeedCommand(seed)
-        }
-        if (!seed) {
-          return indent(line, baseIndentation + 2);
-        }
-        return indent(line, baseIndentation + generateOwnerRef(seed as IR.CommandInvocation, project).length - 1);
-      } else {
-        return indent(line, baseIndentation + 2);
-      }
+      return indent(line, baseIndentation + 2);
     }
   };
 
   let body = '/* Add some commands! */';
   if (command.commands.length > 0) {
-    body = 'return ' + commandBody(command, project).split('\n').map(stageLine).join('\n');
+    body = 'return ' + commandBody(command, command, project).split('\n').map(stageLine).join('\n');
   }
 
   return unindent(
@@ -114,26 +100,33 @@ function generateOwnerRef(command: IR.CommandInvocation, project: Project, forMa
   }
 }
 
-function commandBody(command: IR.Invocation, project: Project): string {
+function commandBody(topLevelGroup: IR.Group, command: IR.Invocation, project: Project): string {
   const decoratorCalls = decorators(command.decorators);
 
   let base = '';
   if (command instanceof IR.CommandInvocation) {
     const ownerRef = generateOwnerRef(command, project);
     const params = command.params.map(p => {
-      if (p instanceof IR.ParamPlaceholder) {
-        return p.name;
-      } else { // hardcoded values
-        return p;
+      if (p.hardcodedValue) {
+        return p.hardcodedValue;
+      } else {
+        const args = topLevelGroup.params.filter(a => a.passesThroughTo(p));
+
+        if (args.length === 1) {
+          return variableName(args[0].name);
+        } else {
+          // This shouldn't happen, but just in case the validation checks fall through...
+          return `/* ${ args.length } passthroughs to ${ p.name }! ${ args.map(a => a.name).join(' and ') } */`
+        }
       }
     }).join(', ');
 
     const calledCommand = findCommand(project, command.command);
     base = `${ ownerRef }${ methodName(calledCommand?.name ?? 'unknown command') }(${ params })`;
   } else if (command instanceof IR.SeqGroup) {
-    base = seqBody(command, project);
+    base = seqBody(topLevelGroup, command, project);
   } else if (command instanceof IR.ParGroup) {
-    base = parBody(command, project);
+    base = parBody(topLevelGroup, command, project);
   }
 
   if (decoratorCalls) {
@@ -143,14 +136,14 @@ function commandBody(command: IR.Invocation, project: Project): string {
   }
 }
 
-function seqBody(group: IR.SeqGroup, project: Project): string {
+function seqBody(topLevelGroup: IR.Group, group: IR.SeqGroup, project: Project): string {
   switch (group.commands.length) {
     case 0:
       return '(/* empty group */)';
     case 1:
-      return commandBody(group.commands[0], project);
+      return commandBody(topLevelGroup, group.commands[0], project);
     default:
-      return `${ commandBody(group.commands[0], project) }${ group.commands.slice(1).map(c => commandBody(c, project)).map(c => `\n.andThen(${ c })`).join('') }`
+      return `${ commandBody(topLevelGroup, group.commands[0], project) }${ group.commands.slice(1).map(c => commandBody(topLevelGroup, c, project)).map(c => `\n.andThen(${ c })`).join('') }`
   }
 }
 
@@ -172,12 +165,12 @@ function findSeedCommand(group: IR.ParGroup): IR.Invocation {
   }
 }
 
-function parBody(group: IR.ParGroup, project: Project): string {
+function parBody(topLevelGroup: IR.Group, group: IR.ParGroup, project: Project): string {
   switch (group.commands.length) {
     case 0:
       return '(/* empty group */)';
     case 1:
-      return commandBody(group.commands[0], project);
+      return commandBody(topLevelGroup, group.commands[0], project);
     default:
       let decoratorMethod: string;
       switch (group.endCondition) {
@@ -194,7 +187,7 @@ function parBody(group: IR.ParGroup, project: Project): string {
 
       const seedCommand = findSeedCommand(group);
 
-      return `${ commandBody(seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(c => c !== seedCommand).map(c => commandBody(c, project)).join(', ') })`
+      return `${ commandBody(topLevelGroup, seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(c => c !== seedCommand).map(c => commandBody(topLevelGroup, c, project)).join(', ') })`
   }
 }
 

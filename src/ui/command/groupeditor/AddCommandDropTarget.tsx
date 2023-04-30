@@ -5,6 +5,7 @@ import Menu from "@mui/material/Menu";
 import { Button, Divider, MenuItem } from "@mui/material";
 import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
 import * as IR from '../../../bindings/ir'
+import { variableName } from "../../../codegen/java/util";
 
 type AddCommandDropTargetProps = {
   sequence: EditorCommandGroup;
@@ -56,18 +57,36 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
       let wrapper: IR.CommandInvocation;
       if (command instanceof AtomicCommand) {
         // wrap in a command invocation
+        // TODO: Prevent name collisions
         wrapper = IR.CommandInvocation.fromAtomicCommand(command);
       } else {
         console.log('Wrapping', command);
         wrapper = new IR.CommandInvocation(
           command.requirements(),
           command.uuid,
-          command.params.map(p => p.clone())
+          command.params
+            .filter(p => p.appearsOnFactory())
+            .map(p => {
+              let varname = variableName(p.name);
+              const existingParamNames = sequence.stages.flatMap(s => s.group.params).map(p => variableName(p.name));
+              let i = 2;
+              let needsSuffix = false;
+              while (existingParamNames.includes(varname)) {
+                // conflict! increment a number suffix until we get a unique name
+                // TODO: Maybe track index numbers separately?
+                varname = `${ variableName(p.name) }${ i }`;
+                i++;
+                needsSuffix = true;
+              }
+              return new IR.ParamPlaceholder((needsSuffix ? `${ p.name } ${ i }` : p.name), p.original, [p], null);
+            })
         )
       }
       stage.group.commands.push(wrapper);
       // bubble up any required params
-      stage.group.params.push(...wrapper.params.filter(p => p instanceof IR.ParamPlaceholder) as IR.ParamPlaceholder[]);
+      stage.group.params.push(...wrapper.params.map(p => {
+        return new IR.ParamPlaceholder(p.name, p.original, [p], null);
+      }));
       onChange(stage);
       handleClose();
     };
@@ -86,13 +105,15 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
 
   console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd);
 
+  const inUse = !!sequence.stages.find(s => s.group.requirements().includes(subsystem.uuid));
+
   return (
     <div>
-      <Button className={ "command-drop-target" }
+      <Button className={ `command-drop-target ${ inUse ? 'idle' : 'open' }` }
               onClick={ handleContextMenu }
               disabled={ availableCommandsToAdd.length < 1 }>
         {
-          availableCommandsToAdd.length > 0 ?
+          availableCommandsToAdd.length > 0 && !inUse ?
             '+ Add Command' :
             'Idle' // No commands available for this subsystem
         }

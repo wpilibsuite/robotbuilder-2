@@ -56,7 +56,7 @@ test("empty nested groups with params", () => {
 
   const code = commandMethod(null, group, EMPTY_PROJECT);
   expect(code).toEqual(unindent(`
-    public CommandBase null(/* unknown */ p1, /* unknown */ p2) {
+    public CommandBase null() {
       return (/* empty group */).repeatedly().until(() -> someCond)
                .andThen((/* empty group */).withTimeout(15 /* seconds */).unless(() -> someOtherCond));
     }

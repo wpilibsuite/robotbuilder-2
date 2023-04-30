@@ -64,36 +64,6 @@ export function editorGroupToIR(project: Project, editorGroup: EditorCommandGrou
   } else {
     return createSequentialGroup(project, editorGroup);
   }
-
-  const group = new IR.SeqGroup();
-  group.commands.push(...relevantStages.map(stage => stageToIR(project, stage)).map(g => {
-    if (g.commands.length === 1) {
-      // special case: unwrap single-command groups and inline the nested command invocation directly
-      return g.commands[0];
-    } else {
-      return g;
-    }
-  }));
-  group.params.push(...uniqueBy(group.commands.flatMap(c => c.params).flatMap(filterAs(IR.ParamPlaceholder)), p => p.name));
-  return group;
-}
-
-function uniqueBy<T, V>(values: T[], by: (value: T) => V): T[] {
-  const arr: T[] = [];
-  const seen: Set<V> = new Set();
-  values.forEach(v => {
-    const check = by(v);
-    if (!seen.has(check)) {
-      seen.add(check);
-      arr.push(v);
-    }
-  })
-
-  return arr;
-}
-
-function stageToIR(project: Project, stage: EditorStage): IR.ParGroup {
-  return stage.group;
 }
 
 function filterAs<T>(type: new (...a: any) => T): (value: any) => [T] | [] {
@@ -149,8 +119,11 @@ export function Commands({ project }: { project: Project }) {
           <CommandList title={ "Command Groups" }
                        commands={ project.commands }
                        requestEdit={ requestGroupEdit }/>
-          <Button onClick={ () => {
-            const group = IR.sequence((s) => s.name = "New Command Group")
+          <Button id="new-command-group-button" onClick={ () => {
+            const group = IR.sequence((s) => {
+              s.name = "New Command Group";
+              s.parallel("all", (p) => p.name = "Stage 1")
+            })
             requestGroupEdit(group);
           } }>
             Create New Group
