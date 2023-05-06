@@ -459,6 +459,7 @@ div.gutter {
 
     &.racer-group-entry {
       background-color: #FF7F00;
+      width: calc(100% - 16px);
 
       // clip the top-right and bottom-right corners so we get an arrow shape
       clip-path: polygon(
@@ -489,6 +490,7 @@ div.gutter {
     &.follower-group-entry {
       //background-color: #007900;
       margin-left: 20px;
+      width: calc(100% - 16px - 20px);
 
       // clip the top-right and bottom-right corners so we get an arrow shape
       clip-path: polygon(
