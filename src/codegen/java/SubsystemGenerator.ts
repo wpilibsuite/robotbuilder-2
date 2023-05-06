@@ -7,11 +7,11 @@ import { generateAction_future } from "./ActionGenerator";
 import { Property } from "../../components/ComponentDefinition";
 
 
-function propertyToValue(type: string, value, subsystem): string {
+function propertyToValue(type: string, value: string | any[], subsystem: Subsystem): string {
   console.debug('propertyToValue(', type, ', ', value, ', ', subsystem, ')');
   if (!type) return 'null';
 
-  if (!value) {
+  if (value === null || value === undefined || value === '') {
     console.warn('No value provided!');
     return "/* You forgot to set a value! */";
   }

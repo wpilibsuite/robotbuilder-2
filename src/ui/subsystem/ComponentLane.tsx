@@ -25,6 +25,7 @@ import {
   Input,
   Paper,
   Select,
+  Switch,
   TextField, Tooltip
 } from "@mui/material";
 import Menu from "@mui/material/Menu";
@@ -198,7 +199,7 @@ function ComponentDialog({
 
   const isTemplateAvailable = (name: string): boolean => {
     console.debug(`[COMPONENT-DIALOG] Checking if template "${ name }" is available in`, newComponentTemplates);
-    return !!newComponentTemplates.find(t => t.name === name);
+    return newComponentTemplates.some(t => t.name === name);
   }
 
   return (
@@ -250,7 +251,6 @@ function ComponentDialog({
                         case "long":
                         case "double":
                           // TODO: Allow integer only input for int/long.  Maybe allow props to define pass/reject functions?
-                          // TODO: Checkbox or toggle for booleans?
                           return <Input type="number"
                                         key={ `prop-input-${ prop.name }` }
                                         value={ newComponentProperties[prop.codeName] ?? '' }
@@ -259,6 +259,14 @@ function ComponentDialog({
                                           props[prop.codeName] = e.target.value;
                                           setNewComponentProperties(props);
                                         } }/>
+                        case "boolean":
+                          return <Switch key={ `prop-input-${ prop.name }` }
+                                         value={ newComponentProperties[prop.codeName] }
+                                         onChange={ (e) => {
+                                          const props = { ...newComponentProperties };
+                                          props[prop.codeName] = e.target.checked;
+                                          setNewComponentProperties(props);
+                                         } }/>;
                         default:
                           if (prop.type.startsWith("vararg")) {
                             // assume variadic components because variadic primitives is odd
@@ -379,7 +387,7 @@ function ComponentDialog({
           {
             newComponentDefinition?.templates?.actions?.map(actionTemplate => {
               const checkbox = (<FormGroup key={ actionTemplate.name }>
-                <FormControlLabel label={ `Generate action: ${ actionTemplate.name }` }
+                <FormControlLabel label={ `Generate action: ${ actionTemplate.name.replaceAll(/\$self/g, newComponentName) }` }
                                   control={ <Checkbox key={ actionTemplate.name } onClick={ (e) => {
                                     if (newComponentTemplates.includes(actionTemplate)) {
                                       setNewComponentTemplates(newComponentTemplates.filter(t => t !== actionTemplate));
@@ -457,7 +465,7 @@ function ComponentDialog({
 
 function buildActionFromTemplate(template: ActionTemplate, component: SubsystemComponent, subsystem: Subsystem): SubsystemAction | null {
   console.debug('[BUILD-ACTION-FROM-TEMPLATE]', template, component, subsystem);
-  const name = template.name;
+  const name = template.name.replaceAll(/\$self/g, component.name);
 
   if (subsystem.actions.find(a => a.name === name)) {
     // TODO: Maybe rename the action instead of quitting
