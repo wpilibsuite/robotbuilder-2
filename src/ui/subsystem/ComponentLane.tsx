@@ -126,7 +126,7 @@ export function ComponentLane({ subsystem, componentType, components, onChange }
                            const templates = changedComponent.definition.templates;
                            if (templates) {
                              const newStates = templates?.states.filter(ts => generatedTemplates.includes(ts)).map(stateTemplate => {
-                               return null;
+                              return buildStateFromTemplate(stateTemplate, changedComponent, subsystem);
                              }).filter(s => !!s);
                              subsystem.states.push(...newStates);
 
@@ -161,6 +161,12 @@ type ComponentDialogProps = {
   editedComponent: SubsystemComponent | null;
   onChange: (changedComponent: SubsystemComponent, generatedTemplates: (StateTemplate | ActionTemplate | CommandTemplate)[]) => void;
   onCancel: () => void;
+}
+
+function stringTemplate(template: string, componentName: string): string {
+  if (template === undefined || template === null) return '';
+
+  return template.replaceAll(/\$self/g, componentName);
 }
 
 function ComponentDialog({
@@ -199,7 +205,7 @@ function ComponentDialog({
 
   const isTemplateAvailable = (name: string): boolean => {
     console.debug(`[COMPONENT-DIALOG] Checking if template "${ name }" is available in`, newComponentTemplates);
-    return newComponentTemplates.some(t => t.name === name);
+    return newComponentTemplates.some(t => stringTemplate(t.name, newComponentName) === name);
   }
 
   return (
@@ -360,19 +366,22 @@ function ComponentDialog({
         <Box>
           {
             newComponentDefinition?.templates?.states?.map(stateTemplate => {
+              const stateName = stringTemplate(stateTemplate.name, newComponentName);
+              const stateDescription = stringTemplate(stateTemplate.description, newComponentName);
+              
               const checkbox = (<FormGroup key={ stateTemplate.name }>
-                <FormControlLabel label={ `Generate state: ${ stateTemplate.name }` }
-                                  control={ <Checkbox key={ stateTemplate.name } onClick={ (e) => {
+                <FormControlLabel label={ `Generate state: ${ stateName }` }
+                                  control={ <Checkbox key={ stateName } onClick={ (e) => {
                                     if (newComponentTemplates.includes(stateTemplate)) {
                                       setNewComponentTemplates(newComponentTemplates.filter(t => t !== stateTemplate));
                                     } else {
                                       setNewComponentTemplates(newComponentTemplates.concat(stateTemplate));
                                     }
-                                  } } checked={ isTemplateAvailable(stateTemplate.name) }/> }/>
+                                  } } checked={ isTemplateAvailable(stateName) }/> }/>
               </FormGroup>);
 
               if (stateTemplate.description) {
-                return (<Tooltip title={ stateTemplate.description } key={ stateTemplate.name }>
+                return (<Tooltip title={ stateDescription } key={ stateName }>
                   { checkbox }
                 </Tooltip>)
               } else {
@@ -386,19 +395,22 @@ function ComponentDialog({
         <Box>
           {
             newComponentDefinition?.templates?.actions?.map(actionTemplate => {
+              const actionName = stringTemplate(actionTemplate.name, newComponentName);
+              const actionDescription = stringTemplate(actionTemplate.description, newComponentName);
+
               const checkbox = (<FormGroup key={ actionTemplate.name }>
-                <FormControlLabel label={ `Generate action: ${ actionTemplate.name.replaceAll(/\$self/g, newComponentName) }` }
-                                  control={ <Checkbox key={ actionTemplate.name } onClick={ (e) => {
+                <FormControlLabel label={ `Generate action: ${ actionName }` }
+                                  control={ <Checkbox key={ actionName } onClick={ (e) => {
                                     if (newComponentTemplates.includes(actionTemplate)) {
                                       setNewComponentTemplates(newComponentTemplates.filter(t => t !== actionTemplate));
                                     } else {
                                       setNewComponentTemplates(newComponentTemplates.concat(actionTemplate));
                                     }
-                                  } } checked={ isTemplateAvailable(actionTemplate.name) }/> }/>
+                                  } } checked={ isTemplateAvailable(actionName) }/> }/>
               </FormGroup>);
 
               if (actionTemplate.description) {
-                return (<Tooltip title={ actionTemplate.description } key={ actionTemplate.name }>
+                return (<Tooltip title={ actionDescription } key={ actionName }>
                   { checkbox }
                 </Tooltip>)
               } else {
@@ -412,19 +424,22 @@ function ComponentDialog({
         <Box>
           {
             newComponentDefinition?.templates?.commands?.map(commandTemplate => {
-              const checkbox = (<FormGroup key={ commandTemplate.name }>
-                <FormControlLabel label={ `Generate command: ${ commandTemplate.name }` }
-                                  control={ <Checkbox key={ commandTemplate.name } onClick={ (e) => {
+              const commandName = stringTemplate(commandTemplate.name, newComponentName);
+              const commandDescription = stringTemplate(commandTemplate.description, newComponentName);
+
+              const checkbox = (<FormGroup key={ commandName }>
+                <FormControlLabel label={ `Generate command: ${ commandName }` }
+                                  control={ <Checkbox key={ commandName } onClick={ (e) => {
                                     if (newComponentTemplates.includes(commandTemplate)) {
                                       setNewComponentTemplates(newComponentTemplates.filter(t => t !== commandTemplate));
                                     } else {
                                       setNewComponentTemplates(newComponentTemplates.concat(commandTemplate));
                                     }
-                                  } } checked={ isTemplateAvailable(commandTemplate.name) }/> }/>
+                                  } } checked={ isTemplateAvailable(commandName) }/> }/>
               </FormGroup>);
 
               if (commandTemplate.description) {
-                return (<Tooltip title={ commandTemplate.description } key={ commandTemplate.name }>
+                return (<Tooltip title={ commandDescription } key={ commandName }>
                   { checkbox }
                 </Tooltip>)
               } else {
@@ -461,6 +476,26 @@ function ComponentDialog({
       </DialogActions>
     </Dialog>
   )
+}
+
+function buildStateFromTemplate(template: StateTemplate, component: SubsystemComponent, subsystem: Subsystem): SubsystemState | null {
+  console.debug('[BUILD-STATE-FROM-TEMPLATE]', template, component, subsystem);
+  const name = stringTemplate(template.name, component.name);
+
+  if (subsystem.states.some(s => s.name === name)) {
+    // TODO: Maybe rename the action instead of quitting
+    console.debug(`[BUILD-STATE-FROM-TEMPLATE] An action already exists with name "${ name }", skipping...`);
+    return null;
+  }
+
+  const state = new SubsystemState(name, subsystem.uuid);
+  state.step = new SubsystemActionStep({
+    component: component.uuid,
+    methodName: template.step.methodName,
+    params: template.step.params
+  })
+
+  return state;
 }
 
 function buildActionFromTemplate(template: ActionTemplate, component: SubsystemComponent, subsystem: Subsystem): SubsystemAction | null {

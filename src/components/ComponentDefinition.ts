@@ -29,6 +29,7 @@ type MethodCallStepTemplate = {
 export type StateTemplate = {
   name: string;
   description?: string;
+  step: StepTemplate;
 }
 
 export type ActionTemplate = {
