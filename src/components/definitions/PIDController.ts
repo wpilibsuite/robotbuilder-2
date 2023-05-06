@@ -152,5 +152,69 @@ export const PID_CONTROLLER: ComponentDefinition = {
         ]
       }
     }
-  ]
+  ],
+  templates: {
+    actions: [
+      {
+        name: 'Reset $self',
+        description: 'Resets the internal state of $self. Use this when changing setpoints.',
+        params: [],
+        steps: [
+          {
+            target: '$self',
+            type: 'method-call',
+            methodName: 'reset',
+            params: []
+          }
+        ]
+      },
+      {
+        name: 'Set $self Target',
+        description: 'Sets the target setpoint for $self. Calling the calculate method on $self after this will output values to control the mechanism to reach the target.',
+        params: [
+          {
+            name: 'target',
+            type: 'double'
+          }
+        ],
+        steps: [
+          {
+            target: '$self',
+            type: 'method-call',
+            methodName: 'reset',
+            params: []
+          },
+          {
+            target: '$self',
+            type: 'method-call',
+            methodName: 'setSetpoint',
+            params: [
+              {
+                paramName: 'setpoint',
+                arg: {
+                  type: 'define-passthrough-value',
+                  passthroughArgumentName: 'target'
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    states: [
+      {
+        name: '$self At Target',
+        description: 'Checks if $self has reached the last known setpoint, within the tolerance bound. Setting a nonzero tolerance is highly recommended.',
+        step: {
+          type: 'method-call',
+          target: '$self',
+          methodName: 'atSetpoint',
+          params: []
+        }
+      }
+    ],
+    commands: [
+
+    ]
+  }
 }
