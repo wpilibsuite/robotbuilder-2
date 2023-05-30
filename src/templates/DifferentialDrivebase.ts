@@ -1,25 +1,22 @@
 import { ActionParamCallOption, Param, Subsystem, SubsystemActionStep, SubsystemComponent } from "../bindings/Command";
 
 import { CAN_TALON_FX } from "../components/definitions/TalonFX";
-import { MOTOR_CONTROLLER_GROUP } from "../components/definitions/MotorControllerGroup";
 import { DIFFERENTIAL_DRIVE } from "../components/definitions/DifferentialDrive";
 import { ANALOG_GYRO } from "../components/definitions/AnalogGyro";
 import { PID_CONTROLLER } from "../components/definitions/PIDController";
 
 /**
- * Creates a new subsystem using a differential drive base.  Includes definitions for four motors,
+ * Creates a new subsystem using a differential drivetrain.  Includes definitions for four motors,
  * a gyro, and a PID controller to control turning, and actions and commands for using them.
  */
 export function differentialDrivebaseTemplate() {
-  const drivebase = new Subsystem();
-  drivebase.name = "Drive Base";
+  const drivetrain = new Subsystem();
+  drivetrain.name = "Drivetrain";
 
   const frontLeftMotor = new SubsystemComponent("Front Left Motor", CAN_TALON_FX, { deviceNumber: 1 });
   const backLeftMotor = new SubsystemComponent("Back Left Motor", CAN_TALON_FX, { deviceNumber: 2 });
   const frontRightMotor = new SubsystemComponent("Front Right Motor", CAN_TALON_FX, { deviceNumber: 3 });
   const backRightMotor = new SubsystemComponent("Back Right Motor", CAN_TALON_FX, { deviceNumber: 4 });
-  const leftMotorGroup = new SubsystemComponent("Left Motors", MOTOR_CONTROLLER_GROUP, { motors: [frontLeftMotor.uuid, backLeftMotor.uuid] });
-  const rightMotorGroup = new SubsystemComponent("Right Motors", MOTOR_CONTROLLER_GROUP, { motors: [frontRightMotor.uuid, backRightMotor.uuid] });
   const differentialDrive = new SubsystemComponent("Differential Drive", DIFFERENTIAL_DRIVE, {
     leftMotors: [frontLeftMotor.uuid, backLeftMotor.uuid],
     rightMotors: [frontRightMotor.uuid, backRightMotor.uuid]
@@ -33,19 +30,17 @@ export function differentialDrivebaseTemplate() {
     tolerance: "1"
   })
 
-  drivebase.components = [
+  drivetrain.components = [
     gyro,
     frontLeftMotor,
     backLeftMotor,
     frontRightMotor,
     backRightMotor,
-    leftMotorGroup,
-    rightMotorGroup,
     differentialDrive,
     turningPIDController
   ];
 
-  const stopAction = drivebase.createAction("Stop");
+  const stopAction = drivetrain.createAction("Stop");
   stopAction.steps = [
     new SubsystemActionStep({
       component: differentialDrive.uuid,
@@ -55,7 +50,7 @@ export function differentialDrivebaseTemplate() {
     })
   ];
 
-  const tankDriveAction = drivebase.createAction("Tank Drive");
+  const tankDriveAction = drivetrain.createAction("Tank Drive");
   tankDriveAction.params = [
     Param.create("leftSpeed", "double"),
     Param.create("rightSpeed", "double"),
@@ -92,7 +87,7 @@ export function differentialDrivebaseTemplate() {
     })
   ];
 
-  const arcadeDriveAction = drivebase.createAction("Arcade Drive");
+  const arcadeDriveAction = drivetrain.createAction("Arcade Drive");
   arcadeDriveAction.params = [
     Param.create("xSpeed", "double"),
     Param.create("zRotation", "double"),
@@ -129,7 +124,7 @@ export function differentialDrivebaseTemplate() {
     })
   ];
 
-  const turnToAngleAction = drivebase.createAction("Turn to Target Angle");
+  const turnToAngleAction = drivetrain.createAction("Turn to Target Angle");
   turnToAngleAction.params = [];
   turnToAngleAction.steps = [
     new SubsystemActionStep({
@@ -182,7 +177,7 @@ export function differentialDrivebaseTemplate() {
     })
   ];
 
-  const setTargetTurningAngleAction = drivebase.createAction("Set Target Turning Angle");
+  const setTargetTurningAngleAction = drivetrain.createAction("Set Target Turning Angle");
   setTargetTurningAngleAction.params = [
     Param.create("setpoint", "double")
   ];
@@ -209,30 +204,30 @@ export function differentialDrivebaseTemplate() {
     })
   ];
 
-  drivebase.createState("Stopped");
-  const atAngleState = drivebase.createState("At Turning Angle");
+  drivetrain.createState("Stopped");
+  const atAngleState = drivetrain.createState("At Turning Angle");
   atAngleState.step = new SubsystemActionStep({
     component: turningPIDController.uuid,
     methodName: 'atSetpoint',
     params: []
   });
 
-  const stopCommand = drivebase.createCommand("Stop", stopAction, "once");
-  const tankDriveCommand = drivebase.createCommand("Drive with Speeds", tankDriveAction, "forever");
+  const stopCommand = drivetrain.createCommand("Stop", stopAction, "once");
+  const tankDriveCommand = drivetrain.createCommand("Drive with Speeds", tankDriveAction, "forever");
   tankDriveCommand.params = [
     ActionParamCallOption.fromObjects(tankDriveAction, tankDriveAction.params[0], "passthrough-value"),
     ActionParamCallOption.fromObjects(tankDriveAction, tankDriveAction.params[1], "passthrough-value"),
     ActionParamCallOption.fromObjects(tankDriveAction, tankDriveAction.params[2], "hardcode", "false")
   ];
 
-  const arcadeDriveCommand = drivebase.createCommand("Arcade Drive with Joysticks", arcadeDriveAction, "forever");
+  const arcadeDriveCommand = drivetrain.createCommand("Arcade Drive with Joysticks", arcadeDriveAction, "forever");
   arcadeDriveCommand.params = [
     ActionParamCallOption.fromObjects(arcadeDriveAction, arcadeDriveAction.params[0], "passthrough-supplier"),
     ActionParamCallOption.fromObjects(arcadeDriveAction, arcadeDriveAction.params[1], "passthrough-supplier"),
     ActionParamCallOption.fromObjects(arcadeDriveAction, arcadeDriveAction.params[2], "hardcode", "true")
   ];
 
-  const turnToAngleCommand = drivebase.createCommand("Turn To Angle", turnToAngleAction, atAngleState.uuid);
+  const turnToAngleCommand = drivetrain.createCommand("Turn To Angle", turnToAngleAction, atAngleState.uuid);
   turnToAngleCommand.params = [
     ActionParamCallOption.fromObjects(setTargetTurningAngleAction, setTargetTurningAngleAction.params[0], "passthrough-value")
   ];
@@ -240,5 +235,5 @@ export function differentialDrivebaseTemplate() {
   turnToAngleCommand.toComplete = [stopAction.uuid];
   turnToAngleCommand.toInterrupt = []; // we could also run the stop action here
 
-  return drivebase;
+  return drivetrain;
 }

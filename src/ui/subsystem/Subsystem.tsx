@@ -1148,10 +1148,10 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
       <Button onClick={ newDriveBase }>
         <Box>
           <Tooltip
-            title={ "A robot has to move around somehow!  This supports the three most common drive base types: differential drives (also called skid-steer or tank drive); swerve drives; and mecanum drives." }>
-            <h3>Drive Base</h3>
+            title={ "A robot has to move around somehow!  This supports the three most common drive train types: differential drives (also called skid-steer or tank drive); swerve drives; and mecanum drives." }>
+            <h3>Drivetrain</h3>
           </Tooltip>
-          <img src={ "logo192.png" } alt={ "" } title={ "DRIVE BASE IMAGE" }/>
+          <img src={ "logo192.png" } alt={ "" } title={ "DRIVETRAIN IMAGE" }/>
         </Box>
       </Button>
       <Button onClick={ () => alert('Not implemented yet') }>

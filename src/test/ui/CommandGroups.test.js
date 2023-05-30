@@ -10,8 +10,8 @@ function setup() {
   render(<ProjectView initialProject={ project } />);
 
   act(() => click(document.getElementById("robot-subsystems-tab")));
-  // create a drive base template
-  act(() => click(screen.getByText("Drive Base")))
+  // create a drive train template
+  act(() => click(screen.getByText("Drivetrain")))
 
   act(() => click(document.getElementById("robot-commands-tab")));
   act(() => click(document.getElementById("new-command-group-button")));
