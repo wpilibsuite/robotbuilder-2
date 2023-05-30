@@ -303,31 +303,26 @@ export class Subsystem {
    */
   name: string;
 
-  uuid: string;
+  uuid: string = uuidV4();
 
   /**
    * The possible actions the subsystem can perform.
    */
-  actions: SubsystemAction[];
+  actions: SubsystemAction[] = [];
 
   /**
    * The possible states that the subsystem exposes to commands.
    */
-  states: SubsystemState[];
+  states: SubsystemState[] = [];
 
   /**
    * The UUIDs of all the atomic commands that require this subsystem.
    */
-  commands: AtomicCommand[];
+  commands: AtomicCommand[] = [];
 
-  components: SubsystemComponent[];
+  components: SubsystemComponent[] = [];
 
   constructor() {
-    this.uuid = uuidV4();
-    this.actions = [];
-    this.states = [];
-    this.commands = [];
-    this.components = [];
   }
 
   addAction(action: SubsystemAction) {
@@ -364,15 +359,15 @@ export class Subsystem {
     return command;
   }
 
-  public getSensors() {
+  public getSensors(): SubsystemComponent[] {
     return this.components.filter(c => c.type === "sensor");
   }
 
-  public getActuators() {
+  public getActuators(): SubsystemComponent[] {
     return this.components.filter(c => c.type === "actuator");
   }
 
-  public getControls() {
+  public getControls(): SubsystemComponent[] {
     return this.components.filter(c => c.type === "control");
   }
 }
