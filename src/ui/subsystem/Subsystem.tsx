@@ -13,32 +13,38 @@ import {
   SubsystemState
 } from "../../bindings/Command";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Card,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle, Divider,
   Paper,
   Select,
+  SxProps,
   Tab,
   Tabs,
-  TextField, Tooltip
+  TextField, Theme, Tooltip
 } from "@mui/material";
 import React, { CSSProperties, useEffect, useState } from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { MethodDefinition, ParameterDefinition } from "../../components/ComponentDefinition";
+import { ComponentDefinition, MethodDefinition, ParameterDefinition } from "../../components/ComponentDefinition";
 import { generateCommand } from "../../codegen/java/CommandGenerator";
 import { generateSubsystem } from "../../codegen/java/SubsystemGenerator";
-import { ComponentLane } from "./ComponentLane";
 import { generateAction_future } from "../../codegen/java/ActionGenerator";
 import { generateState } from "../../codegen/java/StateGenerator";
 import { differentialDrivebaseTemplate } from "../../templates/DifferentialDrivebase";
+import { ComponentColumn } from "./ComponentColumn";
+import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions";
+import { HelpableLabel } from "../HelpableLabel";
+import { ChevronRightSharp } from "@mui/icons-material";
 
 
 type BasicOpts = {
@@ -65,77 +71,283 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
     setCommands(subsystem.commands);
   }, [subsystem, project]);
 
+  const columnHeaderSx: SxProps<Theme> = {
+    // fontWeight: '400',
+    // '&.Mui-expanded': {
+    //   backgroundColor: "#333",
+    //   color: '#eee',
+    //   fontWeight: 'bold'
+    // }
+    fontWeight: 'bold',
+    backgroundColor: '#eee',
+  };
+
+  const onComponentChange = (component: SubsystemComponent) => {
+    setGeneratedCode(generateSubsystem(subsystem, project));
+  }
+
+  const onComponentAdd = (componentDef: ComponentDefinition) => {
+    const newComponent = new SubsystemComponent(`New ${ componentDef.name }`, componentDef, {});
+    subsystem.components.push(newComponent);
+    switch (componentDef.type) {
+      case "actuator":
+        setActuators(subsystem.getActuators());
+        break;
+      case "sensor":
+        setSensors(subsystem.getSensors());
+        break;
+      case "control":
+        setControls(subsystem.getControls());
+        break;
+    }
+  }
+
+  const onComponentDelete = (removedComponent: SubsystemComponent) => {
+    subsystem.components = subsystem.components.filter(c => c !== removedComponent);
+    switch (removedComponent.definition.type) {
+      case "actuator":
+        setActuators(subsystem.getActuators());
+        break;
+      case "sensor":
+        setSensors(subsystem.getSensors());
+        break;
+      case "control":
+        setControls(subsystem.getControls());
+        break;
+    }
+  }
+
   return (
     <Box className="subsystem-pane" style={ {} }>
-      <ComponentLane subsystem={ subsystem }
-                     componentType="sensor"
-                     components={ sensors }
-                     onChange={ (newSensors) => {
-                       console.log('Setting sensors to', newSensors);
-                       const added = newSensors.filter(a => !subsystem.components.includes(a))
-                       const removed = subsystem.getSensors().filter(a => !newSensors.includes(a));
-                       subsystem.components = subsystem.components.filter(c => c.type !== "sensor" || !removed.includes(c)).concat(...added);
-                       setSensors(newSensors);
-                     } }/>
-      <ComponentLane subsystem={ subsystem }
-                     componentType="actuator"
-                     components={ actuators }
-                     onChange={ (newActuators) => {
-                       console.log('Setting actuators to', newActuators);
-                       const added = newActuators.filter(a => !subsystem.components.includes(a))
-                       const removed = subsystem.getActuators().filter(a => !newActuators.includes(a));
-                       subsystem.components = subsystem.components.filter(c => c.type !== "actuator" || !removed.includes(c)).concat(...added);
-                       setActuators(newActuators);
-                     } }/>
-      <ComponentLane subsystem={ subsystem }
-                     componentType="control"
-                     components={ controls }
-                     onChange={ (newControls) => {
-                       console.log('Setting controls to', newControls);
-                       const added = newControls.filter(a => !subsystem.components.includes(a))
-                       const removed = subsystem.getControls().filter(a => !newControls.includes(a));
-                       subsystem.components = subsystem.components.filter(c => c.type !== "control" || !removed.includes(c)).concat(...added);
-                       setControls(newControls);
-                     } }/>
-      <ActionsLane subsystem={ subsystem }
-                   actions={ actions }
-                   onChange={ (newActions) => {
-                     subsystem.actions = [...newActions];
-                     setActions(subsystem.actions);
-                   } }/>
-      <StatesLane subsystem={ subsystem }
-                  states={ states }
-                  onChange={ (newStates) => {
-                    subsystem.states = [...newStates];
-                    setStates(subsystem.states);
-                  } }/>
-      <CommandsLane subsystem={ subsystem }
-                    commands={ commands }
-                    onChange={ (newCommands) => {
-                      // TODO: Update the project.  Maybe?  Project shouldn't know about subsystem's commands...
-                      subsystem.commands = newCommands;
-                      setCommands(newCommands);
+      <div className="components-sidebar">
+        <Accordion id="actuators-panel" className="component-column-accordion" square>
+          <AccordionSummary id="actuators-panel-header" className="component-column-header" sx={ columnHeaderSx }>
+            <span>Actuators</span>
+          </AccordionSummary>
+          <AccordionDetails style={{ padding: 0 }}>
+            <ComponentColumn components={ actuators } subsystem={ subsystem } onChange={ onComponentChange } onDelete={ onComponentDelete }/>
+            <div className="add-components-carousel" id="add-actuators-carousel">
+              {
+                COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "actuator").map(actuatorDef => {
+                  return (
+                    <Button id={ `add-${actuatorDef.id}-button`}
+                            className="add-component-button add-actuator-button"
+                            key={ actuatorDef.id }
+                            onClick={ (e) => onComponentAdd(actuatorDef) }>
+                      Add { actuatorDef.name }
+                    </Button>
+                  )
+                })
+              }
+            </div>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion id="sensors-panel" className="component-column-accordion" square>
+          <AccordionSummary id="sensors-panel-header" className="component-column-header" sx={ columnHeaderSx }>
+            <span>Sensors</span>
+          </AccordionSummary>
+          <AccordionDetails style={{ padding: 0 }}>
+            <ComponentColumn components={ sensors } subsystem={ subsystem } onChange={ onComponentChange } onDelete={ onComponentDelete }/>
+            <div className="add-components-carousel" id="add-sesnors-carousel">
+              {
+                COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "sensor").map(sensorDef => {
+                  return (
+                    <Button id={ `add-${sensorDef.id}-button`}
+                            className="add-component-button add-sensor-button"
+                            key={ sensorDef.id }
+                            onClick={ (e) => onComponentAdd(sensorDef) }>
+                      Add { sensorDef.name }
+                    </Button>
+                  )
+                })
+              }
+            </div>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion id="controls-panel" className="component-column-accordion" square>
+          <AccordionSummary id="controls-panel-header" className="component-column-header" sx={ columnHeaderSx }>
+            <span>Controls</span>
+          </AccordionSummary>
+          <AccordionDetails style={{ padding: 0 }}>
+            <ComponentColumn components={ controls } subsystem={ subsystem } onChange={ onComponentChange } onDelete={ onComponentDelete }/>
+            <div className="add-components-carousel" id="add-controls-carousel">
+              {
+                COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "control").map(controlDef => {
+                  return (
+                    <Button id={ `add-${controlDef.id}-button`}
+                            className="add-component-button add-control-button"
+                            key={ controlDef.id }
+                            onClick={ (e) => onComponentAdd(controlDef) }>
+                      Add { controlDef.name }
+                    </Button>
+                  )
+                })
+              }
+            </div>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion id="actions-panel" className="component-column-accordion" square>
+          <AccordionSummary className="component-column-header" sx={ columnHeaderSx }>
+            <span>Actions</span>
+          </AccordionSummary>
+          <AccordionDetails style={{ padding: 0 }}>
+            <div>
+              {
+                subsystem.actions.map(action => {
+                  return (
+                    <Accordion key={ action.uuid }>
+                      <AccordionSummary>
+                        { action.name }
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <ol className="subsystem-action-steps-list">
+                        {
+                          action.steps.map((step, index) => {
+                            const component = subsystem.components.find(c => c.uuid === step.component);
+                            const method = component.definition.methods.find(m => m.codeName === step.methodName);
+                            const isAccessor = method.parameters.length === 0 && method.returns !== 'void';
+                            return (
+                              <li>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <span className="subsystem-component-name">
+                                  { component.name }
+                                  </span>
+                                  <ChevronRightSharp style={{ height: '16px' }}/>
+                                  <HelpableLabel description={ method.description }>
+                                    <span className="subsystem-action-name">{ method.name }</span>
+                                  </HelpableLabel> 
+                                </div>
+
+                                {
+                                  (step.params.length > 0) ? (
+                                <table className="subsystem-action-step-parameters-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Parameter</th>
+                                      <th>Value</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                {
+                                  step.params.map(param => {
+                                    const realParam = method.parameters.find(p => p.codeName === param.paramName);
+                                    return (
+                                      <tr>
+                                        <td>
+                                          <HelpableLabel description={ realParam.description }>
+                                            <span className="subsystem-action-step-param-name">{ realParam.name }</span>
+                                          </HelpableLabel>
+                                        </td>
+                                        <td>{ (() => {
+                                          const arg = param.arg;
+                                          switch (arg.type) {
+                                            case "hardcode":
+                                              return (<span><code className="hardcoded-value">{ arg.hardcodedValue }</code></span>);
+                                            case "define-passthrough-value":
+                                              return (<span style={{ color: '#aaa' }}>specified when the action runs</span>);
+                                            case "reference-passthrough-value":
+                                              return 'is unknown';
+                                            case "reference-step-output":
+                                              const referencedStep = action.steps.find(s => s.uuid === arg.step);
+                                              const referencedComponent = subsystem.components.find(c => c.uuid === referencedStep.component);
+                                              const referencedMethod = referencedComponent.definition.methods.find(m => m.codeName === referencedStep.methodName);
+                                              return (<span>result of <span className="subsystem-action-name">{ referencedMethod.name }</span> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>);
+                                            default:
+                                              return 'is unknown';
+                                          }
+                                        })() }
+                                        </td>
+                                      </tr>
+                                    )
+                                  })
+                                }
+                                  </tbody>
+                                </table>
+                                  ) : <></>
+                              }
+                              </li>
+                            )
+                          })
+                        }
+                        </ol>
+                      </AccordionDetails>
+                    </Accordion>
+                  )
+                })
+              }
+            </div>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion id="commands-panel" className="component-column-accordion" square>
+          <AccordionSummary className="component-column-header" sx={ columnHeaderSx }>
+            <span>Commands</span>
+          </AccordionSummary>
+          <AccordionDetails style={{ padding: 0 }}>
+            <div>
+              {
+                subsystem.commands.map(command => {
+                  return (
+                    <Accordion key={ command.uuid }>
+                      <AccordionSummary>
+                        { command.name }
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        Run <span className="subsystem-action-name">{ subsystem.actions.find(a => a.uuid === command.action).name }</span> {
+                          (() => {
+                            switch (command.endCondition) {
+                              case "forever":
+                                return <span>until it is cancelled or interrupted</span>;
+                              case "once":
+                                return <span>exactly once</span>;
+                              default:
+                                // state UUID
+                                const endState = subsystem.states.find(s => s.uuid === command.endCondition);
+                                return (<span>until the <span className="subsystem-name">{ subsystem.name }</span> has reached <span className="subsystem-state-name">{ endState.name }</span></span>);
+                            }
+                          })()
+                        }
+                      </AccordionDetails>
+                    </Accordion>
+                  )
+                })
+              }
+            </div>
+          </AccordionDetails>
+        </Accordion>
+        {/* <ActionsLane subsystem={ subsystem }
+                    actions={ actions }
+                    onChange={ (newActions) => {
+                      subsystem.actions = [...newActions];
+                      setActions(subsystem.actions);
                     } }/>
-      <SyntaxHighlighter
-        language="java"
-        style={ SyntaxHighlightStyles.vs }
-        showLineNumbers={ true }
-        wrapLines={ true }
-        lineProps={ (lineNumber: number): { style: React.CSSProperties } => {
-          const style: CSSProperties = { display: "block" };
-          const lineContent = generatedCode.split("\n")[lineNumber - 1];
-          if (lineContent === "  // ACTIONS") {
-            style.backgroundColor = "#cfc";
-          } else if (lineContent === "  // STATES") {
-            style.backgroundColor = "#cfc";
-          } else if (lineContent === "  // COMMANDS") {
-            style.backgroundColor = "#cfc";
-          }
-          return { style };
-        } }
-      >
-        { generatedCode }
-      </SyntaxHighlighter>
+        <StatesLane subsystem={ subsystem }
+                    states={ states }
+                    onChange={ (newStates) => {
+                      subsystem.states = [...newStates];
+                      setStates(subsystem.states);
+                    } }/>
+        <CommandsLane subsystem={ subsystem }
+                      commands={ commands }
+                      onChange={ (newCommands) => {
+                        // TODO: Update the project.  Maybe?  Project shouldn't know about subsystem's commands...
+                        subsystem.commands = newCommands;
+                        setCommands(newCommands);
+                      } }/> */}
+      </div>
+      <div style={{ height: '100%', overflow: 'scroll' }}>
+        <SyntaxHighlighter
+          language="java"
+          style={ SyntaxHighlightStyles.vs }
+          showLineNumbers={ true }
+          wrapLines={ true }
+          lineProps={ (lineNumber: number): { style: React.CSSProperties } => {
+            const style: CSSProperties = { display: "block", fontSize: '10pt' };
+            return { style };
+          } }
+        >
+          { generatedCode }
+        </SyntaxHighlighter>
+      </div>
     </Box>
   );
 }
@@ -1108,9 +1320,6 @@ function RenameSubsystemDialog({
     <Dialog open={ defaultOpen }>
       <DialogTitle>Rename { subsystem.name }</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          Rename { subsystem.name }
-        </DialogContentText>
         <TextField
           autoFocus
           margin="dense"

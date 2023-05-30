@@ -227,7 +227,12 @@ div.gutter {
   justify-content: center;
 
   .subsystem-pane {
-    background-color: #f7f7f7;
+    // background-color: #f7f7f7;
+    height: calc(100vh - 48px - 48px - 37px);
+    display: grid;
+    grid-template-columns: 600px 1fr;
+    gap: 8px;
+    margin: 4px;
 
     .subsystem-lane {
       display: flex;
@@ -255,6 +260,95 @@ div.gutter {
       }
     }
   }
+
+  .components-sidebar {
+    overflow-y: scroll;
+    margin: 1em 0; // mimics the code preview to keep things at the same Y
+  }
+
+  .component-column-accordion {
+    width: 600px;
+
+    .component-column-header {
+      span {
+        // font-weight: bold;
+        font-size: 13pt;
+      }
+    }
+
+    .component-panel {
+      .component-panel-header {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        width: 100%;
+        gap: 32px;
+      }
+
+      .MuiAccordion-root {
+        border-top: 1px solid #ccc;
+
+        .MuiAccordionSummary-root {
+          // background-color: #ffe;
+          font-weight: bold;
+          font-size: 12pt;
+          // border-bottom: 1px solid #eee;
+          box-shadow: 2px 2px 2px gray;
+
+          &.Mui-expanded {
+            background-color: #fff;
+          }
+        }
+        .MuiCollapse-root {
+          background-color: #f7f7f7;
+        }
+      }
+    }
+  }
+
+  .property-editor {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    align-items: center;
+    justify-items: stretch;
+    gap: 32px;
+  }
+}
+
+.add-components-carousel {
+  display: flex;
+  flex-direction: row;
+  overflow-x: scroll;
+
+  button {
+    min-width: fit-content;
+    width: fit-content;
+  }
+}
+
+.helpable-label {
+  .helpable-label-icon {
+    width: 12px;
+    height: 12px;
+
+    transition: ease-in-out;
+    transition-duration: 100ms;
+
+    margin-left: 4px;
+    stroke: powderblue;
+
+    &.invisible {
+      opacity: 0%;
+    }
+
+    &.visible {
+      opacity: 100%;
+    }
+
+    &:hover {
+      stroke: mediumslateblue;
+      cursor: pointer;
+    }
+  }
 }
 
 .code-preview {
@@ -262,24 +356,49 @@ div.gutter {
 }
 
 .subsystem-name {
-  margin: 0 8px;
+  // margin: 0 8px;
   font-weight: bold;
   text-transform: uppercase;
   color: mediumslateblue;
 }
 
+.subsystem-component-name {
+  font-weight: bold;
+  text-transform: uppercase;
+  color: rgb(117, 87, 32);
+}
+
 .subsystem-action-name {
-  margin: 0 8px;
+  // margin: 0 8px;
   font-weight: bold;
   text-transform: uppercase;
   color: forestgreen;
 }
 
+.subsystem-action-step-param-name {
+  font-weight: bold;
+  text-transform: uppercase;
+  color: rgb(19, 41, 113);
+}
+
 .subsystem-state-name {
-  margin: 0 8px;
+  // margin: 0 8px;
   font-weight: bold;
   text-transform: uppercase;
   color: seagreen;
+}
+
+.param-name {
+  text-transform: uppercase;
+}
+
+.subsystem-action-steps-list {
+  margin: 0 0 0 16px;
+  padding: 0;
+
+  .subsystem-action-step-parameters-table {
+
+  }
 }
 
 .create-command-dialog {

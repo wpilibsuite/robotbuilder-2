@@ -169,7 +169,7 @@ function stringTemplate(template: string, componentName: string): string {
   return template.replaceAll(/\$self/g, componentName);
 }
 
-function ComponentDialog({
+export function ComponentDialog({
                            open,
                            componentType,
                            subsystem,
