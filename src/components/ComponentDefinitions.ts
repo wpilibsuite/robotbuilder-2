@@ -6,6 +6,7 @@ import { PID_CONTROLLER } from "./definitions/PIDController";
 import { ANALOG_GYRO } from "./definitions/AnalogGyro";
 import { QUADRATURE_ENCODER } from "./definitions/QuadratureEncoder";
 import { PWM_SPARK_MAX, PWM_TALON_FX, PWM_TALON_SRX, PWM_VICTOR_SPX, SPARK, TALON, VICTOR_SP } from "./definitions/PWMMotors";
+import { DIFFERENTIAL_DRIVE_ODOMETRY } from "./definitions/DifferentialDriveOdometry";
 
 export class ComponentDefinitions {
   definitions: ComponentDefinition[] = [];
@@ -46,6 +47,7 @@ COMPONENT_DEFINITIONS.addDefinition(MOTOR_CONTROLLER_GROUP);
 COMPONENT_DEFINITIONS.addDefinition(DIFFERENTIAL_DRIVE);
 
 COMPONENT_DEFINITIONS.addDefinition(PID_CONTROLLER);
+COMPONENT_DEFINITIONS.addDefinition(DIFFERENTIAL_DRIVE_ODOMETRY);
 
 export function PwmMotorController({ id, name, className, fqn }: { id: string, name: string, className: string, fqn: string }): ComponentDefinition {
   return {
