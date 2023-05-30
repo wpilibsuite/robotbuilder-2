@@ -51,6 +51,8 @@
   },
   "devDependencies": {
     "@types/jquery": "^3.5.16",
+    "prettier": "2.8.8",
+    "prettier-plugin-java": "^2.1.0",
     "sass": "^1.58.3"
   }
 }

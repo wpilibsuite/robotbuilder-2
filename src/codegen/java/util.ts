@@ -1,3 +1,5 @@
+import prettier from "prettier";
+
 /**
  * Removes punctuation from a string, replacing them with the given replacement string (defaults to a single space char)
  *
@@ -69,12 +71,20 @@ export function variableName(name: string): string {
   return camelCase(name);
 }
 
+export function objectName(name: string): string {
+  if (name === null || name === undefined || name === '') {
+    return '<unknown>';
+  } else {
+    return variableName(name);
+  }
+}
+
 export function fieldDeclaration(type: string, name: string): string {
-  return `private final ${ type } ${ variableName(name) }`
+  return `private final ${ type } ${ objectName(name) }`
 }
 
 export function parameterDeclaration(type: string, name: string): string {
-  return `final ${ type } ${ variableName(name) }`;
+  return `final ${ type } ${ objectName(name) }`;
 }
 
 export function constantDeclaration(type: string, name: string): string {
@@ -127,3 +137,32 @@ export function supplierFunctionType(type: Type): string {
   }
 }
 
+/**
+ * Attempts to prettify the given generated Java code.
+ * If the code is not valid Java, returns the original code, unmodified.
+ * 
+ * @param code the code to format
+ * @returns the prettified code
+ */
+export function prettify(code: string): string {
+  try {
+    globalThis.process = globalThis.process; // Required hack to get prettier-plugin-java to function in a browser context
+    const prettierJavaPlugin = require('prettier-plugin-java');
+
+    return prettier.format(
+      code,
+      {
+        plugins: [prettierJavaPlugin],
+        parser: 'java',
+        tabWidth: 2,
+        printWidth: 100,
+        useTabs: false,
+      }
+    );
+  } catch (e) {
+    // Couldn't prettify - return the unprettified contents
+    // This can happen if the code is invalid Java and the parser barfs
+    console.error('Encountered an error while prettifying generated code', e);
+    return code;
+  }
+}
