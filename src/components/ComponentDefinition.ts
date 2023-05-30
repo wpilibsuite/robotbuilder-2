@@ -209,6 +209,17 @@ export type Property = {
    * The method to retrieve the value of this property.
    */
   getter?: MethodDefinition;
+
+  /**
+   * The default value of the property if none is specified.
+   * This string is injected directly into generated code.
+   */
+  defaultValue?: string;
+
+  wrapper?: {
+    definition: string;
+    propertyName: string;
+  };
 }
 
 export type EnumDef = {

@@ -21,8 +21,8 @@ export function differentialDrivebaseTemplate() {
   const leftMotorGroup = new SubsystemComponent("Left Motors", MOTOR_CONTROLLER_GROUP, { motors: [frontLeftMotor.uuid, backLeftMotor.uuid] });
   const rightMotorGroup = new SubsystemComponent("Right Motors", MOTOR_CONTROLLER_GROUP, { motors: [frontRightMotor.uuid, backRightMotor.uuid] });
   const differentialDrive = new SubsystemComponent("Differential Drive", DIFFERENTIAL_DRIVE, {
-    leftMotor: leftMotorGroup.uuid,
-    rightMotor: rightMotorGroup.uuid
+    leftMotors: [frontLeftMotor.uuid, backLeftMotor.uuid],
+    rightMotors: [frontRightMotor.uuid, backRightMotor.uuid]
   });
 
   const gyro = new SubsystemComponent("Gyro", ANALOG_GYRO, { channel: 1 });

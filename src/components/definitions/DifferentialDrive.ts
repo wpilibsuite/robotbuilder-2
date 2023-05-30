@@ -1,4 +1,5 @@
 import { ActionTemplate, ComponentDefinition } from "../ComponentDefinition";
+import { MOTOR_CONTROLLER_GROUP } from "./MotorControllerGroup";
 
 const STOP_MOVING_ACTION: ActionTemplate = {
   name: "Stop Moving",
@@ -132,17 +133,25 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
   ],
   properties: [
     {
-      name: "Left Motor",
-      description: "The motor that powers the left-side wheels",
-      codeName: "leftMotor",
-      type: "MotorController",
+      name: "Left Motors",
+      description: "The motors that power the left-side wheels",
+      codeName: "leftMotors",
+      type: "vararg MotorController",
+      wrapper: {
+        definition: MOTOR_CONTROLLER_GROUP.id,
+        propertyName: "motors"
+      },
       setInConstructor: true
     },
     {
-      name: "Right Motor",
-      description: "The motor that powers the right-side wheels",
-      codeName: "rightMotor",
-      type: "MotorController",
+      name: "Right Motors",
+      description: "The motors that power the right-side wheels",
+      codeName: "rightMotors",
+      type: "vararg MotorController",
+      wrapper: {
+        definition: MOTOR_CONTROLLER_GROUP.id,
+        propertyName: "motors"
+      },
       setInConstructor: true
     },
     {
