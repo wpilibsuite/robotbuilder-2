@@ -3,6 +3,7 @@ import { ComponentDefinition } from "../ComponentDefinition";
 export const PID_CONTROLLER: ComponentDefinition = {
   id: "SAMPLE-pidcontroller",
   name: "PID Controller",
+  description: 'A feedback controller that accepts the current state of a mechanism (such as the angle of an arm) and a desired position (the "setpoint") and calculates a motor output to move the mechanism closer to that setpoint.',
   fqn: "edu.wpi.first.math.controller.PIDController",
   className: "PIDController",
   wpilibApiTypes: [],

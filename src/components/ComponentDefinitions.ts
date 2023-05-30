@@ -51,6 +51,7 @@ export function PwmMotorController({ id, name, className, fqn }: { id: string, n
   return {
     id: id,
     name: name,
+    description: `Controls a physical motor using a ${ name } motor controller.`,
     type: "actuator",
     className: className,
     fqn: fqn,

@@ -3,6 +3,7 @@ import { ComponentDefinition } from "../ComponentDefinition";
 export const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
   id: "SAMPLE-motorcontrollergroup",
   name: "Motor Controller Group",
+  description: 'Aggregates multiple motor controllers together so they can be controlled as a single entity. Useful for gearboxes or other groups of mechanically linked motors.',
   fqn: "edu.wpi.first.wpilibj.MotorControllerGroup",
   className: "MotorControllerGroup",
   type: "actuator",

@@ -1,4 +1,4 @@
-import { ActionParamCallOptionInvocationType, StepParam } from "../bindings/Command";
+import { ActionParamCallOptionInvocationType, StepParam, SubsystemComponent } from "../bindings/Command";
 
 export type ComponentType =
   "sensor" |
@@ -113,6 +113,11 @@ export type ComponentDefinition = {
    * The human-readable name of the component.
    */
   name: string;
+
+  /**
+   * A detailed description of that the component does and how it's indended to be used.
+   */
+  description: string;
 
   /**
    * The fully-qualified domain name for the Java class that represents the component.
@@ -291,7 +296,7 @@ export type ParameterDefinition = {
    * A description of what the parameter is used for and what it controls.  This may be displayed in the UI to help
    * users know what each thing does.
    */
-  description;
+  description: string;
 
   optional?: boolean;
 

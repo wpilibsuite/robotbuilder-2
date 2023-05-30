@@ -4,6 +4,7 @@ import { generateAction_future } from "../../../codegen/java/ActionGenerator";
 
 const GENERIC_ACTUATOR: ComponentDefinition = {
   name: "Generic Actuator",
+  description: '',
   className: "GenericActuator",
   fqn: "com.example.GenericActuator",
   hints: ["action"],
@@ -40,6 +41,7 @@ const GENERIC_ACTUATOR: ComponentDefinition = {
 
 const GENERIC_SENSOR: ComponentDefinition = {
   name: "Generic Sensor",
+  description: '',
   className: "GenericSensor",
   fqn: "com.example.GenericSensor",
   hints: ["state", "action"],
@@ -61,6 +63,7 @@ const GENERIC_SENSOR: ComponentDefinition = {
 
 const GENERIC_CONTROLLER: ComponentDefinition = {
   name: "Generic Controller",
+  description: '',
   className: "GenericController",
   fqn: "com.example.GenericController",
   hints: ["action"],

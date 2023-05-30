@@ -3,6 +3,7 @@ import { ComponentDefinition } from "../ComponentDefinition";
 export const ANALOG_GYRO: ComponentDefinition = {
   id: "SAMPLE-analoggyro",
   name: "Analog Gyroscope",
+  description: 'A single-axis gyroscope that reports its rate of rotation as an analog voltage between -12 Volts and +12 Volts',
   fqn: "edu.wpi.first.wpilib.AnalogGyro",
   className: "AnalogGyro",
   wpilibApiTypes: ["Gyro"],
