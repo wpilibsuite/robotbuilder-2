@@ -134,7 +134,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
 
   console.debug('Generating Java command code for command', name, 'subsystem', subsystem.name, 'action', actionUuid, 'end condition', endCondition, 'with params', commandParams);
 
-  const subsystemVar = 'this';
+  const subsystemVar = 'io';
   let paramDefs = '';
   if (commandParams.length > 0) {
     // All passthrough invocations require parameters on the command factory
@@ -184,9 +184,9 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
     actionLambda = `andThen(${ actionLambda })`;
   }
 
-  const chainItems = [subsystemVar, initializeLambda, actionLambda].filter(i => !!i); // kick out undefined steps
-  let commandChain;
-  if (chainItems.length <= 2) {
+  const chainItems = [initializeLambda, actionLambda].filter(i => !!i); // kick out undefined steps
+  let commandChain: string;
+  if (chainItems.length <= 1) {
     // only one method call
     commandChain = chainItems.join(".");
   } else {
