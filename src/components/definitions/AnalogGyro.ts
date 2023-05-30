@@ -10,7 +10,7 @@ export const ANALOG_GYRO: ComponentDefinition = {
   hints: ["state"],
   methods: [
     {
-      name: "Heading",
+      name: "Get Heading",
       description: "Gets the current angle of the gyro, where 0 is the angle it was at when last reset",
       codeName: "getAngle",
       returns: "double",
