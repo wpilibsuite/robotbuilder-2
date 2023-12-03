@@ -1354,7 +1354,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
       justifyContent: "center",
       gap: "40px"
     } }>
-      <Button onClick={ newDriveBase }>
+      <Button onClick={ newDriveBase } id="drivetrain-subsystem-button">
         <Box>
           <Tooltip
             title={ "A robot has to move around somehow!  This supports the three most common drive train types: differential drives (also called skid-steer or tank drive); swerve drives; and mecanum drives." }>
