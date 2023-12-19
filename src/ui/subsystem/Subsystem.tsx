@@ -1354,7 +1354,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
       justifyContent: "center",
       gap: "40px"
     } }>
-      <Button onClick={ newDriveBase } id="drivetrain-subsystem-button">
+      <Button id="subsystem-button-drivetrain" onClick={ newDriveBase }>
         <Box>
           <Tooltip
             title={ "A robot has to move around somehow!  This supports the three most common drive train types: differential drives (also called skid-steer or tank drive); swerve drives; and mecanum drives." }>
@@ -1363,7 +1363,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" } alt={ "" } title={ "DRIVETRAIN IMAGE" }/>
         </Box>
       </Button>
-      <Button onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-single-jointed-arm" onClick={ () => alert('Not implemented yet') }>
         <Box>
           <Tooltip title={ "A rotating arm with a single pivot point" }>
             <h3>Single-Jointed Arm</h3>
@@ -1371,7 +1371,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-double-jointed-arm" onClick={ () => alert('Not implemented yet') }>
         <Box>
           <Tooltip title={ "A rotating arm with two pivot points" }>
             <h3>Double-Jointed Arm</h3>
@@ -1379,7 +1379,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-wrist" onClick={ () => alert('Not implemented yet') }>
         <Box>
           <Tooltip
             title={ "A wrist at the end of an arm, or a low-mass pivoting mechanism that doesn't require sophisticated controls like an arm would" }>
@@ -1388,7 +1388,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-elevator" onClick={ () => alert('Not implemented yet') }>
         <Box>
           <Tooltip
             title={ "A subsystem that has a linear extension and retraction. This could be vertical, in the case of a traditional elevator, or angled, or even horizontal" }
@@ -1398,7 +1398,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button onClick={ () => {
+      <Button id="subsystem-button-blank" onClick={ () => {
         const blankSubsystem = new Subsystem();
         blankSubsystem.name = "Blank Subsystem";
         acceptNewSubsystem(blankSubsystem);

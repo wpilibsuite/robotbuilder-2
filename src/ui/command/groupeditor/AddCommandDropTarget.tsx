@@ -109,7 +109,7 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
 
   return (
     <div>
-      <Button className={ `command-drop-target ${ inUse ? 'idle' : 'open' }` }
+      <Button id="add-command-button" className={ `command-drop-target ${ inUse ? 'idle' : 'open' }` }
               onClick={ handleContextMenu }
               disabled={ availableCommandsToAdd.length < 1 }>
         {
