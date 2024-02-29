@@ -2,6 +2,7 @@ import * as IR from '../../../bindings/ir'
 import { commandMethod } from "../../../codegen/java/CommandGroupGenerator";
 import { unindent } from "../../../codegen/java/util";
 import { Project } from "../../../bindings/Project";
+import { test, expect } from 'vitest'
 
 const EMPTY_PROJECT: Project = {
   commands: [], controllers: [], name: "", subsystems: []

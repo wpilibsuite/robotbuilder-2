@@ -1,5 +1,5 @@
 import { ComponentDefinition } from "../ComponentDefinition";
-import { PwmMotorController } from "../ComponentDefinitions";
+import { PwmMotorController } from "./PWMMotorController";
 
 export const PWM_TALON_FX: ComponentDefinition = PwmMotorController({
   id: 'SAMPLE-pwmtalonfx',

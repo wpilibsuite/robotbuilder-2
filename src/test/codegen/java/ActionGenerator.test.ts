@@ -1,6 +1,7 @@
 import { Subsystem, SubsystemActionStep, SubsystemComponent } from "../../../bindings/Command";
 import { ComponentDefinition } from "../../../components/ComponentDefinition";
 import { generateAction_future } from "../../../codegen/java/ActionGenerator";
+import { test, expect } from 'vitest'
 
 const GENERIC_ACTUATOR: ComponentDefinition = {
   name: "Generic Actuator",
