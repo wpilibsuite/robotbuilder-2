@@ -1,3 +1,4 @@
+import parsers from "prettier-plugin-java"
 import prettier from "prettier";
 
 /**
@@ -146,13 +147,10 @@ export function supplierFunctionType(type: Type): string {
  */
 export function prettify(code: string): string {
   try {
-    globalThis.process = globalThis.process; // Required hack to get prettier-plugin-java to function in a browser context
-    const prettierJavaPlugin = require('prettier-plugin-java');
-
     return prettier.format(
       code,
       {
-        plugins: [prettierJavaPlugin],
+        plugins: [parsers],
         parser: 'java',
         tabWidth: 2,
         printWidth: 100,
@@ -163,6 +161,26 @@ export function prettify(code: string): string {
     // Couldn't prettify - return the unprettified contents
     // This can happen if the code is invalid Java and the parser barfs
     console.error('Encountered an error while prettifying generated code', e);
+    return code;
+  }
+}
+
+export function prettifySnippet(code: string): string {
+  // Awkwardly, prettifying only works on fully defined classes or interfaces; it won't work on method snippets
+  // So we wrap the snippet in a class declaration, prettify THAT, and then remove the declaration at the end
+  const wrapperStart = 'interface $$$$ {\n'
+  const wrapperEnd = '}';
+
+  const prettified = prettify(unindent(
+    `
+    ${ wrapperStart } ${ code } ${ wrapperEnd }
+    `
+    ).trim()
+  )
+
+  if (prettified.startsWith(wrapperStart)) {
+    return unindent(prettified.replace(wrapperStart, '').replace(/\n\}\n*$/, ''));
+  } else {
     return code;
   }
 }

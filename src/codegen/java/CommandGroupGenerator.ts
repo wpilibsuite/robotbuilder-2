@@ -1,6 +1,6 @@
 import { ActionParamCallOption, Param } from "../../bindings/Command";
 import { findCommand, Project } from "../../bindings/Project";
-import { indent, methodName, supplierFunctionType, unindent, variableName } from "./util";
+import { indent, methodName, prettify, prettifySnippet, supplierFunctionType, unindent, variableName } from "./util";
 import * as IR from '../../bindings/ir'
 import { ParamPlaceholder } from "../../bindings/ir";
 
@@ -40,7 +40,7 @@ export function commandMethod(name: string, command: IR.Group, project: Project)
     return `${ paramType } ${ variableName(p.name) }`;
   }).join(', ');
 
-  const stageLine = (line, lineno) => {
+  const stageLine = (line: string, lineno: number): string => {
     if (lineno === 0) {
       return line;
     } else {
@@ -51,15 +51,15 @@ export function commandMethod(name: string, command: IR.Group, project: Project)
 
   let body = '/* Add some commands! */';
   if (command.commands.length > 0) {
-    body = 'return ' + commandBody(command, command, project).split('\n').map(stageLine).join('\n');
+    body = 'return ' + commandBody(command, command, project).split('\n').map(stageLine).join('\n') + `.withName("${ name }")`;
   }
 
-  return unindent(
+  return prettifySnippet(unindent(
     `
-    public CommandBase ${ methodName(name) }(${ params }) {
+    public Command ${ methodName(name) }(${ params }) {
       ${ body };
     }
-  `).trim();
+  `).trim());
 }
 
 function decorators(decorators: IR.Decorator[]): string {

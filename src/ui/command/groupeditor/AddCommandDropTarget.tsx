@@ -101,7 +101,7 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
       .filter(c => !findCommand(project, sequence.groupId) || !c.runsCommand(sequence.groupId)) // exclude any commands that run the currently edited command to avoid infinite recursion
       .filter(c => c instanceof AtomicCommand || !stage.group.runsCommand(c.uuid)) // exclude any groups that include (even implicitly) any of the commands already in the group
       .filter(c => c.requirements().includes(subsystem.uuid)) // only allow the commands that use the subsystem we're on
-      .filter(c => stage.group.commands.length === 0 || xor(c.requirements(), stage.group.commands.flatMap(sc => sc.requirements())).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
+      .filter(c => true || stage.group.commands.length === 0 || xor(c.requirements(), stage.group.commands.flatMap(sc => sc.requirements())).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
 
   console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd);
 
@@ -115,7 +115,7 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
         {
           availableCommandsToAdd.length > 0 && !inUse ?
             '+ Add Command' :
-            'Idle' // No commands available for this subsystem
+            'Uncontrolled' // No commands available for this subsystem
         }
       </Button>
 

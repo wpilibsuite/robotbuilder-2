@@ -122,7 +122,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
       <div className="components-sidebar">
         <Accordion id="actuators-panel" className="component-column-accordion" square>
           <AccordionSummary id="actuators-panel-header" className="component-column-header" sx={ columnHeaderSx }>
-            <span>Actuators</span>
+            <span>Outputs</span>
           </AccordionSummary>
           <AccordionDetails style={{ padding: 0 }}>
             <ComponentColumn components={ actuators } subsystem={ subsystem } onChange={ onComponentChange } onDelete={ onComponentDelete }/>
@@ -144,7 +144,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
         </Accordion>
         <Accordion id="sensors-panel" className="component-column-accordion" square>
           <AccordionSummary id="sensors-panel-header" className="component-column-header" sx={ columnHeaderSx }>
-            <span>Sensors</span>
+            <span>Inputs</span>
           </AccordionSummary>
           <AccordionDetails style={{ padding: 0 }}>
             <ComponentColumn components={ sensors } subsystem={ subsystem } onChange={ onComponentChange } onDelete={ onComponentDelete }/>
@@ -292,19 +292,31 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                         { command.name }
                       </AccordionSummary>
                       <AccordionDetails>
-                        Run <span className="subsystem-action-name">{ subsystem.actions.find(a => a.uuid === command.action).name }</span> {
+                        {
                           (() => {
-                            switch (command.endCondition) {
-                              case "forever":
-                                return <span>until it is cancelled or interrupted</span>;
-                              case "once":
-                                return <span>exactly once</span>;
-                              default:
-                                // state UUID
-                                const endState = subsystem.states.find(s => s.uuid === command.endCondition);
-                                return (<span>until the <span className="subsystem-name">{ subsystem.name }</span> has reached <span className="subsystem-state-name">{ endState.name }</span></span>);
+                            if (command.action) {
+                              return (<span>Action</span>);
+                            } else {
+                              return (<span>No Action</span>)
                             }
                           })()
+
+                        // Run <span className="subsystem-action-name">{ subsystem.actions.find(a => a.uuid === command.action).name }</span> {
+                        //   (() => {
+                        //     switch (command.endCondition) {
+                        //       case undefined:
+                        //       case null:
+                        //         break;
+                        //       case "forever":
+                        //         return <span>until it is cancelled or interrupted</span>;
+                        //       case "once":
+                        //         return <span>exactly once</span>;
+                        //       default:
+                        //         // state UUID
+                        //         const endState = subsystem.states.find(s => s.uuid === command.endCondition);
+                        //         return (<span>until the <span className="subsystem-name">{ subsystem.name }</span> has reached <span className="subsystem-state-name">{ endState.name }</span></span>);
+                        //     }
+                        //   })()
                         }
                       </AccordionDetails>
                     </Accordion>
@@ -314,7 +326,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
             </div>
           </AccordionDetails>
         </Accordion>
-        {/* <ActionsLane subsystem={ subsystem }
+        <ActionsLane subsystem={ subsystem }
                     actions={ actions }
                     onChange={ (newActions) => {
                       subsystem.actions = [...newActions];
@@ -332,7 +344,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                         // TODO: Update the project.  Maybe?  Project shouldn't know about subsystem's commands...
                         subsystem.commands = newCommands;
                         setCommands(newCommands);
-                      } }/> */}
+                      } }/>
       </div>
       <div style={{ height: '100%', overflow: 'scroll' }}>
         <SyntaxHighlighter
@@ -1213,7 +1225,7 @@ function CreateCommandDialog({
                     console.debug('Setting end condition to', e.target.value);
                     setEndCondition(e.target.value);
                   } }
-                  defaultValue={ editedCommand?.endCondition }>
+                  defaultValue={ editedCommand?.endCondition || "forever" }>
             <MenuItem value="forever">
               It is interrupted or canceled
             </MenuItem>
@@ -1283,7 +1295,8 @@ function CreateCommandDialog({
             // console.debug('  endCondition:', endCondition);
             // console.debug('  commandName:', commandName);
 
-            return !selectedAction || !endCondition || !commandName;
+            // return !selectedAction || !endCondition || !commandName;
+            return !commandName;
           })() }>
           OK
         </Button>

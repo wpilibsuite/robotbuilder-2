@@ -18,7 +18,7 @@ function propertyToValue(property: Property, value: string | any[], subsystem: S
       return property.defaultValue;
     }
     console.warn('No value provided!');
-    return "/* You forgot to set a value! */";
+    return `/* You forgot to set a value for the ${property.name}! */`;
   }
 
   if (typeof value === 'string' && value.length === 36) {
@@ -111,6 +111,7 @@ function generateSubsystemIOInterface(subsystem: Subsystem, project: Project): s
      * that interacts with a model of the real world instead.
      *
      * @see {@link Real${ className(subsystem.name) }IO}
+     * @see {@link Sim${ className(subsystem.name) }IO}
      */
     public interface ${ className(subsystem.name ) }IO {
 ${
@@ -182,13 +183,32 @@ function generateSimSubsystemIO(subsystem: Subsystem, project: Project): string 
      * with a model of the real world and control hardware.
      */
     public static final class ${ simClass } implements ${ ioInterface } {
-      private static final double PERIODIC_TIMESTEP = 0.020; // Seconds
+      // The default periodic timestep is 20ms. Change this if your robot code runs at a different frequency.
+      private static final Measure<Time> PERIODIC_TIMESTEP = Milliseconds.of(20);
 
       /**
        * Updates all simulation devices.
        */
       public void update() {
         // TODO
+      }
+
+      /**
+       * Gets the total current drawn by the subsystem at the current moment in time.
+       * This is used to calculate voltage droop induced by high current draws; for example,
+       * a drivetrain with four motors pulling 60 Amps each will have a total current draw of
+       * 240 Amps. Following Ohm's law, we can calculate the voltage droop of the robot's electrical
+       * system as the total current draw multiplied by the resistance of the power circuit (including
+       * the battery's internal resistance - typically around 15 milliohms). 240 Amps times 0.015 Ohms
+       * equals 3.6 Volts of voltage sag - or, in other words, the available voltage on the robot will
+       * be 8.4 Volts rather than the expected 12 Volts. This means motors will only have access to
+       * approximately 70% of their theoretical maximum speed and acceleration!
+       *
+       * @return the total current drawn, in Amps
+       */
+      public double getCurrentDrawAmps() {
+        // TODO: Read values from flywheel/elevator/arm/linearsystem physics sims
+        return 0.0;
       }
 
 ${ subsystem.actions.map(action => {
@@ -230,7 +250,15 @@ export function generateSubsystem(subsystem: Subsystem, project: Project) {
     `
     package frc.robot.subsystems;
 
+    import static edu.wpi.first.units.Units.*;
+
 ${ [...new Set(subsystem.components.map(c => c.definition.fqn))].sort().map(fqn => indent(`import ${ fqn };`, 4)).join("\n") }
+    import edu.wpi.first.units.*;
+    import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+    import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+    import edu.wpi.first.wpilibj2.command.Command;
+    import edu.wpi.first.wpilibj2.command.SubsystemBase;
+    import edu.wpi.first.wpilibj2.command.button.Trigger;
 
     /**
      * The ${ subsystem.name } subsystem.
@@ -239,6 +267,29 @@ ${ [...new Set(subsystem.components.map(c => c.definition.fqn))].sort().map(fqn 
       private final ${ className(subsystem.name) }IO io;
 
       private final ShuffleboardTab tab = Shuffleboard.getTab("${ subsystem.name }");
+
+${
+  (() => {
+    if (subsystem.states.length > 0) {
+      return indent(
+        unindent(`
+          // These triggers can be used to activate commands when the ${ subsystem.name } enters a
+          // certain state. This can be useful for coordinating hand offs between mechanisms, or for
+          // simply notifying the drivers that something happened.
+          `.trim()
+        ),
+        6
+      );
+    } else {
+      return '';
+    }
+  })()
+}
+${ subsystem.states.map(state => {
+  return indent(unindent(
+    `public final Trigger ${ methodName(state.name) } = new Trigger(this::${ methodName(state.name) });`
+  ).trim(), 6)
+}).join("\n") }
 
       public ${ clazz }(${ className(subsystem.name) }IO io) {
         this.io = io;

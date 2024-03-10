@@ -1,6 +1,7 @@
 import { v4 as uuidV4 } from "uuid"
 import { ComponentDefinition } from "../components/ComponentDefinition";
 import { findCommand, Project } from "./Project";
+import { Group, SeqGroup } from "./ir";
 
 /**
  * The possible types that can be passed as arguments to an action invocation.
@@ -321,6 +322,8 @@ export class Subsystem {
   commands: AtomicCommand[] = [];
 
   components: SubsystemComponent[] = [];
+
+  ioLayer: boolean = true;
 
   constructor() {
   }

@@ -73,7 +73,7 @@ export function generateStepInvocations(steps: SubsystemActionStep[], subsystem:
       // Store output in a final variable
       // Use the return type for clarity - `final var` isn't helpful when a lot of method names don't imply a particular return type
       // (though it's typically going to be doubles)
-      varDef = `final ${ methodDef.returns } ${ varNameForStepOutput(step, steps, subsystem) } = `;
+      varDef = `${ methodDef.returns } ${ varNameForStepOutput(step, steps, subsystem) } = `;
     }
 
     const args = step.params.map(param => {
@@ -101,7 +101,7 @@ export function generateStepInvocations(steps: SubsystemActionStep[], subsystem:
 
     const invocation = `${ step.methodName }(${ args.join(", ") });`;
 
-    return `${ varDef }this.${ variableName(component.name) }.${ invocation }`;
+    return `${ varDef }${ variableName(component.name) }.${ invocation }`;
   });
 }
 

@@ -136,28 +136,34 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
           }
         </div>
         {
-          group.stages.map((stage, index) => {
-            return (
-              <StageEditor key={ `${ stage.name} | ${ index }` }
-                           sequence={ group }
-                           stage={ stage }
-                           project={ project }
-                           onDelete={ (stage) => {
-                             console.log('Deleting stage', stage);
-                             const index = group.stages.indexOf(stage);
-                             group.stages.filter((_, i) => i > index).forEach((s, i) => s.name = `Stage ${ i + index + 1 }`);
-                             group.stages = group.stages.filter(s => s !== stage);
-                             onChange({ ...group });
-                             regenerateCode();
-                           } }
-                           onChange={ (stage) => {
-                             group.stages = [...group.stages];
-                             onChange({ ...group });
-                             regenerateCode();
-                             console.log('Regenerated code');
-                           } }/>
-            )
-          })
+          (() => {
+            if (group.stages.length === 0) {
+              group
+            }
+
+            return group.stages.map((stage, index) => {
+              return (
+                <StageEditor key={ `${ stage.name} | ${ index }` }
+                             sequence={ group }
+                             stage={ stage }
+                             project={ project }
+                             onDelete={ (stage) => {
+                               console.log('Deleting stage', stage);
+                               const index = group.stages.indexOf(stage);
+                               group.stages.filter((_, i) => i > index).forEach((s, i) => s.name = `Stage ${ i + index + 1 }`);
+                               group.stages = group.stages.filter(s => s !== stage);
+                               onChange({ ...group });
+                               regenerateCode();
+                             } }
+                             onChange={ (stage) => {
+                               group.stages = [...group.stages];
+                               onChange({ ...group });
+                               regenerateCode();
+                               console.log('Regenerated code');
+                             } }/>
+              )
+            })
+          })()
         }
         <div className="sequential-group-add-stage">
           <Button onClick={ addStage }>
