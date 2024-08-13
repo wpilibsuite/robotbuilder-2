@@ -69,6 +69,10 @@ export function methodName(name: string): string {
 }
 
 export function variableName(name: string): string {
+  if (/^(Get |get[A-Z])/.test(name)) {
+    // Remove leading "Get" from fields if the input is the name of a getter method
+    name = name.substring(3);
+  }
   return camelCase(name);
 }
 
