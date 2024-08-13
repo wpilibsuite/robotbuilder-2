@@ -183,7 +183,7 @@ export function prettifySnippet(code: string): string {
   )
 
   if (prettified.startsWith(wrapperStart)) {
-    return unindent(prettified.replace(wrapperStart, '').replace(/\n\}\n*$/, ''));
+    return unindent(prettified.replace(wrapperStart, '').replace(/\}\n*$/, '')).trim();
   } else {
     return code;
   }

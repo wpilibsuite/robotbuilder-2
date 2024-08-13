@@ -29,7 +29,7 @@ test("empty nested groups", () => {
   expect(code).toEqual(unindent(`
     public Command null() {
       return (/* empty group */)
-               .andThen((/* empty group */));
+               .andThen((/* empty group */)).withName("null");
     }
   `).trim())
 })
@@ -44,7 +44,7 @@ test("empty nested groups with decorators", () => {
   expect(code).toEqual(unindent(`
     public Command null() {
       return (/* empty group */).repeatedly().until(() -> someCond)
-               .andThen((/* empty group */).withTimeout(15 /* seconds */).unless(() -> someOtherCond));
+               .andThen((/* empty group */).withTimeout(15 /* seconds */).unless(() -> someOtherCond)).withName("null");
     }
   `).trim())
 })
@@ -59,7 +59,7 @@ test("empty nested groups with params", () => {
   expect(code).toEqual(unindent(`
     public Command null() {
       return (/* empty group */).repeatedly().until(() -> someCond)
-               .andThen((/* empty group */).withTimeout(15 /* seconds */).unless(() -> someOtherCond));
+               .andThen((/* empty group */).withTimeout(15 /* seconds */).unless(() -> someOtherCond)).withName("null");
     }
   `).trim())
 })
