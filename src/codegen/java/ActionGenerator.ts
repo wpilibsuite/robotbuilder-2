@@ -27,7 +27,7 @@ const varNameForStepOutput = (stepOrUuid: SubsystemActionStep | string, previous
   const stepNum = previousSteps.indexOf(step) + 1;
   const component = subsystem.components.find(c => c.uuid === step.component);
   // TODO: Better variable names!
-  return variableName(`step${ stepNum } ${ variableName(component.name) } ${ variableName(step.methodName) }`);
+  return variableName(`step${ stepNum } ${ variableName(component.name) } ${ variableName(component.definition.methods.find(m => m.codeName === step.methodName).name) }`);
 }
 
 export function generateStepParams(steps: SubsystemActionStep[], subsystem: Subsystem): string[] {
