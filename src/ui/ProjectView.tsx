@@ -14,6 +14,7 @@ import {
   SubsystemState
 } from "../bindings/Command";
 import { CommandInvocation, Group, ParGroup, SeqGroup } from "../bindings/ir";
+import { Robot } from "./robot/Robot";
 
 type ProjectProps = {
   initialProject: Project;
@@ -96,7 +97,7 @@ const loadProject = (file: File): Promise<Project> => {
 }
 
 export function ProjectView({ initialProject }: ProjectProps) {
-  type Tab = "controllers" | "subsystems" | "commands";
+  type Tab = "robot" | "controllers" | "subsystems" | "commands";
   const defaultTab: Tab = "subsystems";
   const [project, setProject] = React.useState(initialProject);
   const [selectedTab, setSelectedTab] = React.useState(defaultTab);
@@ -107,6 +108,8 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
   const renderContent = (selectedTab: Tab) => {
     switch (selectedTab) {
+      case "robot":
+        return (<Robot project={ project }/>);
       case "controllers":
         return (<Controllers project={ project }/>);
       case "subsystems":
@@ -141,6 +144,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
         <Box>
           <Tabs centered value={ selectedTab } onChange={ handleChange }>
+            <Tab id={ "robot-tab" } label="Robot" value={ "robot" } />
             <Tab id={ "robot-subsystems-tab" } label="Subsystems" value={ "subsystems" }/>
             <Tab id={ "robot-commands-tab"} label="Commands" value={ "commands" }/>
             <Tab id={ "robot-controllers-tab" } label="Controllers" value={ "controllers" }/>

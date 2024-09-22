@@ -6,6 +6,10 @@ export type Controller = {
    */
   name: string;
 
+  className: string;
+
+  fqn: string;
+
   uuid: string;
 
   /**
