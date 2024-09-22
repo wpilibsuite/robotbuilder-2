@@ -85,7 +85,10 @@ export function objectName(name: string): string {
 }
 
 export function fieldDeclaration(type: string, name: string): string {
-  return `private final ${ type } ${ objectName(name) }`
+  return unindent(`
+    @Logged(name = "${name}")
+    private final ${ type } ${ objectName(name) }
+  `).trim();
 }
 
 export function parameterDeclaration(type: string, name: string): string {

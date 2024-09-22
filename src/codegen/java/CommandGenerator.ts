@@ -139,7 +139,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
 
   console.debug('Generating Java command code for command', name, 'subsystem', subsystem.name, 'action', actionUuid, 'end condition', endCondition, 'with params', commandParams);
 
-  const subsystemVar = 'io';
+  const subsystemVar = 'this';
   let paramDefs = '';
   if (commandParams.length > 0) {
     // All passthrough invocations require parameters on the command factory
@@ -175,6 +175,14 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
       break;
     case "once":
       actionLambda = `runOnce(${ actionInvocation })`;
+      break;
+    case undefined:
+      // TODO?
+      if (actionInvocation) {
+        actionLambda = `run(${ actionInvocation })`;
+      } else {
+        actionLambda = `run(/* No action specified! */)`;
+      }
       break;
     default:
       // assume state UUID

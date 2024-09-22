@@ -112,7 +112,7 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
 
   return codeBlock(
     `
-    public void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.join(", ") }) {
+    private void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.join(", ") }) {
 ${ stepInvocations.length > 0 ? stepInvocations.filter(i => !!i).map(invoke => indent(invoke, 6)).join("\n") : indent('// Add your custom logic here!', 6) }
     }
     `
