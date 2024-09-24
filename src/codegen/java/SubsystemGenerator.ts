@@ -18,7 +18,7 @@ function propertyToValue(property: Property, value: string | any[], subsystem: S
       return property.defaultValue;
     }
     console.warn('No value provided!');
-    return "/* You forgot to set a value! */";
+    return `/* You forgot to set a value for the ${property.name}! */`;
   }
 
   if (typeof value === 'string' && value.length === 36) {
@@ -100,36 +100,6 @@ function generateComponentDefinition(component: SubsystemComponent, subsystem: S
   return `new ${ component.definition.className }(${ propertyValues.join(", ") })`;
 }
 
-function generateSubsystemIOInterface(subsystem: Subsystem, project: Project): string {
-  const interfaceContent = unindent(
-    `
-    /**
-     * The generic IO interface. The ${ subsystem.name } subsystem uses an IO object
-     * that implements this interface to interact with the world. Typically, there are
-     * at least two implementations - one concrete implementation that uses real
-     * hardware and interacts with the real world, and one implementation for simulation
-     * that interacts with a model of the real world instead.
-     *
-     * @see {@link Real${ className(subsystem.name) }IO}
-     */
-    public interface ${ className(subsystem.name ) }IO {
-${
-  subsystem.actions.map(action => {
-    return `void ${ methodName(action.name) }(${ generateStepParams(action.steps, subsystem).join(', ') });`
-  }).join("\n") }
-
-  ${
-  subsystem.states.map(state => {
-    return `boolean ${ methodName(state.name) }();`
-  }).join("\n")
-}
-    }
-    `
-  );
-
-  return prettify(interfaceContent);
-}
-
 function generateConcreteSubsystemIO(subsystem: Subsystem, project: Project): string {
   const classContent = unindent(
     `
@@ -171,54 +141,6 @@ ${ indent(generateState(state, subsystem), 6) }
   return prettify(classContent);
 }
 
-function generateSimSubsystemIO(subsystem: Subsystem, project: Project): string {
-  const subsystemClass = className(subsystem.name);
-  const ioInterface = `${ subsystemClass }IO`;
-  const simClass = `Sim${ subsystemClass }IO`;
-  const classContent = unindent(
-    `
-    /**
-     * An implementation of {@link ${ ioInterface }} that interacts
-     * with a model of the real world and control hardware.
-     */
-    public static final class ${ simClass } implements ${ ioInterface } {
-      private static final double PERIODIC_TIMESTEP = 0.020; // Seconds
-
-      /**
-       * Updates all simulation devices.
-       */
-      public void update() {
-        // TODO
-      }
-
-${ subsystem.actions.map(action => {
-    return unindent(
-      `
-        @Override
-        public void ${ methodName(action.name) }() {
-          // TODO
-        }
-      `
-    ).trim()
-  }).map(f => indent(f, 8)).join("\n\n") }
-
-${ subsystem.states.map(state => {
-    return unindent(
-      `
-        @Override
-        public boolean ${ methodName(state.name) }() {
-          // TODO
-        }
-      `
-    ).trim()
-  }).map(f => indent(f, 8)).join("\n\n") }
-    }
-    `
-  ).trim();
-
-  return prettify(classContent);
-}
-
 export function generateSubsystem(subsystem: Subsystem, project: Project) {
   if (!subsystem || !project) return null;
 
@@ -230,56 +152,88 @@ export function generateSubsystem(subsystem: Subsystem, project: Project) {
     `
     package frc.robot.subsystems;
 
-${ [...new Set(subsystem.components.map(c => c.definition.fqn))].sort().map(fqn => indent(`import ${ fqn };`, 4)).join("\n") }
+    import static edu.wpi.first.units.Units.*;
 
+${ [...new Set(subsystem.components.map(c => c.definition.fqn))].sort().map(fqn => indent(`import ${ fqn };`, 4)).join("\n") }
+    import edu.wpi.first.epilogue.Logged;
+    import edu.wpi.first.units.*;
+    import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+    import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+    import edu.wpi.first.wpilibj2.command.Command;
+    import edu.wpi.first.wpilibj2.command.SubsystemBase;
+    import edu.wpi.first.wpilibj2.command.button.Trigger;
+    
     /**
      * The ${ subsystem.name } subsystem.
      */
+    @Logged
     public class ${ clazz } extends SubsystemBase {
-      private final ${ className(subsystem.name) }IO io;
 
-      private final ShuffleboardTab tab = Shuffleboard.getTab("${ subsystem.name }");
+${ subsystem.components.map(c => indent(`${ fieldDeclaration(c.definition.className, c.name) };`, 6)).join("\n") }
 
-      public ${ clazz }(${ className(subsystem.name) }IO io) {
-        this.io = io;
-
-        // Dashboard settings
-        setName("${ subsystem.name }");
-
-        var commandList = tab.getLayout("Commands", BuiltInLayouts.kList);
-${ subsystem.commands.filter(c => c.params.length === 0).map(c => indent(`commandList.add("${ c.name }", this.${ methodName(c.name) }());`, 8)).join("\n") }
-      }
-
-      @Override
-      public void simulationPeriodic() {
-        // This should be in the main robot class
-        if (this.io instanceof Sim${ className(subsystem.name) }IO simIO) {
-          simIO.update();
-        }
-      }
-
-      // IO
-
-${ indent(generateSubsystemIOInterface(subsystem, project), 6) }
-
-${ indent(generateConcreteSubsystemIO(subsystem, project), 6) }
-
-${ indent(generateSimSubsystemIO(subsystem, project), 6) }
-
-      // STATES
+${
+  (() => {
+    if (subsystem.states.length > 0) {
+      return indent(
+        unindent(`
+          // These triggers can be used to activate commands when the ${ subsystem.name } enters a
+          // certain state. This can be useful for coordinating hand offs between mechanisms, or for
+          // simply notifying the drivers that something happened.
+          `.trim()
+        ),
+        6
+      );
+    } else {
+      return '';
+    }
+  })()
+}
 ${ subsystem.states.map(state => {
   return indent(unindent(
     `
-      public boolean ${ methodName(state.name) }() {
-        return io.${ methodName(state.name) }();
-      }
+      @NotLogged
+      public final Trigger ${ methodName(state.name) } = new Trigger(this::${ methodName(state.name) });
     `
   ).trim(), 6)
-}).join("\n\n") }
+}).join("\n") }
+
+      public ${ clazz }() {
+${
+  subsystem.components.map(c => indent(`this.${ objectName(c.name) } = ${ generateComponentDefinition(c, subsystem) };`, 8)
+  ).join("\n")
+}
+
+${
+  subsystem.components.flatMap(c => generatePropertySetting(subsystem, c)).map(setter => indent(setter, 8))
+    .join("\n")
+}
+
+      }
+
+      // ACTIONS
+      // Note: actions are private methods by default. This is for safety. Anything that a subsystem does
+      // should be performed using a command, and a subsystem can only have one command running at a time.
+      // Raw methods like these have no such protections, and should only be used internally where the
+      // subsystem code can guarantee they are used safely.
+
+${
+  subsystem.actions.map(action => unindent(indent(generateAction_future(action, subsystem), 4)).trim())
+    .map(f => indent(f, 6)).join("\n\n")
+}
+
+      // STATES
+
+${
+  subsystem.states.map(state => unindent(indent(generateState(state, subsystem), 4)).trim())
+  .map(f => indent(f, 6)).join("\n\n")
+}
 
       // COMMANDS
 
-${ commands.map(c => indent(generateCommand(c.name, subsystem, c.action, c.endCondition, c.params, c.toInitialize, c.toComplete, c.toInterrupt), 6)).join("\n\n") }
+${
+  commands.map(c => indent(generateCommand(c.name, subsystem, c.action, c.endCondition, c.params, c.toInitialize, c.toComplete, c.toInterrupt), 6))
+    .join("\n\n")
+}
     }
     `
   );

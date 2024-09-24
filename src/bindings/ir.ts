@@ -268,6 +268,8 @@ export class Group extends Decorable {
    */
   name: string;
 
+  readonly type: 'Sequence' | 'Parallel';
+
   /**
    * Adds a new sequential command group to this group.
    *
@@ -345,6 +347,7 @@ export class Group extends Decorable {
 }
 
 export class SeqGroup extends Group {
+  readonly type = 'Sequence';
 }
 
 /**
@@ -359,6 +362,8 @@ export type ParallelEndCondition =
   | "any";
 
 export class ParGroup extends Group {
+  readonly type = 'Parallel';
+
   endCondition: ParallelEndCondition;
 
   constructor(endCondition: ParallelEndCondition) {

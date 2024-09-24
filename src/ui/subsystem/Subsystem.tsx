@@ -1,4 +1,4 @@
-import { Project } from "../../bindings/Project";
+import {Project} from "../../bindings/Project";
 import {
   ActionParamCallOption,
   AtomicCommand,
@@ -18,33 +18,37 @@ import {
   AccordionSummary,
   Box,
   Button,
-  Card,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogTitle, Divider,
-  Paper,
+  DialogTitle,
+  Divider,
   Select,
   SxProps,
   Tab,
   Tabs,
-  TextField, Theme, Tooltip
+  TextField,
+  Theme,
+  Tooltip
 } from "@mui/material";
-import React, { CSSProperties, useEffect, useState } from "react";
+import React, {CSSProperties, useEffect, useState} from "react";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import { ComponentDefinition, MethodDefinition, ParameterDefinition } from "../../components/ComponentDefinition";
-import { generateCommand } from "../../codegen/java/CommandGenerator";
-import { generateSubsystem } from "../../codegen/java/SubsystemGenerator";
-import { generateAction_future } from "../../codegen/java/ActionGenerator";
-import { generateState } from "../../codegen/java/StateGenerator";
-import { differentialDrivebaseTemplate } from "../../templates/DifferentialDrivebase";
-import { ComponentColumn } from "./ComponentColumn";
-import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions";
-import { HelpableLabel } from "../HelpableLabel";
-import { ChevronRightSharp } from "@mui/icons-material";
+import {ComponentDefinition, MethodDefinition, ParameterDefinition} from "../../components/ComponentDefinition";
+import {generateCommand} from "../../codegen/java/CommandGenerator";
+import {generateSubsystem} from "../../codegen/java/SubsystemGenerator";
+import {generateAction_future} from "../../codegen/java/ActionGenerator";
+import {generateState} from "../../codegen/java/StateGenerator";
+import {differentialDrivebaseTemplate} from "../../templates/DifferentialDrivebase";
+import {ComponentColumn} from "./ComponentColumn";
+import {COMPONENT_DEFINITIONS} from "../../components/ComponentDefinitions";
+import {HelpableLabel} from "../HelpableLabel";
+import {ChevronRightSharp} from "@mui/icons-material";
+import SubsystemName from "../SubsystemName";
+import SubsystemActionName from "../SubsystemActionName";
+import SubsystemStateName from "../SubsystemStateName";
 
 
 type BasicOpts = {
@@ -117,12 +121,134 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
     }
   }
 
+  const [showCreateCommandDialog, setShowCreateCommandDialog] = useState(false);
+  const [commandDialogType, setCommandDialogType] = useState(null);
+  const [editedCommand, setEditedCommand] = useState(null as AtomicCommand);
+  const [canAddCommand, setCanAddCommand] = useState(subsystem.actions.length > 0);
+
+  useEffect(() => setCanAddCommand(subsystem.actions.length > 0), [subsystem.actions]);
+
+  const createCommand = (data: NewCommandData) => {
+    console.log(data);
+    if (editedCommand) {
+      editedCommand.name = data.name;
+      editedCommand.toInitialize = [...data.initializeActions];
+      editedCommand.action = data.action;
+      editedCommand.endCondition = data.endCondition;
+      editedCommand.params = data.params;
+      const newCommands = [...commands];
+      subsystem.commands = newCommands;
+      setCommands(newCommands);
+    } else {
+      const newCommand = data.toCommand();
+      const newCommands = commands.concat(newCommand);
+      subsystem.commands = newCommands;
+      setCommands(newCommands);
+    }
+    setEditedCommand(null);
+    setCommandDialogType(null);
+    setShowCreateCommandDialog(false);
+  }
+
+  const [editedAction, setEditedAction] = useState(null as SubsystemAction)
+  const [showCreateActionDialog, setShowCreateActionDialog] = useState(false);
+
+  const closeActionDialog = () => {
+    setShowCreateActionDialog(false);
+    setEditedAction(null);
+  }
+
+  const createAction = (data: ActionParams) => {
+    const newAction = subsystem.createAction(data.name);
+    newAction.steps = [...data.steps];
+    newAction.regenerateParams(subsystem);
+    const newActions = subsystem.actions;
+    subsystem.actions = [...newActions];
+    setActions(subsystem.actions);
+    closeActionDialog();
+  }
+
+  const [editedState, setEditedState] = useState(null as SubsystemState);
+  const [showCreateStateDialog, setShowCreateStateDialog] = useState(false);
+
+  const createState = (data) => {
+    const newState = subsystem.createState(data.name);
+    newState.step = new SubsystemActionStep({
+      component: data.component,
+      methodName: data.method,
+      params: data.params
+    });
+    subsystem.states = [...subsystem.states];
+    setStates(subsystem.states);
+    closeStateDialog();
+  }
+
+  const closeStateDialog = () => {
+    setShowCreateStateDialog(false);
+    setEditedState(null);
+  }
+
+  useEffect(() => {
+    closeActionDialog();
+    closeStateDialog();
+  }, [subsystem]);
+
   return (
     <Box className="subsystem-pane" style={ {} }>
+      <CreateCommandDialog subsystem={ subsystem }
+                           onCancel={ () => setShowCreateCommandDialog(false) }
+                           onAccept={ createCommand }
+                           defaultOpen={ showCreateCommandDialog }
+                           editedCommand={ editedCommand }
+                           type={ commandDialogType }/>
+
+      <CreateActionDialog open={ showCreateActionDialog }
+                          subsystem={ subsystem }
+                          editedAction={ editedAction }
+                          onCancel={ closeActionDialog }
+                          onCreate={ (data) => createAction(data) }
+                          onUpdate={ ({ name, steps }) => {
+                            closeActionDialog();
+                            editedAction.name = name;
+                            editedAction.steps = [...steps];
+                            editedAction.regenerateParams(subsystem);
+
+                            // Find the command that use the edited action, then remove any of their defined parameters that
+                            // pass through to a no longer defined param on the action.
+                            // Otherwise commands would have dangling references to nonexistent action params with no way to remove them
+                            subsystem.commands.filter(c => c.callsAction(editedAction)).forEach(command => {
+                              // Make sure any calling commands are updated to account for the action changes to the action
+                              command.params = command.params.filter(commandParamDef => {
+                                return commandParamDef.action === editedAction.uuid && !editedAction.params.find(ap => ap.uuid === commandParamDef.param);
+                              });
+                            })
+                            subsystem.actions = [...subsystem.actions];
+                            setActions(subsystem.actions);
+                            setEditedAction(null);
+                          } }/>
+
+      <CreateStateDialog open={ showCreateStateDialog }
+                         subsystem={ subsystem }
+                         editedState={ editedState }
+                         onCancel={ closeStateDialog }
+                         onCreate={ (data) => createState(data) }
+                         onUpdate={ (data) => {
+                           closeStateDialog();
+                           editedState.name = data.name;
+                           editedState.step = new SubsystemActionStep({
+                             component: data.component,
+                             methodName: data.method,
+                             params: data.params
+                           });
+                           subsystem.states = [...subsystem.states];
+                           setStates(subsystem.states);
+                           setEditedState(null);
+                         } }/>
+
       <div className="components-sidebar">
         <Accordion id="actuators-panel" className="component-column-accordion" square>
           <AccordionSummary id="actuators-panel-header" className="component-column-header" sx={ columnHeaderSx }>
-            <span>Actuators</span>
+            <span>Outputs</span>
           </AccordionSummary>
           <AccordionDetails style={{ padding: 0 }}>
             <ComponentColumn components={ actuators } subsystem={ subsystem } onChange={ onComponentChange } onDelete={ onComponentDelete }/>
@@ -144,7 +270,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
         </Accordion>
         <Accordion id="sensors-panel" className="component-column-accordion" square>
           <AccordionSummary id="sensors-panel-header" className="component-column-header" sx={ columnHeaderSx }>
-            <span>Sensors</span>
+            <span>Inputs</span>
           </AccordionSummary>
           <AccordionDetails style={{ padding: 0 }}>
             <ComponentColumn components={ sensors } subsystem={ subsystem } onChange={ onComponentChange } onDelete={ onComponentDelete }/>
@@ -214,7 +340,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                                   </span>
                                   <ChevronRightSharp style={{ height: '16px' }}/>
                                   <HelpableLabel description={ method.description }>
-                                    <span className="subsystem-action-name">{ method.name }</span>
+                                    <SubsystemActionName name={ method.name }/>
                                   </HelpableLabel> 
                                 </div>
 
@@ -251,7 +377,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                                               const referencedStep = action.steps.find(s => s.uuid === arg.step);
                                               const referencedComponent = subsystem.components.find(c => c.uuid === referencedStep.component);
                                               const referencedMethod = referencedComponent.definition.methods.find(m => m.codeName === referencedStep.methodName);
-                                              return (<span>result of <span className="subsystem-action-name">{ referencedMethod.name }</span> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>);
+                                              return (<span>result of <SubsystemActionName name={ referencedMethod.name }/> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>);
                                             default:
                                               return 'is unknown';
                                           }
@@ -270,11 +396,63 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                           })
                         }
                         </ol>
+                        <div>
+                          <Button onClick={(e) => { setEditedAction(action); setShowCreateActionDialog(true); }}>
+                            Edit
+                          </Button>
+                        </div>
                       </AccordionDetails>
                     </Accordion>
                   )
                 })
               }
+
+              <Button id="add-action-button"
+                      className="add-component-button add-action-button"
+                      onClick={(e) => setShowCreateActionDialog(true)}>
+                + Add Action
+              </Button>
+            </div>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion id="states-panel" className="component-column-accordion" square>
+          <AccordionSummary className="component-column-header" sx={ columnHeaderSx }>
+            <span>States</span>
+          </AccordionSummary>
+          <AccordionDetails style={{ padding: 0 }}>
+            <div>
+              {
+                subsystem.states.map(state => {
+                  return (
+                    <Accordion key={ state.uuid }>
+                      <AccordionSummary>
+                        { state.name }
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        {
+                          (() => {
+                            if (state.step) {
+                              let component = subsystem.components.find(c => c.uuid === state.step.component);
+                              return `${ component.name } ${ component.definition.methods.find(m => m.codeName === state.step.methodName).name }`;
+                            }
+                          })()
+                        }
+                        <div>
+                          <Button onClick={(e) => { setEditedState(state); setShowCreateStateDialog(true); } }>
+                            Edit
+                          </Button>
+                        </div>
+                      </AccordionDetails>
+                    </Accordion>
+                  )
+                })
+              }
+
+              <Button id="add-state-button"
+                      className="add-component-button add-state-button"
+                      onClick={(e) => setShowCreateStateDialog(true)}>
+                + Add State
+              </Button>
             </div>
           </AccordionDetails>
         </Accordion>
@@ -282,57 +460,53 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
           <AccordionSummary className="component-column-header" sx={ columnHeaderSx }>
             <span>Commands</span>
           </AccordionSummary>
-          <AccordionDetails style={{ padding: 0 }}>
+          <AccordionDetails style={{padding: 0}}>
             <div>
               {
                 subsystem.commands.map(command => {
                   return (
-                    <Accordion key={ command.uuid }>
+                    <Accordion key={command.uuid}>
                       <AccordionSummary>
-                        { command.name }
+                        {command.name}
                       </AccordionSummary>
                       <AccordionDetails>
-                        Run <span className="subsystem-action-name">{ subsystem.actions.find(a => a.uuid === command.action).name }</span> {
-                          (() => {
-                            switch (command.endCondition) {
-                              case "forever":
-                                return <span>until it is cancelled or interrupted</span>;
-                              case "once":
-                                return <span>exactly once</span>;
-                              default:
-                                // state UUID
-                                const endState = subsystem.states.find(s => s.uuid === command.endCondition);
-                                return (<span>until the <span className="subsystem-name">{ subsystem.name }</span> has reached <span className="subsystem-state-name">{ endState.name }</span></span>);
-                            }
-                          })()
-                        }
+                        <div>
+                          Run <SubsystemActionName action={subsystem.actions.find(a => a.uuid === command.action) } /> {
+                            (() => {
+                              switch (command.endCondition) {
+                                case undefined:
+                                case null:
+                                  break;
+                                case "forever":
+                                  return <span>until it is cancelled or interrupted</span>;
+                                case "once":
+                                  return <span>exactly once</span>;
+                                default:
+                                  // state UUID
+                                  const endState = subsystem.states.find(s => s.uuid === command.endCondition);
+                                  return (<span>until the <SubsystemName subsystem={subsystem} /> has reached <SubsystemStateName state={endState}/></span>);
+                              }
+                            })()
+                          }
+                        </div>
+                        <Button onClick={(e) => { setEditedCommand(command); setShowCreateCommandDialog(true); } }>
+                          Edit
+                        </Button>
                       </AccordionDetails>
                     </Accordion>
                   )
                 })
               }
             </div>
+            <div className="add-components-carousel" id="add-commands-carousel">
+              <Button id="add-command-button"
+                      className="add-component-button add-command-button"
+                      onClick={(e) => setShowCreateCommandDialog(true)}>
+                + Add Command
+              </Button>
+            </div>
           </AccordionDetails>
         </Accordion>
-        {/* <ActionsLane subsystem={ subsystem }
-                    actions={ actions }
-                    onChange={ (newActions) => {
-                      subsystem.actions = [...newActions];
-                      setActions(subsystem.actions);
-                    } }/>
-        <StatesLane subsystem={ subsystem }
-                    states={ states }
-                    onChange={ (newStates) => {
-                      subsystem.states = [...newStates];
-                      setStates(subsystem.states);
-                    } }/>
-        <CommandsLane subsystem={ subsystem }
-                      commands={ commands }
-                      onChange={ (newCommands) => {
-                        // TODO: Update the project.  Maybe?  Project shouldn't know about subsystem's commands...
-                        subsystem.commands = newCommands;
-                        setCommands(newCommands);
-                      } }/> */}
       </div>
       <div style={{ height: '100%', overflow: 'scroll' }}>
         <SyntaxHighlighter
@@ -741,276 +915,98 @@ function CreateActionDialog({
   );
 }
 
-function ActionsLane({
-                       subsystem,
-                       actions,
-                       onChange
-                     }: { subsystem: Subsystem, actions: SubsystemAction[], onChange: (newActions: SubsystemAction[]) => void }) {
-  const [editedAction, setEditedAction] = useState(null as SubsystemAction)
-  const [showCreateActionDialog, setShowCreateActionDialog] = useState(false);
-  const closeDialog = () => {
-    setShowCreateActionDialog(false);
-    setEditedAction(null);
-  }
+type StateParams = {
+  name: string,
+  component: UUID,
+  method: string,
+  params: StepParam[]
+};
 
-  useEffect(() => closeDialog(), [subsystem]);
+type CreateStateDialogProps = {
+  open: boolean;
+  subsystem: Subsystem;
+  editedState: SubsystemState | null;
+  onCancel: () => void;
+  onCreate: (data: StateParams) => void;
+  onUpdate: (data: StateParams) => void;
+};
 
-  const createAction = (data: ActionParams) => {
-    console.log(data);
-    const newAction = subsystem.createAction(data.name);
-    newAction.steps = [...data.steps];
-    newAction.regenerateParams(subsystem);
+function CreateStateDialog({
+                             open,
+                             subsystem,
+                             editedState,
+                             onCancel,
+                             onCreate,
+                             onUpdate
+                           }: CreateStateDialogProps) {
 
-    console.debug('Created new action', newAction);
-    onChange([...subsystem.actions]);
-    closeDialog();
-  }
+  const [stateName, setStateName] = useState(editedState?.name as string);
+  const [stateComponent, setStateComponent] = useState(subsystem.components.find(c => editedState?.step?.component && editedState.step.component === c.uuid) as SubsystemComponent);
+  const [stateMethod, setStateMethod] = useState(editedState?.step?.methodName as string);
+  const [stateParams, setStateParams] = useState(editedState?.step?.params ?? [] as StepParam[]);
+
+  useEffect(() => {
+    const pullEditedData = open && !!editedState;
+    setStateName(pullEditedData ? editedState.name : null);
+    setStateComponent(pullEditedData ? subsystem.components.find(c => editedState.step?.component === c.uuid) : null);
+    setStateMethod(pullEditedData ? editedState.step?.methodName : null);
+    setStateParams(pullEditedData ? editedState.step?.params : []);
+  }, [open, editedState]);
 
   return (
-    <Box className="subsystem-lane actions-lane">
-      <h3>Actions</h3>
-      <Box className="subsystem-lane-items">
-        <CreateActionDialog open={ showCreateActionDialog }
-                            subsystem={ subsystem }
-                            editedAction={ editedAction }
-                            onCancel={ closeDialog }
-                            onCreate={ (data) => createAction(data) }
-                            onUpdate={ ({ name, steps }) => {
-                              closeDialog();
-                              editedAction.name = name;
-                              editedAction.steps = [...steps];
-                              editedAction.regenerateParams(subsystem);
-
-                              // Find the command that use the edited action, then remove any of their defined parameters that
-                              // pass through to a no longer defined param on the action.
-                              // Otherwise commands would have dangling references to nonexistent action params with no way to remove them
-                              subsystem.commands.filter(c => c.callsAction(editedAction)).forEach(command => {
-                                // Make sure any calling commands are updated to account for the action changes to the action
-                                console.debug('[ACTION-UPDATE] Updating command', command.name, 'to account for parameters possibly going away');
-                                command.params = command.params.filter(commandParamDef => {
-                                  const references = commandParamDef.action === editedAction.uuid && !editedAction.params.find(ap => ap.uuid === commandParamDef.param);
-                                  if (references) {
-                                    // The command references a parameter that no longer exists on the action!
-                                    console.debug('[ACTION-UPDATE] Parameter', commandParamDef.param, 'went away!');
-                                  }
-                                  return references;
-                                });
-                              })
-                              onChange([...subsystem.actions]);
-                              setEditedAction(null);
-                            } }/>
-        {
-          actions.map(action => {
-            return (
-              <Card key={ action.uuid } className="subsystem-lane-item" component={ Paper }>
-                { action.name }
-                <Button onClick={ (e) => {
-                  setEditedAction(action);
-                  setShowCreateActionDialog(true);
-                } }>
-                  Edit
-                </Button>
-              </Card>
-            )
-          })
-        }
+    <Dialog open={ open }>
+      <DialogTitle>{ editedState ? 'Edit ' : 'Create '} State</DialogTitle>
+      <DialogContent>
+        <TextField label="Name"
+                   variant="standard"
+                   value={ stateName }
+                   onChange={ (e) => setStateName(e.target.value) }/>
+        <StepEditor subsystem={ subsystem }
+                    component={ stateComponent }
+                    methodName={ stateMethod }
+                    params={ stateParams }
+                    previousSteps={ [] }
+                    componentMapper={ null }
+                    methodMapper={ (methods) => {
+                      const nonVoidMethods = methods.filter(m => m.returns !== 'void');
+                      const booleansFirst = (a: MethodDefinition, b: MethodDefinition): number => {
+                        return ((b.hints.includes("state") as unknown as number) - (a.hints.includes("state") as unknown as number)) ||
+                          (((b.returns === "boolean") as unknown as number) - ((a.returns === "boolean") as unknown as number)) ||
+                          (((b.returns === "double") as unknown as number) - ((a.returns === "double") as unknown as number)) ||
+                          0;
+                      }
+                      return nonVoidMethods.sort(booleansFirst);
+                    } }
+                    onMethodChange={ (component, methodName, params) => {
+                      setStateComponent(component);
+                      setStateMethod(methodName);
+                      setStateParams(params);
+                    } }/>
+        <SyntaxHighlighter language="java" style={ SyntaxHighlightStyles.vs }>
+          { (() => {
+            const dummyState = new SubsystemState(stateName ?? 'Unnamed State', subsystem.uuid);
+            dummyState.step = new SubsystemActionStep({
+              component: stateComponent?.uuid,
+              methodName: stateMethod,
+              params: stateParams
+            });
+            return generateState(dummyState, subsystem);
+          })() }
+        </SyntaxHighlighter>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={ onCancel }>Cancel</Button>
         <Button onClick={ () => {
-          setEditedAction(null);
-          setShowCreateActionDialog(true);
-        } }>
-          + Add Action
-        </Button>
-      </Box>
-    </Box>
-  );
-}
-
-function StatesLane({
-                      subsystem,
-                      states,
-                      onChange
-                    }: { subsystem: Subsystem, states: SubsystemState[], onChange: (newStates: SubsystemState[]) => void }) {
-  const [showCreateStateDialog, setShowCreateStateDialog] = useState(false);
-  const [editedState, setEditedState] = useState(null as SubsystemState);
-  const [newStateName, setNewStateName] = useState(null as string);
-  const [newStateComponent, setNewStateComponent] = useState(null as SubsystemComponent);
-  const [newStateMethod, setNewStateMethod] = useState(null as string);
-  const [newStateParams, setNewStateParams] = useState([] as StepParam[]);
-
-  const createState = () => {
-    if (editedState) {
-      editedState.name = newStateName;
-      editedState.step = editedState.step?.clone() ?? new SubsystemActionStep({});
-      editedState.step.component = newStateComponent?.uuid;
-      editedState.step.methodName = newStateMethod;
-      editedState.step.params = [...newStateParams];
-    } else {
-      const newState = subsystem.createState(newStateName);
-      newState.step = new SubsystemActionStep({
-        component: newStateComponent.uuid,
-        methodName: newStateMethod,
-        params: newStateParams
-      });
-      console.debug('[STATES-LANE] Created new state', newState);
-    }
-    onChange([...subsystem.states]);
-    closeDialog();
-  }
-
-  const closeDialog = () => {
-    setShowCreateStateDialog(false);
-    setEditedState(null);
-    setNewStateName(null);
-    setNewStateComponent(null);
-    setNewStateMethod(null);
-    setNewStateParams([]);
-  }
-
-  return (
-    <Box className="subsystem-lane states-lane">
-      <h3>States</h3>
-      <Dialog open={ showCreateStateDialog }>
-        <DialogTitle>{ editedState ? 'Edit ' : 'Create '} State</DialogTitle>
-        <DialogContent>
-          <TextField label="Name"
-                     variant="standard"
-                     value={ newStateName }
-                     onChange={ (e) => setNewStateName(e.target.value) }/>
-          <StepEditor subsystem={ subsystem }
-                      component={ newStateComponent }
-                      methodName={ newStateMethod }
-                      params={ newStateParams }
-                      previousSteps={ [] }
-                      componentMapper={ null }
-                      methodMapper={ (methods) => {
-                        const nonVoidMethods = methods.filter(m => m.returns !== 'void');
-                        const booleansFirst = (a: MethodDefinition, b: MethodDefinition): number => {
-                          return ((b.hints.includes("state") as unknown as number) - (a.hints.includes("state") as unknown as number)) ||
-                            (((b.returns === "boolean") as unknown as number) - ((a.returns === "boolean") as unknown as number)) ||
-                            (((b.returns === "double") as unknown as number) - ((a.returns === "double") as unknown as number)) ||
-                            0;
-                        }
-                        const sortedMethods = nonVoidMethods.sort(booleansFirst);
-                        console.debug('Sorted methods', sortedMethods.map(m => m.name));
-                        return sortedMethods;
-                      } }
-                      onMethodChange={ (component, methodName, params) => {
-                        setNewStateComponent(component);
-                        setNewStateMethod(methodName);
-                        setNewStateParams(params);
-                      } }/>
-          <SyntaxHighlighter language="java" style={ SyntaxHighlightStyles.vs }>
-            { (() => {
-              const dummyState = new SubsystemState(newStateName ?? 'Unnamed State', subsystem.uuid);
-              dummyState.step = new SubsystemActionStep({
-                component: newStateComponent?.uuid,
-                methodName: newStateMethod,
-                params: newStateParams
-              });
-              return generateState(dummyState, subsystem);
-            })() }
-          </SyntaxHighlighter>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={ closeDialog }>Cancel</Button>
-          <Button onClick={ () => createState() } disabled={ !newStateName }>OK</Button>
-        </DialogActions>
-      </Dialog>
-      <Box className="subsystem-lane-items">
-        {
-          states.map(state => {
-            return (
-              <Card key={ state.uuid } className="subsystem-lane-item" component={ Paper }>
-                { state.name }
-                <Button onClick={ () => {
-                  setNewStateName(state.name);
-                  if (state.step) {
-                    setNewStateComponent(subsystem.components.find(c => c.uuid === state.step.component));
-                    setNewStateMethod(state.step.methodName);
-                    setNewStateParams([...state.step.params]);
-                  }
-                  setEditedState(state);
-                  setShowCreateStateDialog(true);
-                } }>
-                  Edit
-                </Button>
-              </Card>
-            )
-          })
-        }
-        <Button onClick={ () => setShowCreateStateDialog(true) }>
-          + Add State
-        </Button>
-      </Box>
-    </Box>
-  );
-}
-
-function CommandsLane({
-                        subsystem,
-                        commands,
-                        onChange
-                      }: { subsystem: Subsystem, commands: AtomicCommand[], onChange: (newCommands: AtomicCommand[]) => void }) {
-  const [showCreateCommandDialog, setShowCreateCommandDialog] = useState(false);
-  const [commandDialogType, setCommandDialogType] = useState(null);
-  const [editedCommand, setEditedCommand] = useState(null as AtomicCommand);
-  const [canAddCommand, setCanAddCommand] = useState(subsystem.actions.length > 0);
-
-  useEffect(() => setCanAddCommand(subsystem.actions.length > 0), [subsystem.actions]);
-
-  const createCommand = (data: NewCommandData) => {
-    console.log(data);
-    if (editedCommand) {
-      editedCommand.name = data.name;
-      editedCommand.toInitialize = [...data.initializeActions];
-      editedCommand.action = data.action;
-      editedCommand.endCondition = data.endCondition;
-      editedCommand.params = data.params;
-      onChange([...commands]);
-    } else {
-      const newCommand = data.toCommand();
-      onChange(commands.concat(newCommand));
-    }
-    setEditedCommand(null);
-    setCommandDialogType(null);
-    setShowCreateCommandDialog(false);
-  }
-
-  return (
-    <Box className="subsystem-lane commands-lane">
-      <h3>Commands</h3>
-      <CreateCommandDialog subsystem={ subsystem }
-                           onCancel={ () => setShowCreateCommandDialog(false) }
-                           onAccept={ createCommand }
-                           defaultOpen={ showCreateCommandDialog }
-                           editedCommand={ editedCommand }
-                           type={ commandDialogType }/>
-      <Box className="subsystem-lane-items">
-        {
-          subsystem.commands.map(command => {
-            return (
-              <Card key={ command.uuid } className="subsystem-lane-item" component={ Paper }>
-                { command.name }
-                <Button onClick={ () => {
-                  setCommandDialogType("edit");
-                  setEditedCommand(command);
-                  setShowCreateCommandDialog(true);
-                } }>
-                  Edit
-                </Button>
-              </Card>
-            )
-          })
-        }
-        <Button onClick={ () => {
-          setCommandDialogType("create");
-          setEditedCommand(null);
-          setShowCreateCommandDialog(true);
-        } } disabled={ !canAddCommand && false }>
-          + Add Command
-        </Button>
-      </Box>
-    </Box>
+          const data: StateParams = {
+            name: stateName,
+            component: stateComponent?.uuid,
+            method: stateMethod,
+            params: stateParams
+          };
+          !!editedState ? onUpdate(data) : onCreate(data)
+        } } disabled={ !stateName }>OK</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -1128,11 +1124,7 @@ function CreateCommandDialog({
       <DialogTitle>{ type === "create" ? "Create Command" : "Edit Command" }</DialogTitle>
       <DialogContent className="content">
         <span className="subsystem-heading">
-          Using the
-          <span className="subsystem-name">
-            { subsystem.name }
-          </span>
-          subsystem,
+          Using the <SubsystemName subsystem={subsystem}/> subsystem,
         </span>
 
         <span className="initialize-heading">
@@ -1155,7 +1147,7 @@ function CreateCommandDialog({
                 return (
                   <MenuItem value={ action.uuid }
                             key={ action.uuid }>
-                    <span className="subsystem-action-name">{ action.name }</span>
+                    <SubsystemActionName action={ action }/>
                   </MenuItem>
                 )
               })
@@ -1196,7 +1188,7 @@ function CreateCommandDialog({
                 return (
                   <MenuItem value={ action.uuid }
                             key={ action.uuid }>
-                    <span className="subsystem-action-name">{ action.name }</span>
+                    <SubsystemActionName action={ action }/>
                   </MenuItem>
                 )
               })
@@ -1213,7 +1205,7 @@ function CreateCommandDialog({
                     console.debug('Setting end condition to', e.target.value);
                     setEndCondition(e.target.value);
                   } }
-                  defaultValue={ editedCommand?.endCondition }>
+                  defaultValue={ editedCommand?.endCondition || "forever" }>
             <MenuItem value="forever">
               It is interrupted or canceled
             </MenuItem>
@@ -1226,8 +1218,7 @@ function CreateCommandDialog({
                   <MenuItem value={ state.uuid }
                             key={ state.uuid }>
                     The
-                    <span className="subsystem-name">{ subsystem.name }</span> reaches <span
-                    className="subsystem-state-name">{ state.name }</span>
+                    <SubsystemName subsystem={subsystem}/> reaches <SubsystemStateName state={state}/>
                   </MenuItem>
                 );
               })
@@ -1283,7 +1274,8 @@ function CreateCommandDialog({
             // console.debug('  endCondition:', endCondition);
             // console.debug('  commandName:', commandName);
 
-            return !selectedAction || !endCondition || !commandName;
+            // return !selectedAction || !endCondition || !commandName;
+            return !commandName;
           })() }>
           OK
         </Button>

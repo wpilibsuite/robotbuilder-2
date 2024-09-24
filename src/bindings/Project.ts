@@ -14,7 +14,7 @@ export const makeNewProject = (): Project => {
   return {
     name: "New Project",
     controllers: [
-      { name: "New Controller", uuid: uuidV4(), type: "ps5", port: 1 , buttons: [] }
+      { name: "New Controller", uuid: uuidV4(), type: "ps5", className: 'CommandPS5Controller', fqn: '', port: 1 , buttons: [] }
     ],
     subsystems: [],
     commands: []

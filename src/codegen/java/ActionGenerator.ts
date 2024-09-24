@@ -27,7 +27,7 @@ const varNameForStepOutput = (stepOrUuid: SubsystemActionStep | string, previous
   const stepNum = previousSteps.indexOf(step) + 1;
   const component = subsystem.components.find(c => c.uuid === step.component);
   // TODO: Better variable names!
-  return variableName(`step${ stepNum } ${ variableName(component.name) } ${ variableName(step.methodName) }`);
+  return variableName(`step${ stepNum } ${ variableName(component.name) } ${ variableName(component.definition.methods.find(m => m.codeName === step.methodName).name) }`);
 }
 
 export function generateStepParams(steps: SubsystemActionStep[], subsystem: Subsystem): string[] {
@@ -73,7 +73,7 @@ export function generateStepInvocations(steps: SubsystemActionStep[], subsystem:
       // Store output in a final variable
       // Use the return type for clarity - `final var` isn't helpful when a lot of method names don't imply a particular return type
       // (though it's typically going to be doubles)
-      varDef = `final ${ methodDef.returns } ${ varNameForStepOutput(step, steps, subsystem) } = `;
+      varDef = `${ methodDef.returns } ${ varNameForStepOutput(step, steps, subsystem) } = `;
     }
 
     const args = step.params.map(param => {
@@ -101,7 +101,7 @@ export function generateStepInvocations(steps: SubsystemActionStep[], subsystem:
 
     const invocation = `${ step.methodName }(${ args.join(", ") });`;
 
-    return `${ varDef }this.${ variableName(component.name) }.${ invocation }`;
+    return `${ varDef }${ variableName(component.name) }.${ invocation }`;
   });
 }
 
@@ -112,7 +112,7 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
 
   return codeBlock(
     `
-    public void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.join(", ") }) {
+    private void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.join(", ") }) {
 ${ stepInvocations.length > 0 ? stepInvocations.filter(i => !!i).map(invoke => indent(invoke, 6)).join("\n") : indent('// Add your custom logic here!', 6) }
     }
     `

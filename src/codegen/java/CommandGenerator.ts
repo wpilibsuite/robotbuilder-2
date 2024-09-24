@@ -87,7 +87,12 @@ function generateActionInvocation(action: SubsystemAction, subsystemVar: string,
   return `${ subsystemVar }.${ actionMethod }(${ action.params.map(param => generateActionParamValue(param, commandParams.find(c => c.param === param.uuid))).join(', ') })`;
 }
 
-function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: string, commandParams: ActionParamCallOption[]) {
+function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: string, commandParams: ActionParamCallOption[]): string | null {
+  if (action === null || action === undefined) {
+    // No action, nothing to do
+    return null;
+  }
+
   const actionMethod = methodName(action.name);
 
   if (action.params.length === 0) {
@@ -116,12 +121,12 @@ function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: s
  * )
  *
  * Generates this code:
- * public CommandBase foo(double x, double y) {
+ * public Command foo(double x, double y) {
  *   return this.run(() -> this.fooAction(x, y));
  * }
  */
 export function generateCommand(name: string, subsystem: Subsystem, actionUuid: string, endCondition: EndCondition, commandParams: ActionParamCallOption[], toInitialize: string[], toComplete: string[], toInterrupt: string[]): string {
-  if (!name || !subsystem || !actionUuid || !endCondition) {
+  if (!name || !subsystem) {
     // Not enough information, bail
     return '';
   }
@@ -129,12 +134,12 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
   const action = subsystem.actions.find(a => a.uuid === actionUuid);
   if (!action) {
     // Couldn't find the action we'd be invoking!
-    return '';
+    // return '';
   }
 
   console.debug('Generating Java command code for command', name, 'subsystem', subsystem.name, 'action', actionUuid, 'end condition', endCondition, 'with params', commandParams);
 
-  const subsystemVar = 'io';
+  const subsystemVar = 'this';
   let paramDefs = '';
   if (commandParams.length > 0) {
     // All passthrough invocations require parameters on the command factory
@@ -147,8 +152,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
     }).join(", ");
   }
 
-  // Return a CommandBase because it implements the Sendable interface, while Command doesn't
-  const commandDef = `public CommandBase ${ variableName(name) }(${ paramDefs })`;
+  const commandDef = `public Command ${ variableName(name) }(${ paramDefs })`;
   const actionInvocation = generateActionInvocationLambda(action, subsystemVar, commandParams);
 
   let initializeLambda = null;
@@ -172,11 +176,24 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
     case "once":
       actionLambda = `runOnce(${ actionInvocation })`;
       break;
+    case undefined:
+      // TODO?
+      if (actionInvocation) {
+        actionLambda = `run(${ actionInvocation })`;
+      } else {
+        actionLambda = `run(/* No action specified! */)`;
+      }
+      break;
     default:
       // assume state UUID
       const endState = subsystem.states.find(s => s.uuid === endCondition);
-      const stateName = endState.name;
-      actionLambda = `run(${ actionInvocation }).until(${ subsystemVar }::${ methodName(stateName) })`;
+      const stateName = endState?.name;
+      if (stateName) {
+        actionLambda = `run(${ actionInvocation }).until(${ subsystemVar }::${ methodName(stateName) })`;
+      } else {
+        // TODO?
+        actionLambda = `end: ${endCondition}`;
+      }
       break;
   }
   if (initializeLambda) {
@@ -184,9 +201,13 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
     actionLambda = `andThen(${ actionLambda })`;
   }
 
-  const chainItems = [initializeLambda, actionLambda].filter(i => !!i); // kick out undefined steps
+  const setName = `withName("${ name }")`;
+
+  const chainItems = [initializeLambda, actionLambda, setName].filter(i => !!i); // kick out undefined steps
   let commandChain: string;
-  if (chainItems.length <= 1) {
+  if (chainItems.length === 0) {
+    commandChain = '/* No action specified! */'
+  } else if (chainItems.length === 1) {
     // only one method call
     commandChain = chainItems.join(".");
   } else {
@@ -199,7 +220,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
         unindent(
           `
           /**
-           * The ${ name } command.  This will run the ${ action.name } action and will
+           * The ${ name } command.  This will run the ${ action?.name } action and will
            * only stop if it is canceled or another command that requires the ${ subsystem.name } is started.
            */
           ${ commandDef } {
@@ -213,7 +234,7 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
         unindent(
           `
           /**
-           * The ${ name } command.  This will run the ${ action.name } action once and then immediately finish.
+           * The ${ name } command.  This will run the ${ action?.name } action once and then immediately finish.
            */
           ${ commandDef } {
             return ${ commandChain };
@@ -224,12 +245,12 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
     default:
       // command state uuid
       const endState = subsystem.states.find(s => s.uuid === endCondition);
-      const stateName = endState.name;
+      const stateName = endState?.name;
       return (
         unindent(
           `
           /**
-           * The ${ name } command.  This will run the ${ action.name } action until the ${ subsystem.name }
+           * The ${ name } command.  This will run the ${ action?.name } action until the ${ subsystem.name }
            * has ${ stateName }.
            */
           ${ commandDef } {

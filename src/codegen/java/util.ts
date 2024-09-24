@@ -1,3 +1,4 @@
+import parsers from "prettier-plugin-java"
 import prettier from "prettier";
 
 /**
@@ -68,6 +69,10 @@ export function methodName(name: string): string {
 }
 
 export function variableName(name: string): string {
+  if (/^(Get |get[A-Z])/.test(name)) {
+    // Remove leading "Get" from fields if the input is the name of a getter method
+    name = name.substring(3);
+  }
   return camelCase(name);
 }
 
@@ -80,7 +85,10 @@ export function objectName(name: string): string {
 }
 
 export function fieldDeclaration(type: string, name: string): string {
-  return `private final ${ type } ${ objectName(name) }`
+  return unindent(`
+    @Logged(name = "${name}")
+    private final ${ type } ${ objectName(name) }
+  `).trim();
 }
 
 export function parameterDeclaration(type: string, name: string): string {
@@ -146,13 +154,10 @@ export function supplierFunctionType(type: Type): string {
  */
 export function prettify(code: string): string {
   try {
-    globalThis.process = globalThis.process; // Required hack to get prettier-plugin-java to function in a browser context
-    const prettierJavaPlugin = require('prettier-plugin-java');
-
     return prettier.format(
       code,
       {
-        plugins: [prettierJavaPlugin],
+        plugins: [parsers],
         parser: 'java',
         tabWidth: 2,
         printWidth: 100,
@@ -163,6 +168,26 @@ export function prettify(code: string): string {
     // Couldn't prettify - return the unprettified contents
     // This can happen if the code is invalid Java and the parser barfs
     console.error('Encountered an error while prettifying generated code', e);
+    return code;
+  }
+}
+
+export function prettifySnippet(code: string): string {
+  // Awkwardly, prettifying only works on fully defined classes or interfaces; it won't work on method snippets
+  // So we wrap the snippet in a class declaration, prettify THAT, and then remove the declaration at the end
+  const wrapperStart = 'interface $$$$ {\n'
+  const wrapperEnd = '}';
+
+  const prettified = prettify(unindent(
+    `
+    ${ wrapperStart } ${ code } ${ wrapperEnd }
+    `
+    ).trim()
+  )
+
+  if (prettified.startsWith(wrapperStart)) {
+    return unindent(prettified.replace(wrapperStart, '').replace(/\}\n*$/, '')).trim();
+  } else {
     return code;
   }
 }

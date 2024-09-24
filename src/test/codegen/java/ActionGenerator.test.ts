@@ -122,8 +122,8 @@ test("Generates implementation with a passthrough value", () => {
   console.log(output);
 
   expect(output).toEqual((
-`public void anAction(double valuePassedToActuatorSetValueMethod) {
-  this.actuator.setValue(valuePassedToActuatorSetValueMethod);
+`private void anAction(double valuePassedToActuatorSetValueMethod) {
+  actuator.setValue(valuePassedToActuatorSetValueMethod);
 }`
   ))
 });
@@ -159,8 +159,8 @@ test("Generates implementation with a hardcoded value", () => {
   console.log(output);
 
   expect(output).toEqual((
-    `public void anAction() {
-  this.actuator.setValue(Double.MAX_VALUE);
+    `private void anAction() {
+  actuator.setValue(Double.MAX_VALUE);
 }`
   ))
 });
@@ -212,9 +212,9 @@ test("Generates implementation that references an argument defined by a prior st
   console.log(output);
 
   expect(output).toEqual((
-    `public void anAction(double valuePassedToActuatorSetValueMethod) {
-  this.actuator.setValue(valuePassedToActuatorSetValueMethod);
-  this.actuator.setValue(valuePassedToActuatorSetValueMethod);
+    `private void anAction(double valuePassedToActuatorSetValueMethod) {
+  actuator.setValue(valuePassedToActuatorSetValueMethod);
+  actuator.setValue(valuePassedToActuatorSetValueMethod);
 }`
   ))
 });
@@ -270,10 +270,10 @@ test("Generates an implementation that references the output of a previous step"
   console.log(output);
 
   expect(output).toEqual((
-    `public void anAction() {
-  final double step1SensorGetPosition = this.sensor.getPosition();
-  final double step2ControllerCalculate = this.controller.calculate(step1SensorGetPosition);
-  this.actuator.setValue(step2ControllerCalculate);
+    `private void anAction() {
+  double step1SensorPosition = sensor.getPosition();
+  double step2ControllerCalculate = controller.calculate(step1SensorPosition);
+  actuator.setValue(step2ControllerCalculate);
 }`
   ))
 });
