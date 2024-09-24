@@ -7,21 +7,22 @@ import {
   MenuItem,
   Paper,
   Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-} from "@mui/material";
-import { Controller, ControllerButton } from "../../bindings/Controller";
-import { PS5Controller } from "./configs/ps5";
-import { ButtonConfig, ControllerConfig } from "./ControllerConfig";
-import { AtomicCommand } from "../../bindings/Command";
-import React, { useState } from "react";
-import $ from "jquery";
-import { ReactSVG } from "react-svg";
-import { Project } from "../../bindings/Project";
+} from "@mui/material"
+import { Controller, ControllerButton } from "../../bindings/Controller"
+import { PS5Controller } from "./configs/ps5"
+import { ButtonConfig, ControllerConfig } from "./ControllerConfig"
+import { AtomicCommand } from "../../bindings/Command"
+import React, { useState } from "react"
+import $ from "jquery"
+import { ReactSVG } from "react-svg"
+import { Project } from "../../bindings/Project"
 
 export type ControllerPaneProps = {
   project: Project;
@@ -31,38 +32,38 @@ export type ControllerPaneProps = {
 type CommandSelectBoxProps = {
   project: Project;
   initialCommand: string | undefined;
-  onChange: any;
+  onChange: (event: SelectChangeEvent<string>, child: React.ReactNode) => void;
 }
 
 function groupArrayContents<K, V>(array: V[], groupingFunction: (V) => K): Map<K, V[]> {
-  const object = new Map<K, V[]>();
+  const object = new Map<K, V[]>()
   array.forEach(item => {
-    const key = groupingFunction(item);
+    const key = groupingFunction(item)
     if (!object.get(key)) {
-      object.set(key, []);
+      object.set(key, [])
     }
-    object.get(key).push(item);
+    object.get(key).push(item)
   })
 
-  return object;
+  return object
 }
 
 function CommandSelectBox({ project, initialCommand, onChange }: CommandSelectBoxProps) {
   const groupedAtomicCommands = groupArrayContents(
     project.subsystems.flatMap(s => s.commands) as AtomicCommand[],
-    (c: AtomicCommand) => project.subsystems.find(s => s.uuid === c.subsystem)
-  );
+    (c: AtomicCommand) => project.subsystems.find(s => s.uuid === c.subsystem),
+  )
 
   return (
     <FormControl size="small" style={ { width: "100%" } }>
       <Select className={ "command-select" } variant={ "standard" } onChange={ onChange }
-              defaultValue={ initialCommand ?? '' }>
-        <MenuItem value={ '' } selected={ !initialCommand }>
+              defaultValue={ initialCommand ?? "" }>
+        <MenuItem value={ "" } selected={ !initialCommand }>
           Unbound
         </MenuItem>
         {
           Array.from(groupedAtomicCommands.entries()).sort((a, b) => a[0].uuid.localeCompare(b[0].uuid)).flatMap(data => {
-            const [subsystem, commands] = data;
+            const [subsystem, commands] = data
 
             const groupHeader = <ListSubheader key={ subsystem.uuid }>{ subsystem.name }</ListSubheader>
 
@@ -71,8 +72,8 @@ function CommandSelectBox({ project, initialCommand, onChange }: CommandSelectBo
                 return (
                   <MenuItem value={ command.uuid} key={ command.uuid }>{ command.name }</MenuItem>
                 )
-              })
-            );
+              }),
+            )
           })
         }
         <Divider/>
@@ -85,7 +86,7 @@ function CommandSelectBox({ project, initialCommand, onChange }: CommandSelectBo
         }
       </Select>
     </FormControl>
-  );
+  )
 }
 
 type ButtonBindingDialogProps = {
@@ -95,8 +96,8 @@ type ButtonBindingDialogProps = {
 
 function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
   const updateButtonCommand = (bindingType: string, uuid: string) => {
-    button[bindingType] = uuid;
-  };
+    button[bindingType] = uuid
+  }
 
   return (
     <Card className={ "binding-dialog" } component={ Paper }>
@@ -114,55 +115,55 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>Press and hold</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whileHeld }
-                                    onChange={ (event) => updateButtonCommand('whileHeld', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whileHeld", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Press</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whenPressed }
-                                    onChange={ (event) => updateButtonCommand('whenPressed', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whenPressed", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Toggle on press</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.toggleOnPress }
-                                    onChange={ (event) => updateButtonCommand('toggleOnPress', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("toggleOnPress", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>When released</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whenReleased }
-                                    onChange={ (event) => updateButtonCommand('whenReleased', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whenReleased", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>While released</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whileReleased }
-                                    onChange={ (event) => updateButtonCommand('whileReleased', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whileReleased", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Toggle on release</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.toggleOnRelease }
-                                    onChange={ (event) => updateButtonCommand('toggleOnRelease', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("toggleOnRelease", event.target.value) }/>
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -170,38 +171,38 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
         </TableContainer>
       </CardContent>
     </Card>
-  );
+  )
 }
 
 export function ControllerPane({ controller, project }: ControllerPaneProps) {
-  let config: ControllerConfig;
+  let config: ControllerConfig
   switch (controller.type) {
     case "ps5":
-      config = PS5Controller;
-      break;
+      config = PS5Controller
+      break
     default:
-      config = PS5Controller;
-      break;
+      config = PS5Controller
+      break
   }
 
-  const [currentButton, setCurrentButton] = useState({ button: null, target: null });
-  const [showDialog, setShowDialog] = useState(false);
+  const [currentButton, setCurrentButton] = useState({ button: null, target: null })
+  const [showDialog, setShowDialog] = useState(false)
 
   const toggleDialog = (buttonConfig: ButtonConfig, target: HTMLElement) => {
     if (showDialog && currentButton.button.name === buttonConfig.name) {
-      setCurrentButton({ button: null, target: null });
-      target.classList.remove("selected");
-      setShowDialog(false);
+      setCurrentButton({ button: null, target: null })
+      target.classList.remove("selected")
+      setShowDialog(false)
     } else {
-      let button: ControllerButton = controller.buttons.find(b => b.name === buttonConfig.name);
+      let button: ControllerButton = controller.buttons.find(b => b.name === buttonConfig.name)
       if (!button) {
         // Create a new controller button for the bindings
         button = { name: buttonConfig.name }
-        controller.buttons.push(button);
+        controller.buttons.push(button)
       }
-      setCurrentButton({ button: button, target: target });
-      target.classList.add("selected");
-      setShowDialog(true);
+      setCurrentButton({ button: button, target: target })
+      target.classList.add("selected")
+      setShowDialog(true)
     }
   }
 
@@ -211,17 +212,17 @@ export function ControllerPane({ controller, project }: ControllerPaneProps) {
       </Box>
       <Box className={ "controller-center" }>
         <div key={ `controller-svg-${ config.name }` } className="controller-svg-wrapper" onClick={ (e) => {
-          const uiButton = $(e.target).parent(".controller-button")[0];
+          const uiButton = $(e.target).parent(".controller-button")[0]
           if (uiButton) {
-            const name = $(uiButton).data("buttonName");
+            const name = $(uiButton).data("buttonName")
             if (name) {
-              const bc = config.buttons.find(b => b.name === name);
-              let button: ControllerButton = controller.buttons.find(button => button.name === name);
+              const bc = config.buttons.find(b => b.name === name)
+              let button: ControllerButton = controller.buttons.find(button => button.name === name)
               if (!button) {
-                button = { name: name };
-                controller.buttons.push(button);
+                button = { name: name }
+                controller.buttons.push(button)
               }
-              toggleDialog(bc, uiButton as HTMLElement);
+              toggleDialog(bc, uiButton as HTMLElement)
             }
           }
         }

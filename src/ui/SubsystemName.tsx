@@ -1,5 +1,5 @@
-import React from "react";
-import {Subsystem} from "../bindings/Command";
+import React from "react"
+import { Subsystem } from "../bindings/Command"
 
 type SubsystemNameProps = {
   name?: string,
@@ -8,10 +8,10 @@ type SubsystemNameProps = {
 
 export default function SubsystemName({ name, subsystem }: SubsystemNameProps) {
   if (subsystem) {
-    name = subsystem.name;
+    name = subsystem.name
   }
 
   return (
     <span className="subsystem-name">{ name }</span>
-  );
+  )
 }

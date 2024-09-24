@@ -1,5 +1,5 @@
-import { ActionTemplate, ComponentDefinition } from "../ComponentDefinition";
-import { MOTOR_CONTROLLER_GROUP } from "./MotorControllerGroup";
+import { ActionTemplate, ComponentDefinition } from "../ComponentDefinition"
+import { MOTOR_CONTROLLER_GROUP } from "./MotorControllerGroup"
 
 const STOP_MOVING_ACTION: ActionTemplate = {
   name: "Stop Moving",
@@ -11,10 +11,10 @@ const STOP_MOVING_ACTION: ActionTemplate = {
       type: "method-call",
       target: "$self",
       methodName: "stopMotor",
-      params: []
-    }
-  ]
-};
+      params: [],
+    },
+  ],
+}
 
 const TANK_DRIVE_ACTION: ActionTemplate = {
   name: "Tank Drive",
@@ -22,7 +22,7 @@ const TANK_DRIVE_ACTION: ActionTemplate = {
   params: [
     { name: "leftSpeed", type: "double" },
     { name: "rightSpeed", type: "double" },
-    { name: "squareInputs", type: "boolean" }
+    { name: "squareInputs", type: "boolean" },
   ],
   steps: [
     // one step - "$self.tankDrive(leftSpeed, rightSpeed, squareInputs)", where $self will be replaced by the name of the generated component
@@ -35,32 +35,32 @@ const TANK_DRIVE_ACTION: ActionTemplate = {
           paramName: "leftSpeed",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "leftSpeed"
-          }
+            passthroughArgumentName: "leftSpeed",
+          },
         },
         {
           paramName: "rightSpeed",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "rightSpeed"
-          }
+            passthroughArgumentName: "rightSpeed",
+          },
         },
         {
           paramName: "squareInputs",
           arg: {
             type: "define-passthrough-value",
-            passthroughArgumentName: "squareInputs"
-          }
-        }
-      ]
-    }
-  ]
-};
+            passthroughArgumentName: "squareInputs",
+          },
+        },
+      ],
+    },
+  ],
+}
 
 export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
   id: "SAMPLE-differentialdrive",
   name: "Differential Drive",
-  description: 'Provides high-level control for driving a robot. Can be operated with Tank Drive (each side controlled independently) or with Arcade Drive (linear and turning speeds controlled independently)',
+  description: "Provides high-level control for driving a robot. Can be operated with Tank Drive (each side controlled independently) or with Arcade Drive (linear and turning speeds controlled independently)",
   fqn: "edu.wpi.first.wpilibj.drive.DifferentialDrive",
   className: "DifferentialDrive",
   wpilibApiTypes: [],
@@ -77,23 +77,23 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
           name: "Forward Speed",
           description: "The speed to apply to straight-line movement.  This is combined with the Turning Speed input to calculate the power needed to output to the left and right side motors.",
           codeName: "xSpeed",
-          type: "double"
+          type: "double",
         },
         {
           name: "Turning Speed",
           description: "The speed to apply to turning.  This is combined with the Forward Speed input to calculate the power needed to output to the left and right side motors.",
           codeName: "zRotation",
-          type: "double"
+          type: "double",
         },
         {
           name: "Squared Inputs",
           description: "Squares the input values to make the response act quadratically rather than linearly for improved control at lower speeds.  Maximum speeds are unaffected.",
           codeName: "squareInputs",
           type: "boolean",
-          optional: true
-        }
+          optional: true,
+        },
       ],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Tank Drive",
@@ -105,23 +105,23 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
           name: "Left Speed",
           description: "The speed to drive the left-side motors at. Ranges from -1 for full speed in reverse to +1 for full speed forward.  Values outside that range will be clamped to be in [-1, 1].",
           codeName: "leftSpeed",
-          type: "double"
+          type: "double",
         },
         {
           name: "Right Speed",
           description: "The speed to drive the right-side motors at.  Ranges from -1 for full speed in reverse to +1 for full speed forward.  Values outside that range will be clamped to be in [-1, 1].",
           codeName: "rightSpeed",
-          type: "double"
+          type: "double",
         },
         {
           name: "Squared Inputs",
           description: "Squares the input values to make the response act quadratically rather than linearly for improved control at lower speeds.  Maximum speeds are unaffected.",
           codeName: "squareInputs",
           type: "boolean",
-          optional: true
-        }
+          optional: true,
+        },
       ],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Stop",
@@ -129,8 +129,8 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
       description: "Immediately stops all motors by setting their speeds to zero.",
       hints: ["action"],
       parameters: [],
-      returns: "void"
-    }
+      returns: "void",
+    },
   ],
   properties: [
     {
@@ -140,9 +140,9 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
       type: "vararg MotorController",
       wrapper: {
         definition: MOTOR_CONTROLLER_GROUP.id,
-        propertyName: "motors"
+        propertyName: "motors",
       },
-      setInConstructor: true
+      setInConstructor: true,
     },
     {
       name: "Right Motors",
@@ -151,9 +151,9 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
       type: "vararg MotorController",
       wrapper: {
         definition: MOTOR_CONTROLLER_GROUP.id,
-        propertyName: "motors"
+        propertyName: "motors",
       },
-      setInConstructor: true
+      setInConstructor: true,
     },
     {
       name: "Deadband",
@@ -172,10 +172,10 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
             name: "Deadband",
             description: "",
             codeName: "deadband",
-            type: "double"
-          }
-        ]
-      }
+            type: "double",
+          },
+        ],
+      },
     },
     {
       name: "Maximum Output",
@@ -194,18 +194,18 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
             name: "Max Output",
             description: "",
             codeName: "maxOutput",
-            type: "double"
-          }
-        ]
-      }
-    }
+            type: "double",
+          },
+        ],
+      },
+    },
   ],
 
   templates: {
     states: [], // no states
     actions: [
       STOP_MOVING_ACTION,
-      TANK_DRIVE_ACTION
+      TANK_DRIVE_ACTION,
     ],
     commands: [
       {
@@ -214,9 +214,9 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
         toInitialize: [],
         toExecute: {
           actionName: STOP_MOVING_ACTION.name,
-          params: []
+          params: [],
         },
-        endCondition: "once"
+        endCondition: "once",
       },
       {
         name: "Tank Drive with Joysticks",
@@ -228,23 +228,23 @@ export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
             {
               // left speed
               paramName: TANK_DRIVE_ACTION.params[0].name,
-              invocationType: "passthrough-supplier"
+              invocationType: "passthrough-supplier",
             },
             {
               // right speed
               paramName: TANK_DRIVE_ACTION.params[1].name,
-              invocationType: "passthrough-supplier"
+              invocationType: "passthrough-supplier",
             },
             {
               // squared inputs
               paramName: TANK_DRIVE_ACTION.params[2].name,
               invocationType: "hardcode",
-              hardcodedValue: "true"
+              hardcodedValue: "true",
             },
-          ]
+          ],
         },
-        endCondition: "forever"
-      }
-    ]
-  }
-};
+        endCondition: "forever",
+      },
+    ],
+  },
+}

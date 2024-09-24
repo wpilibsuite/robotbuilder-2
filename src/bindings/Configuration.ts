@@ -1,5 +1,5 @@
-import { Controller } from "./Controller";
-import { Command, Subsystem } from "./Command";
+import { Controller } from "./Controller"
+import { Command, Subsystem } from "./Command"
 
 export type Configuration = {
   name: string;

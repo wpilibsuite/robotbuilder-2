@@ -1,8 +1,8 @@
-import React from "react";
-import { AtomicCommand } from "../../bindings/Command";
-import { Button, Card, CardContent, CardHeader, Paper } from "@mui/material";
+import React from "react"
+import { AtomicCommand } from "../../bindings/Command"
+import { Button, Card, CardContent, CardHeader, Paper } from "@mui/material"
 
-import * as IR from '../../bindings/ir'
+import * as IR from "../../bindings/ir"
 
 type CommandListProps = {
   title: string;
@@ -30,7 +30,7 @@ export function CommandList({ title, commands, requestEdit }: CommandListProps) 
                     : <></> // not a group, can't edit
                 }
               </div>
-            );
+            )
           })
         }
       </CardContent>

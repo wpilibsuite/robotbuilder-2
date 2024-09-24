@@ -1,9 +1,9 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const CAN_TALON_FX: ComponentDefinition = {
   id: "SAMPLE-cantalonfx",
   name: "Talon FX (CAN)",
-  description: 'A CTRE-manufactured Talon FX controlled via a CAN bus',
+  description: "A CTRE-manufactured Talon FX controlled via a CAN bus",
   fqn: "com.ctre.phoenix.motorcontrol.can.WPI_TalonFX",
   className: "WPI_TalonFX",
   type: "actuator",
@@ -16,9 +16,9 @@ export const CAN_TALON_FX: ComponentDefinition = {
       codeName: "set",
       hints: ["action", "motor-input"],
       parameters: [
-        { name: "Speed", description: "", codeName: "speed", type: "double" }
+        { name: "Speed", description: "", codeName: "speed", type: "double" },
       ],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Get Position",
@@ -26,7 +26,7 @@ export const CAN_TALON_FX: ComponentDefinition = {
       codeName: "getSelectedSensorPosition",
       hints: ["state", "sensor-output"],
       parameters: [],
-      returns: "double"
+      returns: "double",
     },
     {
       name: "Get Velocity",
@@ -34,7 +34,7 @@ export const CAN_TALON_FX: ComponentDefinition = {
       codeName: "getSelectedSensorVelocity",
       hints: ["state", "sensor-output"],
       parameters: [],
-      returns: "double"
+      returns: "double",
     },
   ],
   properties: [
@@ -50,8 +50,8 @@ export const CAN_TALON_FX: ComponentDefinition = {
         codeName: "getDeviceID",
         hints: [],
         parameters: [],
-        returns: "int"
-      }
+        returns: "int",
+      },
     },
     {
       name: "Sensor",
@@ -66,7 +66,7 @@ export const CAN_TALON_FX: ComponentDefinition = {
         { name: "PWM Encoded Position", codeName: "FeedbackDevice.PulseWidthEncodedPosition", description: "" },
         { name: "Built-in Encoder (Absolute Mode)", codeName: "FeedbackDevice.CTRE_MagEncoder_Absolute", description: "" },
         { name: "Built-in Encoder (Relative Mode)", codeName: "FeedbackDevice.CTRE_MagEncoder_Relative", description: "" },
-        { name: "No Sensor", codeName: "FeedbackDevice.None", description: "No integrated sensor. Position and velocity readings will always return zero." }
+        { name: "No Sensor", codeName: "FeedbackDevice.None", description: "No integrated sensor. Position and velocity readings will always return zero." },
       ],
       setInConstructor: false,
       setter: {
@@ -81,10 +81,10 @@ export const CAN_TALON_FX: ComponentDefinition = {
             description: "",
             codeName: "feedbackDevice",
             type: "com.ctre.phoenix.motorcontrol.FeedbackDevice",
-            tags: []
-          }
-        ]
-      }
-    }
-  ]
-};
+            tags: [],
+          },
+        ],
+      },
+    },
+  ],
+}

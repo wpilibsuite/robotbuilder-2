@@ -1,9 +1,9 @@
-import { ActionTemplate, ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const QUADRATURE_ENCODER: ComponentDefinition = {
   id: "SAMPLE-quadratureencoder",
   name: "Quadrature Encoder",
-  description: 'Measures the rotation of a shaft. Velocities are measured accurately, but displacement is relative to when the encoder started measuring - either robot boot or the last call to Reset',
+  description: "Measures the rotation of a shaft. Velocities are measured accurately, but displacement is relative to when the encoder started measuring - either robot boot or the last call to Reset",
   fqn: "edu.wpi.first.wpilibj.Encoder",
   className: "Encoder",
   wpilibApiTypes: [],
@@ -15,14 +15,14 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
       codeName: "channelA",
       type: "int",
       description: "The digital input channel for the A channel",
-      setInConstructor: true
+      setInConstructor: true,
     },
     {
       name: "Channel B",
       codeName: "channelB",
       type: "int",
       description: "The digital input channel for the B channel",
-      setInConstructor: true
+      setInConstructor: true,
     },
     {
       name: "Reversed",
@@ -40,11 +40,11 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
             name: "Reversed",
             codeName: "reverseDirection",
             type: "boolean",
-            description: "" // eh, seems redundant
-          }
+            description: "", // eh, seems redundant
+          },
         ],
-        returns: "void"
-      }
+        returns: "void",
+      },
     },
     {
       name: "Distance per Pulse",
@@ -64,12 +64,12 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
             name: "Distance per Pulse",
             codeName: "distancePerPulse",
             type: "double",
-            description: ""
-          }
+            description: "",
+          },
         ],
-        returns: "void"
+        returns: "void",
       },
-    }
+    },
   ],
   methods: [
     {
@@ -78,7 +78,7 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
       description: "Gets the current encoder count from the sensor",
       hints: ["state"],
       parameters: [],
-      returns: "int"
+      returns: "int",
     },
     {
       name: "Reset Count",
@@ -86,7 +86,7 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
       description: "Resets the current count to zero",
       hints: ["housekeeping"],
       parameters: [],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Get Distance",
@@ -94,7 +94,7 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
       description: "Gets the travelled distance of the encoder since the last reset. Distance units are based on the value set for Distance per Pulse, or raw encoder units if it was not set.",
       hints: ["state"],
       parameters: [],
-      returns: "double"
+      returns: "double",
     },
     {
       name: "Get Rate",
@@ -102,7 +102,7 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
       description: "Gets the current velocity of the encoder. Returns in units of distance per second, where the distance unit depends on what you set for Distance per Pulse. If that was not set, distance units are raw encoder ticks.",
       hints: ["state"],
       parameters: [],
-      returns: "double"
+      returns: "double",
     },
     {
       name: "Stopped",
@@ -110,7 +110,7 @@ export const QUADRATURE_ENCODER: ComponentDefinition = {
       description: "Checks if the encoder has stopped moving",
       hints: ["state"],
       parameters: [],
-      returns: "boolean"
-    }
+      returns: "boolean",
+    },
   ],
 }

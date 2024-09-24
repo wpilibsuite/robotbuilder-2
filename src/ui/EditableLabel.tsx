@@ -1,70 +1,77 @@
-import React, { useState, useRef } from "react";
-import PropTypes from "prop-types";
-import { Input, InputLabel } from "@mui/material";
+import React, { useState, useRef } from "react"
+import PropTypes from "prop-types"
+import { Input, InputLabel } from "@mui/material"
 
-const ENTER_KEY_CODE = 13;
-const DEFAULT_LABEL_PLACEHOLDER = "Click To Edit";
+const ENTER_KEY_CODE = 13
+const DEFAULT_LABEL_PLACEHOLDER = "Click To Edit"
 
 const EditableLabel = ({
-                         onFocus = (value: string) => {},
-                         onBlur = (value: string) => {},
-                         ...props
-                       }) => {
-  const [isEditing, setEditing] = useState(false);
-  const [value, setValue] = useState(props.initialValue);
-  const inputRef = useRef(null);
+  onFocus = () => {},
+  onBlur = () => {},
+  ...props
+}) => {
+  const [isEditing, setEditing] = useState(false)
+  const [value, setValue] = useState(props.initialValue)
+  const inputRef = useRef(null)
 
   const isTextValueValid = () =>
-    typeof value !== "undefined" && value.trim().length > 0;
+    typeof value !== "undefined" && value.trim().length > 0
 
   const handleFocus = () => {
-    const fn = isEditing ? onBlur : onFocus;
-    fn(value);
-    handleEditState();
-  };
+    if (isEditing) {
+      onBlur(value)
+    } else {
+      onFocus(value)
+    }
+    handleEditState()
+  }
 
-  const handleChange = e => setValue(inputRef.current.value);
+  const handleChange = () => setValue(inputRef.current.value)
 
   const handleKeyDown = e => {
     if (e.keyCode === ENTER_KEY_CODE) {
-      handleEnterKey();
+      handleEnterKey()
     }
-  };
+  }
 
   const handleEditState = () => {
     // if(!isTextValueValid()) return;
-    setEditing(prev => !prev);
-  };
+    setEditing(prev => !prev)
+  }
 
   const handleEnterKey = () => {
-    handleFocus();
-  };
+    handleFocus()
+  }
 
   if (isEditing) {
     return (
       <Input
         inputProps={{
           ref: inputRef,
-          value
+          value,
         }}
         onChange={handleChange}
         onBlur={handleFocus}
         onKeyDown={handleKeyDown}
         autoFocus
       />
-    );
+    )
   }
 
-  const labelText = (isTextValueValid() && value) || DEFAULT_LABEL_PLACEHOLDER;
+  const labelText = (isTextValueValid() && value) || DEFAULT_LABEL_PLACEHOLDER
 
-  return <InputLabel onClick={handleFocus}>{labelText}</InputLabel>;
-};
+  return (
+    <InputLabel onClick={ handleFocus }>
+      { labelText }
+    </InputLabel>
+  )
+}
 
 EditableLabel.propTypes = {
   initialValue: PropTypes.string.isRequired,
   emptyEdit: PropTypes.bool,
   onFocus: PropTypes.func,
-  onBlur: PropTypes.func
-};
+  onBlur: PropTypes.func,
+}
 
-export default EditableLabel;
+export default EditableLabel

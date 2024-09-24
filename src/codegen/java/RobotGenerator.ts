@@ -1,8 +1,9 @@
-import { Command, Subsystem } from "../../bindings/Command";
-import { Controller } from "../../bindings/Controller";
-import { Project } from "../../bindings/Project";
-import { commandMethod } from "./CommandGroupGenerator";
-import { className, indent, methodName, prettify } from "./util";
+import { AtomicCommand, Command, Subsystem } from "../../bindings/Command"
+import { Controller } from "../../bindings/Controller"
+import { Project } from "../../bindings/Project"
+import { commandMethod } from "./CommandGroupGenerator"
+import { className, indent, methodName, prettify } from "./util"
+import * as IR from "../../bindings/ir"
 
 export function generateRobotClass(project: Project): string {
   return prettify(
@@ -24,7 +25,7 @@ ${
 ${
   project.controllers.map(c => `
     @NotLogged // Controllers are not loggable
-    private final ${c.className} ${methodName(c.name)} = new ${c.className}(${c.port});
+    private final ${ c.className } ${ methodName(c.name) } = new ${ c.className }(${ c.port });
     `)
 }
 
@@ -89,62 +90,62 @@ ${
   project.commands.map(c => commandMethod(c.name, c, project)).join("\n")
 }
     }
-    `
-  );
+    `,
+  )
 }
 
 function generateSubsystemDeclaration(subsystem: Subsystem): string {
   return indent(
     `
-      @Logged(name = "${subsystem.name}")
-      private final ${className(subsystem.name)} ${methodName(subsystem.name)} = new ${className(subsystem.name)}();
+      @Logged(name = "${ subsystem.name }")
+      private final ${ className(subsystem.name) } ${ methodName(subsystem.name) } = new ${ className(subsystem.name) }();
     `.trim(),
-    2
-  );
+    2,
+  )
 }
 
 function generateButtonBindings(project: Project, controller: Controller): string[] {
   return controller.buttons.flatMap(button => {
-    const buttonName = button.name;
-    const commands = [];
+    const buttonName = button.name
+    const commands = []
 
     const [whenPressedOwner, whenPressed] = findCommand(project, button.whenPressed)
     if (whenPressed) {
-      const scope = whenPressedOwner === project ? 'this' : methodName((whenPressedOwner as Subsystem).name)
-      commands.push(`${methodName(controller.name)}.${buttonName}().onTrue(${scope}.${methodName(whenPressed.name)}());`)
+      const scope = whenPressedOwner === project ? "this" : methodName((whenPressedOwner as Subsystem).name)
+      commands.push(`${ methodName(controller.name) }.${ buttonName }().onTrue(${ scope }.${ methodName(whenPressed.name) }());`)
     }
 
     const [whenReleasedOwner, whenReleased] = findCommand(project, button.whenReleased)
     if (whenReleased) {
-      const scope = whenReleasedOwner === project ? 'this' : methodName((whenReleasedOwner as Subsystem).name)
-      commands.push(`${methodName(controller.name)}.${buttonName}().onFalse(${scope}.${methodName(whenReleased.name)}());`)
+      const scope = whenReleasedOwner === project ? "this" : methodName((whenReleasedOwner as Subsystem).name)
+      commands.push(`${ methodName(controller.name) }.${ buttonName }().onFalse(${ scope }.${ methodName(whenReleased.name) }());`)
     }
 
     const [whileHeldOwner, whileHeld] = findCommand(project, button.whileHeld)
     if (whileHeld) {
-      const scope = whileHeldOwner === project ? 'this' : methodName((whileHeldOwner as Subsystem).name)
-      commands.push(`${methodName(controller.name)}.${buttonName}().whileTrue(${scope}.${methodName(whileHeld.name)}());`)
+      const scope = whileHeldOwner === project ? "this" : methodName((whileHeldOwner as Subsystem).name)
+      commands.push(`${ methodName(controller.name) }.${ buttonName }().whileTrue(${ scope }.${ methodName(whileHeld.name) }());`)
     }
 
     const [whileReleasedOwner, whileReleased] = findCommand(project, button.whileReleased)
     if (whileReleased) {
-      const scope = whileReleasedOwner === project ? 'this' : methodName((whileReleasedOwner as Subsystem).name)
-      commands.push(`${methodName(controller.name)}.${buttonName}().whileFalse(${scope}.${methodName(whileReleased.name)}());`)
+      const scope = whileReleasedOwner === project ? "this" : methodName((whileReleasedOwner as Subsystem).name)
+      commands.push(`${ methodName(controller.name) }.${ buttonName }().whileFalse(${ scope }.${ methodName(whileReleased.name) }());`)
     }
 
     const [toggleOnPressOwner, toggleOnPress] = findCommand(project, button.toggleOnPress)
     if (toggleOnPress) {
-      const scope = toggleOnPressOwner === project ? 'this' : methodName((toggleOnPressOwner as Subsystem).name)
-      commands.push(`${methodName(controller.name)}.${buttonName}().toggleOnTrue(${scope}.${methodName(toggleOnPress.name)}());`)
+      const scope = toggleOnPressOwner === project ? "this" : methodName((toggleOnPressOwner as Subsystem).name)
+      commands.push(`${ methodName(controller.name) }.${ buttonName }().toggleOnTrue(${ scope }.${ methodName(toggleOnPress.name) }());`)
     }
 
     const [toggleOnReleaseOwner, toggleOnRelease] = findCommand(project, button.toggleOnRelease)
     if (toggleOnRelease) {
-      const scope = toggleOnReleaseOwner === project ? 'this' : methodName((toggleOnReleaseOwner as Subsystem).name)
-      commands.push(`${methodName(controller.name)}.${buttonName}().toggleOnFalse(${scope}.${methodName(toggleOnRelease.name)}());`)
+      const scope = toggleOnReleaseOwner === project ? "this" : methodName((toggleOnReleaseOwner as Subsystem).name)
+      commands.push(`${ methodName(controller.name) }.${ buttonName }().toggleOnFalse(${ scope }.${ methodName(toggleOnRelease.name) }());`)
     }
 
-    return commands;
+    return commands
   })
 }
 
@@ -153,16 +154,17 @@ function findCommand(project: Project, commandUUID: string): [Project | Subsyste
     return []
   }
 
-  let cmd = null
+  let cmd: AtomicCommand | IR.Group = project.commands.find(c => c.uuid === commandUUID)
 
   // First, scan the project for globally-defined commands (eg command groups)
-  if (cmd = project.commands.find(c => c.uuid === commandUUID)) {
+  if (cmd) {
     return [project, cmd]
   }
 
   // Then fall back to the 
   for (const subsystem of project.subsystems) {
-    if (cmd = subsystem.commands.find(c => c.uuid === commandUUID)) {
+    cmd = subsystem.commands.find(c => c.uuid === commandUUID)
+    if (cmd) {
       return [subsystem, cmd]
     }
   }

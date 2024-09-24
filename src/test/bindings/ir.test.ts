@@ -1,14 +1,14 @@
-import { sequence } from '../../bindings/ir'
-import { test, expect } from 'vitest'
+import { sequence } from "../../bindings/ir"
+import { test, expect } from "vitest"
 
 test("basic", () => {
   const s = sequence((s, p1, p2) => {
     s.run("Drive Base", "Command X", p1, p2, "hardcoded")
-  });
+  })
 
-  const b = [{ name: 'p1', original: null }, {name: 'p2', original: null }]
-  expect(s.params.every((obj, i) => obj.name === b[i].name && obj.original === b[i].original)).to.be.true
-});
+  const b = [{ name: "p1", original: null }, { name: "p2", original: null }]
+  expect(s.params.every((obj, i) => obj.name === b[i].name && obj.original === b[i].original)).toEqual(true)
+})
 
 test("nesting", () => {
   const group = sequence((s) => {

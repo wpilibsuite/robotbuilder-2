@@ -1,4 +1,4 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const PID_CONTROLLER: ComponentDefinition = {
   id: "SAMPLE-pidcontroller",
@@ -21,10 +21,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
           description: "The current position of the system",
           codeName: "measurement",
           type: "double",
-          tags: []
-        }
+          tags: [],
+        },
       ],
-      returns: "double"
+      returns: "double",
     },
     {
       name: "Set Setpoint",
@@ -38,10 +38,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
           description: "The setpoint to target",
           codeName: "setpoint",
           type: "double",
-          tags: ["controller-setpoint"]
-        }
+          tags: ["controller-setpoint"],
+        },
       ],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Reset",
@@ -49,7 +49,7 @@ export const PID_CONTROLLER: ComponentDefinition = {
       codeName: "reset",
       hints: ["housekeeping"],
       parameters: [],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Reached Setpoint",
@@ -57,8 +57,8 @@ export const PID_CONTROLLER: ComponentDefinition = {
       codeName: "atSetpoint",
       hints: ["state"],
       parameters: [],
-      returns: "boolean"
-    }
+      returns: "boolean",
+    },
   ],
   properties: [
     {
@@ -79,10 +79,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "kp",
             type: "double",
-            tags: []
-          }
-        ]
-      }
+            tags: [],
+          },
+        ],
+      },
     },
     {
       name: "Integral Constant",
@@ -102,10 +102,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "ki",
             type: "double",
-            tags: []
-          }
-        ]
-      }
+            tags: [],
+          },
+        ],
+      },
     },
     {
       name: "Derivative Constant",
@@ -125,10 +125,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "kd",
             type: "double",
-            tags: []
-          }
-        ]
-      }
+            tags: [],
+          },
+        ],
+      },
     },
     {
       name: "Tolerance",
@@ -148,74 +148,74 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "tolerance",
             type: "double",
-            tags: []
-          }
-        ]
-      }
-    }
+            tags: [],
+          },
+        ],
+      },
+    },
   ],
   templates: {
     actions: [
       {
-        name: 'Reset $self',
-        description: 'Resets the internal state of $self. Use this when changing setpoints.',
+        name: "Reset $self",
+        description: "Resets the internal state of $self. Use this when changing setpoints.",
         params: [],
         steps: [
           {
-            target: '$self',
-            type: 'method-call',
-            methodName: 'reset',
-            params: []
-          }
-        ]
+            target: "$self",
+            type: "method-call",
+            methodName: "reset",
+            params: [],
+          },
+        ],
       },
       {
-        name: 'Set $self Target',
-        description: 'Sets the target setpoint for $self. Calling the calculate method on $self after this will output values to control the mechanism to reach the target.',
+        name: "Set $self Target",
+        description: "Sets the target setpoint for $self. Calling the calculate method on $self after this will output values to control the mechanism to reach the target.",
         params: [
           {
-            name: 'target',
-            type: 'double'
-          }
+            name: "target",
+            type: "double",
+          },
         ],
         steps: [
           {
-            target: '$self',
-            type: 'method-call',
-            methodName: 'reset',
-            params: []
+            target: "$self",
+            type: "method-call",
+            methodName: "reset",
+            params: [],
           },
           {
-            target: '$self',
-            type: 'method-call',
-            methodName: 'setSetpoint',
+            target: "$self",
+            type: "method-call",
+            methodName: "setSetpoint",
             params: [
               {
-                paramName: 'setpoint',
+                paramName: "setpoint",
                 arg: {
-                  type: 'define-passthrough-value',
-                  passthroughArgumentName: 'target'
-                }
-              }
-            ]
-          }
-        ]
-      }
+                  type: "define-passthrough-value",
+                  passthroughArgumentName: "target",
+                },
+              },
+            ],
+          },
+        ],
+      },
     ],
     states: [
       {
-        name: '$self At Target',
-        description: 'Checks if $self has reached the last known setpoint, within the tolerance bound. Setting a nonzero tolerance is highly recommended.',
+        name: "$self At Target",
+        description: "Checks if $self has reached the last known setpoint, within the tolerance bound. Setting a nonzero tolerance is highly recommended.",
         step: {
-          type: 'method-call',
-          target: '$self',
-          methodName: 'atSetpoint',
-          params: []
-        }
-      }
+          type: "method-call",
+          target: "$self",
+          methodName: "atSetpoint",
+          params: [],
+        },
+      },
     ],
     commands: [
 
-    ]
-  }
+    ],
+  },
 }

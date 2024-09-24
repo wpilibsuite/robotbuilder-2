@@ -1,9 +1,9 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
   id: "SAMPLE-motorcontrollergroup",
   name: "Motor Controller Group",
-  description: 'Aggregates multiple motor controllers together so they can be controlled as a single entity. Useful for gearboxes or other groups of mechanically linked motors.',
+  description: "Aggregates multiple motor controllers together so they can be controlled as a single entity. Useful for gearboxes or other groups of mechanically linked motors.",
   fqn: "edu.wpi.first.wpilibj.MotorControllerGroup",
   className: "MotorControllerGroup",
   type: "actuator",
@@ -16,10 +16,10 @@ export const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
       codeName: "set",
       hints: ["action", "motor-input"],
       parameters: [
-        { name: "Speed", description: "", codeName: "speed", type: "double" }
+        { name: "Speed", description: "", codeName: "speed", type: "double" },
       ],
-      returns: "void"
-    }
+      returns: "void",
+    },
   ],
   properties: [
     {
@@ -27,7 +27,7 @@ export const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
       description: "The motors to group together",
       codeName: "motors",
       type: "vararg MotorController",
-      setInConstructor: true
-    }
-  ]
+      setInConstructor: true,
+    },
+  ],
 }

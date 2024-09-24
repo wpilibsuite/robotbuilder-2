@@ -1,17 +1,17 @@
-import * as IR from '../../../bindings/ir'
-import { commandMethod } from "../../../codegen/java/CommandGroupGenerator";
-import { unindent } from "../../../codegen/java/util";
-import { Project } from "../../../bindings/Project";
-import { test, expect } from 'vitest'
+import * as IR from "../../../bindings/ir"
+import { commandMethod } from "../../../codegen/java/CommandGroupGenerator"
+import { unindent } from "../../../codegen/java/util"
+import { Project } from "../../../bindings/Project"
+import { test, expect } from "vitest"
 
 const EMPTY_PROJECT: Project = {
-  commands: [], controllers: [], name: "", subsystems: []
+  commands: [], controllers: [], name: "", subsystems: [],
 }
 
 test("empty group", () => {
-  const group = IR.sequence((s) => null);
+  const group = IR.sequence(() => null)
 
-  const code = commandMethod(null, group, EMPTY_PROJECT);
+  const code = commandMethod(null, group, EMPTY_PROJECT)
   expect(code).toEqual(unindent(`
     public Command null() {
       /* Add some commands! */;
@@ -21,11 +21,11 @@ test("empty group", () => {
 
 test("empty nested groups", () => {
   const group = IR.sequence((s) => {
-    s.parallel("all", (p) => null);
-    s.parallel("any", (p) => null);
+    s.parallel("all", () => null)
+    s.parallel("any", () => null)
   })
 
-  const code = commandMethod(null, group, EMPTY_PROJECT);
+  const code = commandMethod(null, group, EMPTY_PROJECT)
   expect(code).toEqual(unindent(`
     public Command null() {
       return (/* empty group */)
@@ -36,11 +36,11 @@ test("empty nested groups", () => {
 
 test("empty nested groups with decorators", () => {
   const group = IR.sequence((s) => {
-    s.parallel("all", (p) => null).repeatingForever().until("() -> someCond");
-    s.parallel("any", (p) => null).forNoLongerThan(15).unless("() -> someOtherCond");
+    s.parallel("all", () => null).repeatingForever().until("() -> someCond")
+    s.parallel("any", () => null).forNoLongerThan(15).unless("() -> someOtherCond")
   })
 
-  const code = commandMethod(null, group, EMPTY_PROJECT);
+  const code = commandMethod(null, group, EMPTY_PROJECT)
   expect(code).toEqual(unindent(`
     public Command null() {
       return (/* empty group */).repeatedly().until(() -> someCond)
@@ -50,12 +50,12 @@ test("empty nested groups with decorators", () => {
 })
 
 test("empty nested groups with params", () => {
-  const group = IR.sequence((s, p1, p2) => {
-    s.parallel("all", (p) => null).repeatingForever().until("() -> someCond");
-    s.parallel("any", (pp2p1) => null).forNoLongerThan(15).unless("() -> someOtherCond");
+  const group = IR.sequence((s) => {
+    s.parallel("all", () => null).repeatingForever().until("() -> someCond")
+    s.parallel("any", () => null).forNoLongerThan(15).unless("() -> someOtherCond")
   })
 
-  const code = commandMethod(null, group, EMPTY_PROJECT);
+  const code = commandMethod(null, group, EMPTY_PROJECT)
   expect(code).toEqual(unindent(`
     public Command null() {
       return (/* empty group */).repeatedly().until(() -> someCond)

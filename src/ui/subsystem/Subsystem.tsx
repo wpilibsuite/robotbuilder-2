@@ -1,17 +1,21 @@
-import {Project} from "../../bindings/Project";
+import { Project } from "../../bindings/Project"
 import {
   ActionParamCallOption,
   AtomicCommand,
   EndCondition,
+  HardcodedStepArgument,
   Param,
+  PassthroughValueStepArgument,
+  ReferencePassthroughValueStepArgument,
+  ReferencePreviousOutputStepArgument,
   StepArgument,
   StepParam,
   Subsystem,
   SubsystemAction,
   SubsystemActionStep,
   SubsystemComponent,
-  SubsystemState
-} from "../../bindings/Command";
+  SubsystemState,
+} from "../../bindings/Command"
 import {
   Accordion,
   AccordionDetails,
@@ -29,26 +33,26 @@ import {
   Tabs,
   TextField,
   Theme,
-  Tooltip
-} from "@mui/material";
-import React, {CSSProperties, useEffect, useState} from "react";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import SyntaxHighlighter from 'react-syntax-highlighter';
-import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
-import {ComponentDefinition, MethodDefinition, ParameterDefinition} from "../../components/ComponentDefinition";
-import {generateCommand} from "../../codegen/java/CommandGenerator";
-import {generateSubsystem} from "../../codegen/java/SubsystemGenerator";
-import {generateAction_future} from "../../codegen/java/ActionGenerator";
-import {generateState} from "../../codegen/java/StateGenerator";
-import {differentialDrivebaseTemplate} from "../../templates/DifferentialDrivebase";
-import {ComponentColumn} from "./ComponentColumn";
-import {COMPONENT_DEFINITIONS} from "../../components/ComponentDefinitions";
-import {HelpableLabel} from "../HelpableLabel";
-import {ChevronRightSharp} from "@mui/icons-material";
-import SubsystemName from "../SubsystemName";
-import SubsystemActionName from "../SubsystemActionName";
-import SubsystemStateName from "../SubsystemStateName";
+  Tooltip,
+} from "@mui/material"
+import React, { CSSProperties, useEffect, useState } from "react"
+import Menu from "@mui/material/Menu"
+import MenuItem from "@mui/material/MenuItem"
+import SyntaxHighlighter from "react-syntax-highlighter"
+import * as SyntaxHighlightStyles from "react-syntax-highlighter/dist/esm/styles/hljs"
+import { ComponentDefinition, MethodDefinition, ParameterDefinition } from "../../components/ComponentDefinition"
+import { generateCommand } from "../../codegen/java/CommandGenerator"
+import { generateSubsystem } from "../../codegen/java/SubsystemGenerator"
+import { generateAction_future } from "../../codegen/java/ActionGenerator"
+import { generateState } from "../../codegen/java/StateGenerator"
+import { differentialDrivebaseTemplate } from "../../templates/DifferentialDrivebase"
+import { ComponentColumn } from "./ComponentColumn"
+import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions"
+import { HelpableLabel } from "../HelpableLabel"
+import { ChevronRightSharp } from "@mui/icons-material"
+import SubsystemName from "../SubsystemName"
+import SubsystemActionName from "../SubsystemActionName"
+import SubsystemStateName from "../SubsystemStateName"
 
 
 type BasicOpts = {
@@ -57,23 +61,23 @@ type BasicOpts = {
 }
 
 function SubsystemPane({ subsystem, project }: BasicOpts) {
-  const [generatedCode, setGeneratedCode] = useState(generateSubsystem(subsystem, project));
-  const [sensors, setSensors] = useState(subsystem.getSensors());
-  const [actuators, setActuators] = useState(subsystem.getActuators());
-  const [controls, setControls] = useState(subsystem.getControls());
-  const [actions, setActions] = useState(subsystem.actions);
-  const [states, setStates] = useState(subsystem.states);
-  const [commands, setCommands] = useState(subsystem.commands);
+  const [generatedCode, setGeneratedCode] = useState(generateSubsystem(subsystem, project))
+  const [sensors, setSensors] = useState(subsystem.getSensors())
+  const [actuators, setActuators] = useState(subsystem.getActuators())
+  const [controls, setControls] = useState(subsystem.getControls())
+  const [actions, setActions] = useState(subsystem.actions)
+  const [states, setStates] = useState(subsystem.states)
+  const [commands, setCommands] = useState(subsystem.commands)
 
-  useEffect(() => setGeneratedCode(generateSubsystem(subsystem, project)), [subsystem, project, sensors, actuators, controls, actions, states, commands]);
+  useEffect(() => setGeneratedCode(generateSubsystem(subsystem, project)), [subsystem, project, sensors, actuators, controls, actions, states, commands])
   useEffect(() => {
-    setSensors(subsystem.getSensors());
-    setActuators(subsystem.getActuators());
-    setControls(subsystem.getControls());
-    setActions(subsystem.actions);
-    setStates(subsystem.states);
-    setCommands(subsystem.commands);
-  }, [subsystem, project]);
+    setSensors(subsystem.getSensors())
+    setActuators(subsystem.getActuators())
+    setControls(subsystem.getControls())
+    setActions(subsystem.actions)
+    setStates(subsystem.states)
+    setCommands(subsystem.commands)
+  }, [subsystem, project])
 
   const columnHeaderSx: SxProps<Theme> = {
     // fontWeight: '400',
@@ -82,116 +86,116 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
     //   color: '#eee',
     //   fontWeight: 'bold'
     // }
-    fontWeight: 'bold',
-    backgroundColor: '#eee',
-  };
+    fontWeight: "bold",
+    backgroundColor: "#eee",
+  }
 
-  const onComponentChange = (component: SubsystemComponent) => {
-    setGeneratedCode(generateSubsystem(subsystem, project));
+  const onComponentChange = () => {
+    setGeneratedCode(generateSubsystem(subsystem, project))
   }
 
   const onComponentAdd = (componentDef: ComponentDefinition) => {
-    const newComponent = new SubsystemComponent(`New ${ componentDef.name }`, componentDef, {});
-    subsystem.components.push(newComponent);
+    const newComponent = new SubsystemComponent(`New ${ componentDef.name }`, componentDef, {})
+    subsystem.components.push(newComponent)
     switch (componentDef.type) {
       case "actuator":
-        setActuators(subsystem.getActuators());
-        break;
+        setActuators(subsystem.getActuators())
+        break
       case "sensor":
-        setSensors(subsystem.getSensors());
-        break;
+        setSensors(subsystem.getSensors())
+        break
       case "control":
-        setControls(subsystem.getControls());
-        break;
+        setControls(subsystem.getControls())
+        break
     }
   }
 
   const onComponentDelete = (removedComponent: SubsystemComponent) => {
-    subsystem.components = subsystem.components.filter(c => c !== removedComponent);
+    subsystem.components = subsystem.components.filter(c => c !== removedComponent)
     switch (removedComponent.definition.type) {
       case "actuator":
-        setActuators(subsystem.getActuators());
-        break;
+        setActuators(subsystem.getActuators())
+        break
       case "sensor":
-        setSensors(subsystem.getSensors());
-        break;
+        setSensors(subsystem.getSensors())
+        break
       case "control":
-        setControls(subsystem.getControls());
-        break;
+        setControls(subsystem.getControls())
+        break
     }
   }
 
-  const [showCreateCommandDialog, setShowCreateCommandDialog] = useState(false);
-  const [commandDialogType, setCommandDialogType] = useState(null);
-  const [editedCommand, setEditedCommand] = useState(null as AtomicCommand);
-  const [canAddCommand, setCanAddCommand] = useState(subsystem.actions.length > 0);
+  const [showCreateCommandDialog, setShowCreateCommandDialog] = useState(false)
+  const [commandDialogType, setCommandDialogType] = useState(null)
+  const [editedCommand, setEditedCommand] = useState(null as AtomicCommand)
+  const [, setCanAddCommand] = useState(subsystem.actions.length > 0)
 
-  useEffect(() => setCanAddCommand(subsystem.actions.length > 0), [subsystem.actions]);
+  useEffect(() => setCanAddCommand(subsystem.actions.length > 0), [subsystem.actions])
 
   const createCommand = (data: NewCommandData) => {
-    console.log(data);
+    console.log(data)
     if (editedCommand) {
-      editedCommand.name = data.name;
-      editedCommand.toInitialize = [...data.initializeActions];
-      editedCommand.action = data.action;
-      editedCommand.endCondition = data.endCondition;
-      editedCommand.params = data.params;
-      const newCommands = [...commands];
-      subsystem.commands = newCommands;
-      setCommands(newCommands);
+      editedCommand.name = data.name
+      editedCommand.toInitialize = [...data.initializeActions]
+      editedCommand.action = data.action
+      editedCommand.endCondition = data.endCondition
+      editedCommand.params = data.params
+      const newCommands = [...commands]
+      subsystem.commands = newCommands
+      setCommands(newCommands)
     } else {
-      const newCommand = data.toCommand();
-      const newCommands = commands.concat(newCommand);
-      subsystem.commands = newCommands;
-      setCommands(newCommands);
+      const newCommand = data.toCommand()
+      const newCommands = commands.concat(newCommand)
+      subsystem.commands = newCommands
+      setCommands(newCommands)
     }
-    setEditedCommand(null);
-    setCommandDialogType(null);
-    setShowCreateCommandDialog(false);
+    setEditedCommand(null)
+    setCommandDialogType(null)
+    setShowCreateCommandDialog(false)
   }
 
   const [editedAction, setEditedAction] = useState(null as SubsystemAction)
-  const [showCreateActionDialog, setShowCreateActionDialog] = useState(false);
+  const [showCreateActionDialog, setShowCreateActionDialog] = useState(false)
 
   const closeActionDialog = () => {
-    setShowCreateActionDialog(false);
-    setEditedAction(null);
+    setShowCreateActionDialog(false)
+    setEditedAction(null)
   }
 
   const createAction = (data: ActionParams) => {
-    const newAction = subsystem.createAction(data.name);
-    newAction.steps = [...data.steps];
-    newAction.regenerateParams(subsystem);
-    const newActions = subsystem.actions;
-    subsystem.actions = [...newActions];
-    setActions(subsystem.actions);
-    closeActionDialog();
+    const newAction = subsystem.createAction(data.name)
+    newAction.steps = [...data.steps]
+    newAction.regenerateParams(subsystem)
+    const newActions = subsystem.actions
+    subsystem.actions = [...newActions]
+    setActions(subsystem.actions)
+    closeActionDialog()
   }
 
-  const [editedState, setEditedState] = useState(null as SubsystemState);
-  const [showCreateStateDialog, setShowCreateStateDialog] = useState(false);
+  const [editedState, setEditedState] = useState(null as SubsystemState)
+  const [showCreateStateDialog, setShowCreateStateDialog] = useState(false)
 
   const createState = (data) => {
-    const newState = subsystem.createState(data.name);
+    const newState = subsystem.createState(data.name)
     newState.step = new SubsystemActionStep({
       component: data.component,
       methodName: data.method,
-      params: data.params
-    });
-    subsystem.states = [...subsystem.states];
-    setStates(subsystem.states);
-    closeStateDialog();
+      params: data.params,
+    })
+    subsystem.states = [...subsystem.states]
+    setStates(subsystem.states)
+    closeStateDialog()
   }
 
   const closeStateDialog = () => {
-    setShowCreateStateDialog(false);
-    setEditedState(null);
+    setShowCreateStateDialog(false)
+    setEditedState(null)
   }
 
   useEffect(() => {
-    closeActionDialog();
-    closeStateDialog();
-  }, [subsystem]);
+    closeActionDialog()
+    closeStateDialog()
+  }, [subsystem])
 
   return (
     <Box className="subsystem-pane" style={ {} }>
@@ -208,10 +212,10 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                           onCancel={ closeActionDialog }
                           onCreate={ (data) => createAction(data) }
                           onUpdate={ ({ name, steps }) => {
-                            closeActionDialog();
-                            editedAction.name = name;
-                            editedAction.steps = [...steps];
-                            editedAction.regenerateParams(subsystem);
+                            closeActionDialog()
+                            editedAction.name = name
+                            editedAction.steps = [...steps]
+                            editedAction.regenerateParams(subsystem)
 
                             // Find the command that use the edited action, then remove any of their defined parameters that
                             // pass through to a no longer defined param on the action.
@@ -219,12 +223,12 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                             subsystem.commands.filter(c => c.callsAction(editedAction)).forEach(command => {
                               // Make sure any calling commands are updated to account for the action changes to the action
                               command.params = command.params.filter(commandParamDef => {
-                                return commandParamDef.action === editedAction.uuid && !editedAction.params.find(ap => ap.uuid === commandParamDef.param);
-                              });
+                                return commandParamDef.action === editedAction.uuid && !editedAction.params.find(ap => ap.uuid === commandParamDef.param)
+                              })
                             })
-                            subsystem.actions = [...subsystem.actions];
-                            setActions(subsystem.actions);
-                            setEditedAction(null);
+                            subsystem.actions = [...subsystem.actions]
+                            setActions(subsystem.actions)
+                            setEditedAction(null)
                           } }/>
 
       <CreateStateDialog open={ showCreateStateDialog }
@@ -233,16 +237,16 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                          onCancel={ closeStateDialog }
                          onCreate={ (data) => createState(data) }
                          onUpdate={ (data) => {
-                           closeStateDialog();
-                           editedState.name = data.name;
+                           closeStateDialog()
+                           editedState.name = data.name
                            editedState.step = new SubsystemActionStep({
                              component: data.component,
                              methodName: data.method,
-                             params: data.params
-                           });
-                           subsystem.states = [...subsystem.states];
-                           setStates(subsystem.states);
-                           setEditedState(null);
+                             params: data.params,
+                           })
+                           subsystem.states = [...subsystem.states]
+                           setStates(subsystem.states)
+                           setEditedState(null)
                          } }/>
 
       <div className="components-sidebar">
@@ -256,10 +260,10 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
               {
                 COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "actuator").map(actuatorDef => {
                   return (
-                    <Button id={ `add-${actuatorDef.id}-button`}
+                    <Button id={ `add-${ actuatorDef.id }-button`}
                             className="add-component-button add-actuator-button"
                             key={ actuatorDef.id }
-                            onClick={ (e) => onComponentAdd(actuatorDef) }>
+                            onClick={ () => onComponentAdd(actuatorDef) }>
                       Add { actuatorDef.name }
                     </Button>
                   )
@@ -278,10 +282,10 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
               {
                 COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "sensor").map(sensorDef => {
                   return (
-                    <Button id={ `add-${sensorDef.id}-button`}
+                    <Button id={ `add-${ sensorDef.id }-button`}
                             className="add-component-button add-sensor-button"
                             key={ sensorDef.id }
-                            onClick={ (e) => onComponentAdd(sensorDef) }>
+                            onClick={ () => onComponentAdd(sensorDef) }>
                       Add { sensorDef.name }
                     </Button>
                   )
@@ -300,10 +304,10 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
               {
                 COMPONENT_DEFINITIONS.definitions.filter(d => d.type === "control").map(controlDef => {
                   return (
-                    <Button id={ `add-${controlDef.id}-button`}
+                    <Button id={ `add-${ controlDef.id }-button`}
                             className="add-component-button add-control-button"
                             key={ controlDef.id }
-                            onClick={ (e) => onComponentAdd(controlDef) }>
+                            onClick={ () => onComponentAdd(controlDef) }>
                       Add { controlDef.name }
                     </Button>
                   )
@@ -327,77 +331,82 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                       </AccordionSummary>
                       <AccordionDetails>
                         <ol className="subsystem-action-steps-list">
-                        {
-                          action.steps.map((step, index) => {
-                            const component = subsystem.components.find(c => c.uuid === step.component);
-                            const method = component.definition.methods.find(m => m.codeName === step.methodName);
-                            const isAccessor = method.parameters.length === 0 && method.returns !== 'void';
-                            return (
-                              <li>
-                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                  <span className="subsystem-component-name">
-                                  { component.name }
-                                  </span>
-                                  <ChevronRightSharp style={{ height: '16px' }}/>
-                                  <HelpableLabel description={ method.description }>
-                                    <SubsystemActionName name={ method.name }/>
-                                  </HelpableLabel> 
-                                </div>
+                          {
+                            action.steps.map((step, index) => {
+                              const component = subsystem.components.find(c => c.uuid === step.component)
+                              const method = component.definition.methods.find(m => m.codeName === step.methodName)
 
-                                {
-                                  (step.params.length > 0) ? (
-                                <table className="subsystem-action-step-parameters-table">
-                                  <thead>
-                                    <tr>
-                                      <th>Parameter</th>
-                                      <th>Value</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                {
-                                  step.params.map(param => {
-                                    const realParam = method.parameters.find(p => p.codeName === param.paramName);
-                                    return (
-                                      <tr>
-                                        <td>
-                                          <HelpableLabel description={ realParam.description }>
-                                            <span className="subsystem-action-step-param-name">{ realParam.name }</span>
-                                          </HelpableLabel>
-                                        </td>
-                                        <td>{ (() => {
-                                          const arg = param.arg;
-                                          switch (arg.type) {
-                                            case "hardcode":
-                                              return (<span><code className="hardcoded-value">{ arg.hardcodedValue }</code></span>);
-                                            case "define-passthrough-value":
-                                              return (<span style={{ color: '#aaa' }}>specified when the action runs</span>);
-                                            case "reference-passthrough-value":
-                                              return 'is unknown';
-                                            case "reference-step-output":
-                                              const referencedStep = action.steps.find(s => s.uuid === arg.step);
-                                              const referencedComponent = subsystem.components.find(c => c.uuid === referencedStep.component);
-                                              const referencedMethod = referencedComponent.definition.methods.find(m => m.codeName === referencedStep.methodName);
-                                              return (<span>result of <SubsystemActionName name={ referencedMethod.name }/> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>);
-                                            default:
-                                              return 'is unknown';
+                              return (
+                                <li key={ index }>
+                                  <div style={{ display: "flex", alignItems: "center" }}>
+                                    <span className="subsystem-component-name">
+                                      { component.name }
+                                    </span>
+                                    <ChevronRightSharp style={{ height: "16px" }}/>
+                                    <HelpableLabel description={ method.description }>
+                                      <SubsystemActionName name={ method.name }/>
+                                    </HelpableLabel> 
+                                  </div>
+
+                                  {
+                                    (step.params.length > 0) ? (
+                                      <table className="subsystem-action-step-parameters-table">
+                                        <thead>
+                                          <tr>
+                                            <th>Parameter</th>
+                                            <th>Value</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {
+                                            step.params.map(param => {
+                                              const realParam = method.parameters.find(p => p.codeName === param.paramName)
+                                              return (
+                                                <tr key={ param.paramName }>
+                                                  <td>
+                                                    <HelpableLabel description={ realParam.description }>
+                                                      <span className="subsystem-action-step-param-name">{ realParam.name }</span>
+                                                    </HelpableLabel>
+                                                  </td>
+                                                  <td>{ (() => {
+                                                    const arg = param.arg
+                                                    switch (arg.type) {
+                                                      case "hardcode":
+                                                        return (<span><code className="hardcoded-value">{ arg.hardcodedValue }</code></span>)
+                                                      case "define-passthrough-value":
+                                                        return (<span style={{ color: "#aaa" }}>specified when the action runs</span>)
+                                                      case "reference-passthrough-value":
+                                                        return "is unknown"
+                                                      case "reference-step-output":
+                                                      {
+                                                        const referencedStep = action.steps.find(s => s.uuid === arg.step)
+                                                        const referencedComponent = subsystem.components.find(c => c.uuid === referencedStep.component)
+                                                        const referencedMethod = referencedComponent.definition.methods.find(m => m.codeName === referencedStep.methodName)
+                                                        return (<span>result of <SubsystemActionName name={ referencedMethod.name }/> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>)
+                                                      }
+                                                      default:
+                                                        return "is unknown"
+                                                    }
+                                                  })() }
+                                                  </td>
+                                                </tr>
+                                              )
+                                            })
                                           }
-                                        })() }
-                                        </td>
-                                      </tr>
-                                    )
-                                  })
-                                }
-                                  </tbody>
-                                </table>
-                                  ) : <></>
-                              }
-                              </li>
-                            )
-                          })
-                        }
+                                        </tbody>
+                                      </table>
+                                    ) : <></>
+                                  }
+                                </li>
+                              )
+                            })
+                          }
                         </ol>
                         <div>
-                          <Button onClick={(e) => { setEditedAction(action); setShowCreateActionDialog(true); }}>
+                          <Button onClick={ () => {
+                            setEditedAction(action)
+                            setShowCreateActionDialog(true)
+                          } }>
                             Edit
                           </Button>
                         </div>
@@ -409,7 +418,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
 
               <Button id="add-action-button"
                       className="add-component-button add-action-button"
-                      onClick={(e) => setShowCreateActionDialog(true)}>
+                      onClick={ () => setShowCreateActionDialog(true) }>
                 + Add Action
               </Button>
             </div>
@@ -432,13 +441,16 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                         {
                           (() => {
                             if (state.step) {
-                              let component = subsystem.components.find(c => c.uuid === state.step.component);
-                              return `${ component.name } ${ component.definition.methods.find(m => m.codeName === state.step.methodName).name }`;
+                              const component = subsystem.components.find(c => c.uuid === state.step.component)
+                              return `${ component.name } ${ component.definition.methods.find(m => m.codeName === state.step.methodName).name }`
                             }
                           })()
                         }
                         <div>
-                          <Button onClick={(e) => { setEditedState(state); setShowCreateStateDialog(true); } }>
+                          <Button onClick={ () => {
+                            setEditedState(state)
+                            setShowCreateStateDialog(true)
+                          } }>
                             Edit
                           </Button>
                         </div>
@@ -450,7 +462,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
 
               <Button id="add-state-button"
                       className="add-component-button add-state-button"
-                      onClick={(e) => setShowCreateStateDialog(true)}>
+                      onClick={ () => setShowCreateStateDialog(true) }>
                 + Add State
               </Button>
             </div>
@@ -460,7 +472,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
           <AccordionSummary className="component-column-header" sx={ columnHeaderSx }>
             <span>Commands</span>
           </AccordionSummary>
-          <AccordionDetails style={{padding: 0}}>
+          <AccordionDetails style={{ padding: 0 }}>
             <div>
               {
                 subsystem.commands.map(command => {
@@ -476,20 +488,25 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                               switch (command.endCondition) {
                                 case undefined:
                                 case null:
-                                  break;
+                                  break
                                 case "forever":
-                                  return <span>until it is cancelled or interrupted</span>;
+                                  return <span>until it is cancelled or interrupted</span>
                                 case "once":
-                                  return <span>exactly once</span>;
+                                  return <span>exactly once</span>
                                 default:
-                                  // state UUID
-                                  const endState = subsystem.states.find(s => s.uuid === command.endCondition);
-                                  return (<span>until the <SubsystemName subsystem={subsystem} /> has reached <SubsystemStateName state={endState}/></span>);
+                                // state UUID
+                                {
+                                  const endState = subsystem.states.find(s => s.uuid === command.endCondition)
+                                  return (<span>until the <SubsystemName subsystem={subsystem} /> has reached <SubsystemStateName state={endState}/></span>)
+                                }
                               }
                             })()
                           }
                         </div>
-                        <Button onClick={(e) => { setEditedCommand(command); setShowCreateCommandDialog(true); } }>
+                        <Button onClick={ () => {
+                          setEditedCommand(command)
+                          setShowCreateCommandDialog(true)
+                        } }>
                           Edit
                         </Button>
                       </AccordionDetails>
@@ -501,29 +518,29 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
             <div className="add-components-carousel" id="add-commands-carousel">
               <Button id="add-command-button"
                       className="add-component-button add-command-button"
-                      onClick={(e) => setShowCreateCommandDialog(true)}>
+                      onClick={ () => setShowCreateCommandDialog(true) }>
                 + Add Command
               </Button>
             </div>
           </AccordionDetails>
         </Accordion>
       </div>
-      <div style={{ height: '100%', overflow: 'scroll' }}>
+      <div style={{ height: "100%", overflow: "scroll" }}>
         <SyntaxHighlighter
           language="java"
           style={ SyntaxHighlightStyles.vs }
           showLineNumbers={ true }
           wrapLines={ true }
-          lineProps={ (lineNumber: number): { style: React.CSSProperties } => {
-            const style: CSSProperties = { display: "block", fontSize: '10pt' };
-            return { style };
+          lineProps={ (): { style: React.CSSProperties } => {
+            const style: CSSProperties = { display: "block", fontSize: "10pt" }
+            return { style }
           } }
         >
           { generatedCode }
         </SyntaxHighlighter>
       </div>
     </Box>
-  );
+  )
 }
 
 
@@ -545,40 +562,40 @@ type StepEditorProps = {
 };
 
 function StepEditor({
-                      subsystem,
-                      component,
-                      methodName,
-                      params,
-                      previousSteps,
-                      componentMapper,
-                      methodMapper,
-                      onMethodChange
-                    }: StepEditorProps) {
+  subsystem,
+  component,
+  methodName,
+  params,
+  previousSteps,
+  componentMapper,
+  methodMapper,
+  onMethodChange,
+}: StepEditorProps) {
 
-  if (!componentMapper) componentMapper = (components) => components;
-  if (!methodMapper) methodMapper = (methods) => methods;
+  if (!componentMapper) componentMapper = (components) => components
+  if (!methodMapper) methodMapper = (methods) => methods
 
-  const availableComponents = componentMapper(subsystem.components).filter(c => methodMapper(c.definition.methods).length > 0);
-  const availableMethods = component ? methodMapper(component.definition.methods) : [];
+  const availableComponents = componentMapper(subsystem.components).filter(c => methodMapper(c.definition.methods).length > 0)
+  const availableMethods = component ? methodMapper(component.definition.methods) : []
 
   const buildDummyParams = (component: SubsystemComponent, methodName: string): StepParam[] => {
-    const method = component.definition.methods.find(m => m.codeName === methodName);
-    if (!method) return [];
+    const method = component.definition.methods.find(m => m.codeName === methodName)
+    if (!method) return []
 
     return method.parameters.map(param => {
       return {
         paramName: param.codeName,
         arg: {
           type: "hardcode",
-          hardcodedValue: "/* TODO */"
-        }
+          hardcodedValue: "/* TODO */",
+        },
       }
     })
   }
 
   useEffect(() => {
-    console.debug('[STEP-EDITOR] Rendering step editor for step using component', component, 'with method', methodName);
-  });
+    console.debug("[STEP-EDITOR] Rendering step editor for step using component", component, "with method", methodName)
+  })
 
   return (
     <Box className="step-editor">
@@ -586,11 +603,11 @@ function StepEditor({
         Using
         <Select variant="standard"
                 style={ { margin: "0 8px" } }
-                value={ component?.uuid ?? '' }
+                value={ component?.uuid ?? "" }
                 onChange={ (e) => {
-                  const componentUuid = e.target.value;
-                  const newComponent = subsystem.components.find(c => c.uuid === componentUuid);
-                  onMethodChange(newComponent, null, []);
+                  const componentUuid = e.target.value
+                  const newComponent = subsystem.components.find(c => c.uuid === componentUuid)
+                  onMethodChange(newComponent, null, [])
                 } }>
           {
             availableComponents.map(c => {
@@ -600,7 +617,7 @@ function StepEditor({
                     { c.name }
                   </span>
                 </MenuItem>
-              );
+              )
             })
           }
         </Select>
@@ -608,7 +625,7 @@ function StepEditor({
         , call
         <Select variant="standard"
                 style={ { margin: "0 8px" } }
-                value={ methodName ?? '' }
+                value={ methodName ?? "" }
                 onChange={ (e) => onMethodChange(component, e.target.value, buildDummyParams(component, e.target.value)) }
         >
           {
@@ -619,7 +636,7 @@ function StepEditor({
                     { method.name }
                   </span>
                 </MenuItem>
-              );
+              )
             })
           }
         </Select>
@@ -629,9 +646,9 @@ function StepEditor({
           <Tooltip title={
             component.definition.methods.find(m => m.codeName === methodName).description
           }>
-        <span style={ { fontSize: "10pt", color: "lightslategray" } }>
+            <span style={ { fontSize: "10pt", color: "lightslategray" } }>
           (?)
-        </span>
+            </span>
           </Tooltip>
         ) : null
       }
@@ -644,184 +661,186 @@ function StepEditor({
           component && methodName ?
             component.definition.methods.find(m => m.codeName === methodName).parameters.map(param => {
               return (
-                <StepParameterEditor param={ param }
+                <StepParameterEditor key={ param.codeName }
+                                     param={ param }
                                      stepParam={ params.find(p => p.paramName === param.codeName) }
                                      subsystem={ subsystem }
                                      previousSteps={ previousSteps }
                                      onParamChange={ (newParam) => {
-                                       console.log('Setting new params for step to', newParam);
-                                       const existingParamIndex = params.indexOf(params.find(p => p.paramName === newParam.paramName));
+                                       console.log("Setting new params for step to", newParam)
+                                       const existingParamIndex = params.indexOf(params.find(p => p.paramName === newParam.paramName))
 
-                                       let newParams: StepParam[];
+                                       let newParams: StepParam[]
                                        if (existingParamIndex === -1) {
                                          // No existing parameter for this input, stick it on the end
-                                         newParams = params.concat(newParam);
+                                         newParams = params.concat(newParam)
                                        } else {
                                          // Replace the existing param with the new one.  Not using splice so we don't modify the existing step
-                                         newParams = params.slice(0, existingParamIndex).concat(newParam).concat(...params.slice(existingParamIndex + 1, params.length));
+                                         newParams = params.slice(0, existingParamIndex).concat(newParam).concat(...params.slice(existingParamIndex + 1, params.length))
                                        }
-                                       onMethodChange(component, methodName, [...newParams]);
+                                       onMethodChange(component, methodName, [...newParams])
                                      } }
                 />
-              );
+              )
             }) : null
         }
       </Box>
     </Box>
-  );
+  )
 }
 
 function StepParameterEditor({
-                               param,
-                               stepParam,
-                               subsystem,
-                               previousSteps,
-                               onParamChange
-                             }: { param: ParameterDefinition, stepParam: StepParam, subsystem: Subsystem, previousSteps: SubsystemActionStep[], onParamChange: (newParam: StepParam) => void }) {
-  const toSelectionValue = (argType: string, others: any): StepArgument => {
+  param,
+  stepParam,
+  subsystem,
+  previousSteps,
+  onParamChange,
+}: { param: ParameterDefinition, stepParam: StepParam, subsystem: Subsystem, previousSteps: SubsystemActionStep[], onParamChange: (newParam: StepParam) => void }) {
+  const toSelectionValue = (argType: string, others: StepArgument): StepArgument => {
     switch (argType) {
       case "hardcode":
         return {
           type: "hardcode",
-          hardcodedValue: others.hardcodedValue
-        };
+          hardcodedValue: (others as HardcodedStepArgument).hardcodedValue,
+        }
       case "define-passthrough-value":
         return {
           type: "define-passthrough-value",
-          passthroughArgumentName: others.passthroughArgumentName
+          passthroughArgumentName: (others as PassthroughValueStepArgument).passthroughArgumentName,
         }
       case "reference-passthrough-value":
         return {
           type: "reference-passthrough-value",
-          step: others.step,
-          paramName: others.paramName
-        };
+          step: (others as ReferencePassthroughValueStepArgument).step,
+          paramName: (others as ReferencePassthroughValueStepArgument).paramName,
+        }
       case "reference-step-output":
         return {
           type: "reference-step-output",
-          step: others.step
+          step: (others as ReferencePreviousOutputStepArgument).step,
         }
       default:
-        console.warn('Unsupported arg type!', argType);
-        return null;
+        console.warn("Unsupported arg type!", argType)
+        return null
     }
   }
 
   return (
     <div>
+      <span>
         <span>
-          <span>
-            <span style={ { textTransform: "uppercase", color: "orangered" } }>{ param.name }</span>
+          <span style={ { textTransform: "uppercase", color: "orangered" } }>{ param.name }</span>
             &nbsp;is...
-          </span>
-          <Select variant={ "standard" }
-                  value={ JSON.stringify(stepParam.arg) }
-                  style={ { margin: "0 8px" } }
-                  onChange={ (e) => {
-                    if (!e.target.value || e.target.value === '') return;
-
-                    const data = JSON.parse(e.target.value);
-                    const newParam: StepParam = {
-                      paramName: param.codeName,
-                      arg: {
-                        // @ts-ignore
-                        type: data.type as string
-                      }
-                    }
-                    const arg = newParam.arg;
-                    if (arg.type === "hardcode") {
-                      arg.type = "hardcode";
-                      arg.hardcodedValue = "";
-                    } else if (arg.type === "define-passthrough-value") {
-                      arg.passthroughArgumentName = param.codeName;
-                    } else if (arg.type === "reference-passthrough-value") {
-                      arg.step = data.step;
-                      arg.paramName = data.paramName;
-                    } else if (arg.type === "reference-step-output") {
-                      arg.step = data.step;
-                    }
-                    console.debug('Created new param', newParam);
-                    onParamChange(newParam);
-                  } }
-          >
-            <MenuItem
-              value={ JSON.stringify(toSelectionValue("define-passthrough-value", { passthroughArgumentName: stepParam.paramName })) }>
-              {/* TODO: Allow the parameter name to be specified */ }
-              Provided when the action is run
-            </MenuItem>
-
-            <Divider/>
-
-            {
-              previousSteps.flatMap(s => s.params.filter(p => p.arg.type === "define-passthrough-value")).map(previousParam => {
-                return (
-                  <MenuItem key={ JSON.stringify(previousParam) }
-                            value={ JSON.stringify(toSelectionValue("reference-passthrough-value", {
-                              step: previousSteps.find(s => s.params.includes(previousParam)).uuid,
-                              paramName: previousParam.paramName
-                            })) }
-                  >
-                    Reuse&nbsp;<span>{ previousParam.paramName }</span>
-                  </MenuItem>
-                )
-              })
-            }
-
-            <Divider/>
-
-            {
-              previousSteps.filter(s => {
-                const previousStepMethod = subsystem.components.find(c => c.uuid === s.component).definition.methods.find(m => m.codeName === s.methodName);
-                if (!previousStepMethod) return false;
-
-                return previousStepMethod.returns === param.type; // NOTE: assumes no param will ever be defined with type `void`
-              }).map((s, index) => {
-                const component = subsystem.components.find(c => c.uuid === s.component);
-                return (
-                  <MenuItem key={ `select-output-${ s.uuid }` }
-                            value={ JSON.stringify(toSelectionValue("reference-step-output", { step: s.uuid })) }>
-                    The result of&nbsp;
-                    <span style={ {
-                      textTransform: "uppercase",
-                      color: "blue"
-                    } }>{ component.definition.methods.find(m => m.codeName === s.methodName)?.name ?? '[UNDEFINED METHOD]' }</span>&nbsp;
-                    on&nbsp;
-                    <span style={ { textTransform: "uppercase", color: "blue" } }>{ component.name }</span>&nbsp;
-                    <span>in step { index + 1 }</span>&nbsp;
-                  </MenuItem>
-                );
-              })
-            }
-            <Divider/>
-            <MenuItem value={ JSON.stringify({
-              type: "hardcode",
-              hardcodedValue: stepParam?.arg['hardcodedValue'] ?? 'SET ME'
-            }) }>
-              Hardcoded
-            </MenuItem>
-          </Select>
-          {
-            stepParam?.arg.type === "hardcode" ?
-              <span>
-                to&nbsp;
-                <TextField defaultValue={ stepParam.arg.hardcodedValue }
-                           variant={ "standard" }
-                           onChange={ (e) => {
-                             const { paramName } = stepParam;
-                             onParamChange({
-                               paramName: paramName,
-                               arg: {
-                                 type: "hardcode",
-                                 hardcodedValue: e.target.value
-                               }
-                             })
-                           } }/>
-              </span>
-              : null
-          }
         </span>
+        <Select variant={ "standard" }
+                value={ JSON.stringify(stepParam.arg) }
+                style={ { margin: "0 8px" } }
+                onChange={ (e) => {
+                  if (!e.target.value || e.target.value === "") {
+                    return
+                  }
+
+                  const data = JSON.parse(e.target.value)
+                  const newParam: StepParam = {
+                    paramName: param.codeName,
+                    arg: {
+                      type: data.type as string,
+                    },
+                  }
+                  const arg = newParam.arg
+                  if (arg.type === "hardcode") {
+                    arg.type = "hardcode"
+                    arg.hardcodedValue = ""
+                  } else if (arg.type === "define-passthrough-value") {
+                    arg.passthroughArgumentName = param.codeName
+                  } else if (arg.type === "reference-passthrough-value") {
+                    arg.step = data.step
+                    arg.paramName = data.paramName
+                  } else if (arg.type === "reference-step-output") {
+                    arg.step = data.step
+                  }
+                  console.debug("Created new param", newParam)
+                  onParamChange(newParam)
+                } }
+        >
+          <MenuItem
+            value={ JSON.stringify(toSelectionValue("define-passthrough-value", { passthroughArgumentName: stepParam.paramName })) }>
+            {/* TODO: Allow the parameter name to be specified */ }
+              Provided when the action is run
+          </MenuItem>
+
+          <Divider/>
+
+          {
+            previousSteps.flatMap(s => s.params.filter(p => p.arg.type === "define-passthrough-value")).map(previousParam => {
+              return (
+                <MenuItem key={ JSON.stringify(previousParam) }
+                          value={ JSON.stringify(toSelectionValue("reference-passthrough-value", {
+                            step: previousSteps.find(s => s.params.includes(previousParam)).uuid,
+                            paramName: previousParam.paramName,
+                          })) }
+                >
+                    Reuse&nbsp;<span>{ previousParam.paramName }</span>
+                </MenuItem>
+              )
+            })
+          }
+
+          <Divider/>
+
+          {
+            previousSteps.filter(s => {
+              const previousStepMethod = subsystem.components.find(c => c.uuid === s.component).definition.methods.find(m => m.codeName === s.methodName)
+              if (!previousStepMethod) return false
+
+              return previousStepMethod.returns === param.type // NOTE: assumes no param will ever be defined with type `void`
+            }).map((s, index) => {
+              const component = subsystem.components.find(c => c.uuid === s.component)
+              return (
+                <MenuItem key={ `select-output-${ s.uuid }` }
+                          value={ JSON.stringify(toSelectionValue("reference-step-output", { step: s.uuid })) }>
+                    The result of&nbsp;
+                  <span style={ {
+                    textTransform: "uppercase",
+                    color: "blue",
+                  } }>{ component.definition.methods.find(m => m.codeName === s.methodName)?.name ?? "[UNDEFINED METHOD]" }</span>&nbsp;
+                    on&nbsp;
+                  <span style={ { textTransform: "uppercase", color: "blue" } }>{ component.name }</span>&nbsp;
+                  <span>in step { index + 1 }</span>&nbsp;
+                </MenuItem>
+              )
+            })
+          }
+          <Divider/>
+          <MenuItem value={ JSON.stringify({
+            type: "hardcode",
+            hardcodedValue: stepParam?.arg["hardcodedValue"] ?? "SET ME",
+          }) }>
+              Hardcoded
+          </MenuItem>
+        </Select>
+        {
+          stepParam?.arg.type === "hardcode" ?
+            <span>
+                to&nbsp;
+              <TextField defaultValue={ stepParam.arg.hardcodedValue }
+                         variant={ "standard" }
+                         onChange={ (e) => {
+                           const { paramName } = stepParam
+                           onParamChange({
+                             paramName: paramName,
+                             arg: {
+                               type: "hardcode",
+                               hardcodedValue: e.target.value,
+                             },
+                           })
+                         } }/>
+            </span>
+            : null
+        }
+      </span>
     </div>
-  );
+  )
 }
 
 type ActionParams = {
@@ -839,26 +858,26 @@ type CreateActionDialogProps = {
 };
 
 function CreateActionDialog({
-                              open,
-                              subsystem,
-                              editedAction,
-                              onCancel,
-                              onCreate,
-                              onUpdate
-                            }: CreateActionDialogProps) {
-  const [actionName, setActionName] = useState(editedAction?.name ?? null);
-  const [steps, setSteps] = useState(editedAction?.steps.map(s => s.clone()) ?? []);
+  open,
+  subsystem,
+  editedAction,
+  onCancel,
+  onCreate,
+  onUpdate,
+}: CreateActionDialogProps) {
+  const [actionName, setActionName] = useState(editedAction?.name ?? null)
+  const [steps, setSteps] = useState(editedAction?.steps.map(s => s.clone()) ?? [])
 
   useEffect(() => {
-    const pullEditedData = open && !!editedAction;
-    setActionName(pullEditedData ? editedAction.name : null);
-    setSteps(pullEditedData ? editedAction.steps.map(s => s.clone()) : []);
-    console.debug("[CREATE-ACTION-DIALOG] Reset new action name and params to", actionName, steps);
-  }, [open, editedAction]);
+    const pullEditedData = open && !!editedAction
+    setActionName(pullEditedData ? editedAction.name : null)
+    setSteps(pullEditedData ? editedAction.steps.map(s => s.clone()) : [])
+    console.debug("[CREATE-ACTION-DIALOG] Reset new action name and params to", actionName, steps)
+  }, [open, editedAction])
 
   return (
     <Dialog open={ open }>
-      <DialogTitle>{ editedAction ? 'Edit' : 'Create' } Action</DialogTitle>
+      <DialogTitle>{ editedAction ? "Edit" : "Create" } Action</DialogTitle>
       <DialogContent>
         <Box style={ { display: "flex", flexDirection: "column", gap: "12px" } }>
           <TextField variant="standard"
@@ -867,35 +886,36 @@ function CreateActionDialog({
           <Box style={ { display: "flex", flexDirection: "column", gap: "22px" } }>
             {
               steps.map((step, index) => {
-                console.debug('[CREATE-ACTION-DIALOG] Rendering editor for step', index + 1, step);
-                return <StepEditor subsystem={ subsystem }
+                console.debug("[CREATE-ACTION-DIALOG] Rendering editor for step", index + 1, step)
+                return <StepEditor key={ subsystem.uuid  }
+                                   subsystem={ subsystem }
                                    component={ subsystem.components.find(c => c.uuid === step.component) }
                                    methodName={ step.methodName }
                                    previousSteps={ steps.slice(0, index) }
                                    onMethodChange={ (component, methodName, params) => {
-                                     console.debug('[CREATE-ACTION-DIALOG] Updating step', step, 'to match component:', component, 'method:', methodName, 'with params: ', params);
-                                     step.component = component.uuid;
-                                     step.methodName = methodName;
-                                     step.params = params;
-                                     setSteps([...steps]); // rerender
+                                     console.debug("[CREATE-ACTION-DIALOG] Updating step", step, "to match component:", component, "method:", methodName, "with params: ", params)
+                                     step.component = component.uuid
+                                     step.methodName = methodName
+                                     step.params = params
+                                     setSteps([...steps]) // rerender
                                    } }
                                    params={ step.params }/>
               })
             }
           </Box>
           <Button onClick={ () => {
-            const newStep = new SubsystemActionStep({});
-            setSteps(steps.concat(newStep));
+            const newStep = new SubsystemActionStep({})
+            setSteps(steps.concat(newStep))
           } }>
             + Add Step
           </Button>
         </Box>
         <SyntaxHighlighter language="java" style={ SyntaxHighlightStyles.vs }>
           { (() => {
-            const dummyAction = new SubsystemAction(actionName, subsystem.uuid);
-            dummyAction.steps = [...steps];
+            const dummyAction = new SubsystemAction(actionName, subsystem.uuid)
+            dummyAction.steps = [...steps]
             // dummyAction.regenerateParams(subsystem); // not needed, since params are only referenced when using the action in a command
-            return generateAction_future(dummyAction, subsystem);
+            return generateAction_future(dummyAction, subsystem)
           })() }
         </SyntaxHighlighter>
       </DialogContent>
@@ -904,15 +924,19 @@ function CreateActionDialog({
           Cancel
         </Button>
         <Button onClick={ () => {
-          const data = { name: actionName, steps: steps };
-          !!editedAction ? onUpdate(data) : onCreate(data);
+          const data = { name: actionName, steps: steps }
+          if (editedAction) {
+            onUpdate(data)
+          } else {
+            onCreate(data)
+          }
         } }
                 disabled={ !actionName || !!steps.find(s => !s.methodName || !s.component || s.params.find(p => !p.arg.type)) }>
           OK
         </Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
 type StateParams = {
@@ -932,30 +956,30 @@ type CreateStateDialogProps = {
 };
 
 function CreateStateDialog({
-                             open,
-                             subsystem,
-                             editedState,
-                             onCancel,
-                             onCreate,
-                             onUpdate
-                           }: CreateStateDialogProps) {
+  open,
+  subsystem,
+  editedState,
+  onCancel,
+  onCreate,
+  onUpdate,
+}: CreateStateDialogProps) {
 
-  const [stateName, setStateName] = useState(editedState?.name as string);
-  const [stateComponent, setStateComponent] = useState(subsystem.components.find(c => editedState?.step?.component && editedState.step.component === c.uuid) as SubsystemComponent);
-  const [stateMethod, setStateMethod] = useState(editedState?.step?.methodName as string);
-  const [stateParams, setStateParams] = useState(editedState?.step?.params ?? [] as StepParam[]);
+  const [stateName, setStateName] = useState(editedState?.name as string)
+  const [stateComponent, setStateComponent] = useState(subsystem.components.find(c => editedState?.step?.component && editedState.step.component === c.uuid) as SubsystemComponent)
+  const [stateMethod, setStateMethod] = useState(editedState?.step?.methodName as string)
+  const [stateParams, setStateParams] = useState(editedState?.step?.params ?? [] as StepParam[])
 
   useEffect(() => {
-    const pullEditedData = open && !!editedState;
-    setStateName(pullEditedData ? editedState.name : null);
-    setStateComponent(pullEditedData ? subsystem.components.find(c => editedState.step?.component === c.uuid) : null);
-    setStateMethod(pullEditedData ? editedState.step?.methodName : null);
-    setStateParams(pullEditedData ? editedState.step?.params : []);
-  }, [open, editedState]);
+    const pullEditedData = open && !!editedState
+    setStateName(pullEditedData ? editedState.name : null)
+    setStateComponent(pullEditedData ? subsystem.components.find(c => editedState.step?.component === c.uuid) : null)
+    setStateMethod(pullEditedData ? editedState.step?.methodName : null)
+    setStateParams(pullEditedData ? editedState.step?.params : [])
+  }, [open, editedState])
 
   return (
     <Dialog open={ open }>
-      <DialogTitle>{ editedState ? 'Edit ' : 'Create '} State</DialogTitle>
+      <DialogTitle>{ editedState ? "Edit " : "Create "} State</DialogTitle>
       <DialogContent>
         <TextField label="Name"
                    variant="standard"
@@ -968,29 +992,29 @@ function CreateStateDialog({
                     previousSteps={ [] }
                     componentMapper={ null }
                     methodMapper={ (methods) => {
-                      const nonVoidMethods = methods.filter(m => m.returns !== 'void');
+                      const nonVoidMethods = methods.filter(m => m.returns !== "void")
                       const booleansFirst = (a: MethodDefinition, b: MethodDefinition): number => {
                         return ((b.hints.includes("state") as unknown as number) - (a.hints.includes("state") as unknown as number)) ||
                           (((b.returns === "boolean") as unknown as number) - ((a.returns === "boolean") as unknown as number)) ||
                           (((b.returns === "double") as unknown as number) - ((a.returns === "double") as unknown as number)) ||
-                          0;
+                          0
                       }
-                      return nonVoidMethods.sort(booleansFirst);
+                      return nonVoidMethods.sort(booleansFirst)
                     } }
                     onMethodChange={ (component, methodName, params) => {
-                      setStateComponent(component);
-                      setStateMethod(methodName);
-                      setStateParams(params);
+                      setStateComponent(component)
+                      setStateMethod(methodName)
+                      setStateParams(params)
                     } }/>
         <SyntaxHighlighter language="java" style={ SyntaxHighlightStyles.vs }>
           { (() => {
-            const dummyState = new SubsystemState(stateName ?? 'Unnamed State', subsystem.uuid);
+            const dummyState = new SubsystemState(stateName ?? "Unnamed State", subsystem.uuid)
             dummyState.step = new SubsystemActionStep({
               component: stateComponent?.uuid,
               methodName: stateMethod,
-              params: stateParams
-            });
-            return generateState(dummyState, subsystem);
+              params: stateParams,
+            })
+            return generateState(dummyState, subsystem)
           })() }
         </SyntaxHighlighter>
       </DialogContent>
@@ -1001,123 +1025,127 @@ function CreateStateDialog({
             name: stateName,
             component: stateComponent?.uuid,
             method: stateMethod,
-            params: stateParams
-          };
-          !!editedState ? onUpdate(data) : onCreate(data)
+            params: stateParams,
+          }
+          if (editedState) {
+            onUpdate(data)
+          } else {
+            onCreate(data)
+          }
         } } disabled={ !stateName }>OK</Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
 class NewCommandData {
-  readonly name: string;
-  readonly subsystem: string; // UUID
-  readonly initializeActions: string[]; // UUIDs
-  readonly action: string; // UUID
-  readonly endCondition: EndCondition;
-  readonly params: ActionParamCallOption[];
+  readonly name: string
+  readonly subsystem: string // UUID
+  readonly initializeActions: string[] // UUIDs
+  readonly action: string // UUID
+  readonly endCondition: EndCondition
+  readonly params: ActionParamCallOption[]
 
-  constructor(name, subsystem, initializeActions, action, endCondition, params) {
-    this.name = name;
-    this.subsystem = subsystem;
-    this.initializeActions = initializeActions;
-    this.action = action;
-    this.endCondition = endCondition;
-    this.params = params;
+  constructor(name: string, subsystem: string, initializeActions: string[], action: string, endCondition: EndCondition, params: ActionParamCallOption[]) {
+    this.name = name
+    this.subsystem = subsystem
+    this.initializeActions = initializeActions
+    this.action = action
+    this.endCondition = endCondition
+    this.params = params
   }
 
   toCommand(): AtomicCommand {
-    const command = new AtomicCommand();
-    command.name = this.name;
-    command.subsystem = this.subsystem;
-    command.toInitialize = [...this.initializeActions];
-    command.action = this.action;
-    command.endCondition = this.endCondition;
-    command.params = [...this.params];
-    return command;
+    const command = new AtomicCommand()
+    command.name = this.name
+    command.subsystem = this.subsystem
+    command.toInitialize = [...this.initializeActions]
+    command.action = this.action
+    command.endCondition = this.endCondition
+    command.params = [...this.params]
+    return command
   }
 }
 
 function ActionInvocationEditor(param: Param, action: SubsystemAction, params: ActionParamCallOption[], setParams: (params: ActionParamCallOption[]) => void) {
-  let hardCodedValue = null;
-  const existingInvocation: ActionParamCallOption | undefined = params.find(p => p.param === param.uuid);
-  console.debug('Rendering controls for existing argument invocation:', existingInvocation);
+  let hardCodedValue = null
+  const existingInvocation: ActionParamCallOption | undefined = params.find(p => p.param === param.uuid)
+  console.debug("Rendering controls for existing argument invocation:", existingInvocation)
 
   return (
     [
-      <label>{ param.name }</label>,
-      <span>
-          <Select defaultValue={ existingInvocation?.invocationType ?? "" }
-                  value={ existingInvocation?.invocationType ?? "" }
-                  variant="standard"
-                  onChange={ (e) => {
-                    const optType = e.target.value as "hardcode" | "passthrough-value" | "passthrough-supplier";
+      <label key={ "label" }>{ param.name }</label>,
+      <span key={ "span" }>
+        <Select defaultValue={ existingInvocation?.invocationType ?? "" }
+                value={ existingInvocation?.invocationType ?? "" }
+                variant="standard"
+                onChange={ (e) => {
+                  const optType = e.target.value as "hardcode" | "passthrough-value" | "passthrough-supplier"
 
-                    const newInvocation: ActionParamCallOption = ActionParamCallOption.fromObjects(action, param, optType, hardCodedValue);
-                    const existingIndex = params.findIndex((option) => option.param === param.uuid);
-                    let newParams: ActionParamCallOption[];
-                    if (existingIndex >= 0) {
-                      // replace
-                      params.splice(existingIndex, 1, newInvocation);
-                      newParams = [...params];
-                    } else {
-                      // concat
-                      newParams = params.concat(newInvocation);
-                    }
-                    // sort to keep the parameters in the same order they appear in the action param defs
-                    newParams = newParams.sort((a, b) => action.params.findIndex(p => p.uuid === a.param) - action.params.findIndex(p => p.uuid === b.param));
-                    setParams(newParams);
-                  } }>
-            <MenuItem value={ "hardcode" }>
+                  const newInvocation: ActionParamCallOption = ActionParamCallOption.fromObjects(action, param, optType, hardCodedValue)
+                  const existingIndex = params.findIndex((option) => option.param === param.uuid)
+                  let newParams: ActionParamCallOption[]
+                  if (existingIndex >= 0) {
+                    // replace
+                    params.splice(existingIndex, 1, newInvocation)
+                    newParams = [...params]
+                  } else {
+                    // concat
+                    newParams = params.concat(newInvocation)
+                  }
+                  // sort to keep the parameters in the same order they appear in the action param defs
+                  newParams = newParams.sort((a, b) => action.params.findIndex(p => p.uuid === a.param) - action.params.findIndex(p => p.uuid === b.param))
+                  setParams(newParams)
+                } }>
+          <MenuItem value={ "hardcode" }>
               Hardcoded
-            </MenuItem>
-            <MenuItem value={ "passthrough-value" }>
+          </MenuItem>
+          <MenuItem value={ "passthrough-value" }>
               Pass through a value
-            </MenuItem>
-            <MenuItem value={ "passthrough-supplier" }>
+          </MenuItem>
+          <MenuItem value={ "passthrough-supplier" }>
               Pass through with a supplier
-            </MenuItem>
-          </Select>
-          <TextField variant="standard"
-                     defaultValue={ existingInvocation?.hardcodedValue ?? "" }
-                     value={ existingInvocation?.hardcodedValue ?? "" }
-                     onChange={ (e) => {
-                       hardCodedValue = e.target.value;
-                       const newParam = ActionParamCallOption.fromObjects(action, param, "hardcode", hardCodedValue);
-                       const existingParam = params.find(p => p.param === param.uuid);
+          </MenuItem>
+        </Select>
+        <TextField variant="standard"
+                   defaultValue={ existingInvocation?.hardcodedValue ?? "" }
+                   value={ existingInvocation?.hardcodedValue ?? "" }
+                   onChange={ (e) => {
+                     hardCodedValue = e.target.value
+                     const newParam = ActionParamCallOption.fromObjects(action, param, "hardcode", hardCodedValue)
+                     const existingParam = params.find(p => p.param === param.uuid)
 
-                       console.debug('Replacing existing param', existingParam, 'with new param', newParam);
+                     console.debug("Replacing existing param", existingParam, "with new param", newParam)
 
-                       params.splice(params.indexOf(existingParam), 1, newParam);
-                       setParams([...params]);
-                     } }/>
-        </span>
+                     params.splice(params.indexOf(existingParam), 1, newParam)
+                     setParams([...params])
+                   } }/>
+      </span>,
     ]
-  );
+  )
 }
 
 
 function CreateCommandDialog({
-                               subsystem,
-                               onCancel,
-                               onAccept,
-                               defaultOpen,
-                               type,
-                               editedCommand
-                             }: { subsystem: Subsystem, onCancel: () => void, onAccept: (string) => void, defaultOpen: boolean, type: "create" | "edit", editedCommand: AtomicCommand | null }) {
-  const [initializeActions, setInitializeActions] = useState(editedCommand?.toInitialize ?? []);
-  const [selectedAction, setSelectedAction] = useState(editedCommand?.action);
-  const [endCondition, setEndCondition] = useState(editedCommand?.endCondition);
-  const [commandName, setCommandName] = useState(editedCommand?.name);
-  const [params, setParams] = useState(editedCommand?.params ?? []);
+  subsystem,
+  onCancel,
+  onAccept,
+  defaultOpen,
+  type,
+  editedCommand,
+}: { subsystem: Subsystem, onCancel: () => void, onAccept: (string) => void, defaultOpen: boolean, type: "create" | "edit", editedCommand: AtomicCommand | null }) {
+  const [initializeActions, setInitializeActions] = useState(editedCommand?.toInitialize ?? [])
+  const [selectedAction, setSelectedAction] = useState(editedCommand?.action)
+  const [endCondition, setEndCondition] = useState(editedCommand?.endCondition)
+  const [commandName, setCommandName] = useState(editedCommand?.name)
+  const [params, setParams] = useState(editedCommand?.params ?? [])
 
   // doesn't clear properly when hitting +add command, closing, then re-opening
-  useEffect(() => setInitializeActions(editedCommand?.toInitialize ?? []), [editedCommand, subsystem, defaultOpen]);
-  useEffect(() => setSelectedAction(editedCommand?.action), [editedCommand, subsystem, defaultOpen]);
-  useEffect(() => setEndCondition(editedCommand?.endCondition), [editedCommand, subsystem, defaultOpen]);
-  useEffect(() => setCommandName(editedCommand?.name), [editedCommand, subsystem, defaultOpen]);
-  useEffect(() => setParams(editedCommand?.action === selectedAction ? editedCommand?.params ?? [] : []), [editedCommand, subsystem, defaultOpen, selectedAction]);
+  useEffect(() => setInitializeActions(editedCommand?.toInitialize ?? []), [editedCommand, subsystem, defaultOpen])
+  useEffect(() => setSelectedAction(editedCommand?.action), [editedCommand, subsystem, defaultOpen])
+  useEffect(() => setEndCondition(editedCommand?.endCondition), [editedCommand, subsystem, defaultOpen])
+  useEffect(() => setCommandName(editedCommand?.name), [editedCommand, subsystem, defaultOpen])
+  useEffect(() => setParams(editedCommand?.action === selectedAction ? editedCommand?.params ?? [] : []), [editedCommand, subsystem, defaultOpen, selectedAction])
 
   return (
     <Dialog open={ defaultOpen } className="create-command-dialog">
@@ -1134,11 +1162,11 @@ function CreateCommandDialog({
                   variant="standard"
                   defaultValue={ editedCommand?.toInitialize.join(",") ?? "" }
                   onChange={ (e) => {
-                    const selectedActionUUID = e.target.value;
+                    const selectedActionUUID = e.target.value
                     if (selectedActionUUID && selectedActionUUID.length > 0) {
-                      setInitializeActions([selectedActionUUID]);
+                      setInitializeActions([selectedActionUUID])
                     } else {
-                      setInitializeActions([]);
+                      setInitializeActions([])
                     }
                   } }
           >
@@ -1153,7 +1181,7 @@ function CreateCommandDialog({
               })
             }
             <Divider/>
-            <MenuItem value={ "" } key={ 'none' }>
+            <MenuItem value={ "" } key={ "none" }>
               None
             </MenuItem>
           </Select>
@@ -1179,8 +1207,8 @@ function CreateCommandDialog({
                   variant="standard"
                   defaultValue={ editedCommand?.action }
                   onChange={ (e) => {
-                    const selectedActionUUID = e.target.value;
-                    setSelectedAction(selectedActionUUID);
+                    const selectedActionUUID = e.target.value
+                    setSelectedAction(selectedActionUUID)
                   } }
                   placeholder={ "Select an action..." }>
             {
@@ -1202,8 +1230,8 @@ function CreateCommandDialog({
           <Select className="state-select"
                   variant="standard"
                   onChange={ (e) => {
-                    console.debug('Setting end condition to', e.target.value);
-                    setEndCondition(e.target.value);
+                    console.debug("Setting end condition to", e.target.value)
+                    setEndCondition(e.target.value)
                   } }
                   defaultValue={ editedCommand?.endCondition || "forever" }>
             <MenuItem value="forever">
@@ -1220,7 +1248,7 @@ function CreateCommandDialog({
                     The
                     <SubsystemName subsystem={subsystem}/> reaches <SubsystemStateName state={state}/>
                   </MenuItem>
-                );
+                )
               })
             }
           </Select>
@@ -1250,10 +1278,10 @@ function CreateCommandDialog({
             {
               (() => {
                 try {
-                  return generateCommand(commandName, subsystem, selectedAction, endCondition, params, initializeActions, [], []);
+                  return generateCommand(commandName, subsystem, selectedAction, endCondition, params, initializeActions)
                 } catch (e) {
-                  console.error(e);
-                  return `ERROR: Failed to generate code for command ${ commandName }: ${ e }`;
+                  console.error(e)
+                  return `ERROR: Failed to generate code for command ${ commandName }: ${ e }`
                 }
               })()
             }
@@ -1262,11 +1290,11 @@ function CreateCommandDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={ () => {
-          onCancel();
+          onCancel()
         } }>Cancel</Button>
         <Button
           onClick={ () => {
-            onAccept(new NewCommandData(commandName, subsystem.uuid, initializeActions, selectedAction, endCondition, params));
+            onAccept(new NewCommandData(commandName, subsystem.uuid, initializeActions, selectedAction, endCondition, params))
           } }
           disabled={ (() => {
             // console.debug('Checking if the', type, 'command dialog should be submittable');
@@ -1275,37 +1303,37 @@ function CreateCommandDialog({
             // console.debug('  commandName:', commandName);
 
             // return !selectedAction || !endCondition || !commandName;
-            return !commandName;
+            return !commandName
           })() }>
           OK
         </Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
 function RenameSubsystemDialog({
-                                 subsystem,
-                                 onCancel,
-                                 onAccept,
-                                 defaultOpen
-                               }: { subsystem: Subsystem, onCancel: () => void, onAccept: (string) => void, defaultOpen: boolean }) {
+  subsystem,
+  onCancel,
+  onAccept,
+  defaultOpen,
+}: { subsystem: Subsystem, onCancel: () => void, onAccept: (string) => void, defaultOpen: boolean }) {
 
   // const [name, setName] = useState(subsystem?.name);
-  let name = subsystem?.name;
+  let name = subsystem?.name
 
   if (!subsystem) {
-    console.warn('No subsystem given?');
-    return null;
+    console.warn("No subsystem given?")
+    return null
   }
 
   const handleCancel = () => {
-    name = (subsystem.name);
-    onCancel();
+    name = (subsystem.name)
+    onCancel()
   }
 
   const handleAccept = () => {
-    onAccept(name);
+    onAccept(name)
   }
 
   return (
@@ -1329,14 +1357,14 @@ function RenameSubsystemDialog({
         <Button onClick={ handleAccept }>OK</Button>
       </DialogActions>
     </Dialog>
-  );
+  )
 }
 
 function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsystem) => void }) {
   const newDriveBase = () => {
-    const driveBase = differentialDrivebaseTemplate();
-    acceptNewSubsystem(driveBase);
-  };
+    const driveBase = differentialDrivebaseTemplate()
+    acceptNewSubsystem(driveBase)
+  }
 
   return (
     <Box style={ {
@@ -1344,7 +1372,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
       flexDirection: "row",
       flexWrap: "wrap",
       justifyContent: "center",
-      gap: "40px"
+      gap: "40px",
     } }>
       <Button id="subsystem-button-drivetrain" onClick={ newDriveBase }>
         <Box>
@@ -1355,7 +1383,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" } alt={ "" } title={ "DRIVETRAIN IMAGE" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-single-jointed-arm" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-single-jointed-arm" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip title={ "A rotating arm with a single pivot point" }>
             <h3>Single-Jointed Arm</h3>
@@ -1363,7 +1391,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-double-jointed-arm" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-double-jointed-arm" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip title={ "A rotating arm with two pivot points" }>
             <h3>Double-Jointed Arm</h3>
@@ -1371,7 +1399,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-wrist" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-wrist" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip
             title={ "A wrist at the end of an arm, or a low-mass pivoting mechanism that doesn't require sophisticated controls like an arm would" }>
@@ -1380,7 +1408,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-elevator" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-elevator" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip
             title={ "A subsystem that has a linear extension and retraction. This could be vertical, in the case of a traditional elevator, or angled, or even horizontal" }
@@ -1391,9 +1419,9 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
         </Box>
       </Button>
       <Button id="subsystem-button-blank" onClick={ () => {
-        const blankSubsystem = new Subsystem();
-        blankSubsystem.name = "Blank Subsystem";
-        acceptNewSubsystem(blankSubsystem);
+        const blankSubsystem = new Subsystem()
+        blankSubsystem.name = "Blank Subsystem"
+        acceptNewSubsystem(blankSubsystem)
       } }>
         <Box>
           <Tooltip title={ "A new blank subsystem with no prebuilt configuration" }>
@@ -1403,75 +1431,75 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
         </Box>
       </Button>
     </Box>
-  );
+  )
 }
 
 export function Subsystems({ project }: { project: Project }) {
-  const [currentSubsystem, setCurrentSubsystem] = useState(project.subsystems[0]);
+  const [currentSubsystem, setCurrentSubsystem] = useState(project.subsystems[0])
   if (currentSubsystem && !project.subsystems.find(s => s.uuid === currentSubsystem.uuid)) {
     // Project changed and removed our subsystem.  Reset the component to display the first subsystem again.
-    setCurrentSubsystem(project.subsystems[0]);
+    setCurrentSubsystem(project.subsystems[0])
   }
 
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
     mouseY: number;
     subsystem: Subsystem;
-  } | null>(null);
+  } | null>(null)
 
-  const [contextMenuSubsystem, setContextMenuSubsystem] = useState(null);
-  useEffect(() => setContextMenuSubsystem(project.subsystems.length === 0 || !currentSubsystem), [project, project.subsystems, currentSubsystem]);
+  const [contextMenuSubsystem, setContextMenuSubsystem] = useState(null)
+  useEffect(() => setContextMenuSubsystem(project.subsystems.length === 0 || !currentSubsystem), [project, project.subsystems, currentSubsystem])
 
   const handleContextMenu = (subsystem: Subsystem) => {
     return (event: React.MouseEvent) => {
-      event.preventDefault();
-      console.log('handleContextMenu(', subsystem, ')');
-      setContextMenuSubsystem(subsystem);
+      event.preventDefault()
+      console.log("handleContextMenu(", subsystem, ")")
+      setContextMenuSubsystem(subsystem)
       setContextMenu(
         contextMenu == null ?
           { mouseX: event.clientX, mouseY: event.clientY, subsystem: subsystem } :
-          null
-      );
-    };
+          null,
+      )
+    }
   }
 
   const handleClose = () => {
     // setContextMenuSubsystem(null);
-    setContextMenu(null);
+    setContextMenu(null)
   }
 
-  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false)
   const renameSubsystem = (subsystem: Subsystem) => {
-    console.log('RENAME', subsystem);
-    setContextMenuSubsystem(subsystem);
-    setShowRenameDialog(true);
-    handleClose();
+    console.log("RENAME", subsystem)
+    setContextMenuSubsystem(subsystem)
+    setShowRenameDialog(true)
+    handleClose()
   }
 
   const deleteSubsystem = (subsystem: Subsystem) => {
-    console.log('DELETE', subsystem);
-    const index = project.subsystems.indexOf(subsystem);
-    project.subsystems = project.subsystems.filter(s => s !== subsystem);
+    console.log("DELETE", subsystem)
+    const index = project.subsystems.indexOf(subsystem)
+    project.subsystems = project.subsystems.filter(s => s !== subsystem)
     if (currentSubsystem === subsystem) {
       // Deleted the selected subsystem - select the tab to the left, or, if it was the leftmost one already,
       // select the new leftmost subsystem
-      const newSelectedIndex = Math.max(0, index - 1);
-      setCurrentSubsystem(project.subsystems[newSelectedIndex]);
+      const newSelectedIndex = Math.max(0, index - 1)
+      setCurrentSubsystem(project.subsystems[newSelectedIndex])
     }
-    handleClose();
+    handleClose()
   }
 
-  const [showSubsystemCreate, setShowSubsystemCreate] = useState(project.subsystems.length === 0);
+  const [showSubsystemCreate, setShowSubsystemCreate] = useState(project.subsystems.length === 0)
 
   return (
     <Box className="subsystems">
       <Tabs onChange={ (_, selectedUuid) => {
         if (selectedUuid === "create-subsystem") {
-          setShowSubsystemCreate(true);
-          setCurrentSubsystem(null);
+          setShowSubsystemCreate(true)
+          setCurrentSubsystem(null)
         } else {
-          setShowSubsystemCreate(false);
-          setCurrentSubsystem(project.subsystems.find(s => s.uuid === selectedUuid));
+          setShowSubsystemCreate(false)
+          setCurrentSubsystem(project.subsystems.find(s => s.uuid === selectedUuid))
         }
       } }
             value={ currentSubsystem?.uuid ?? "create-subsystem" } centered>
@@ -1482,7 +1510,7 @@ export function Subsystems({ project }: { project: Project }) {
                    value={ subsystem.uuid }
                    key={ subsystem.uuid }
                    onContextMenu={ handleContextMenu(subsystem) }/>
-            );
+            )
           })
         }
         <Tab label={ "+ Create Subsystem" }
@@ -1492,17 +1520,17 @@ export function Subsystems({ project }: { project: Project }) {
       <RenameSubsystemDialog subsystem={ contextMenuSubsystem }
                              onCancel={ () => setShowRenameDialog(false) }
                              onAccept={ (name: string) => {
-                               contextMenuSubsystem.name = name;
-                               setCurrentSubsystem(currentSubsystem);
-                               setShowRenameDialog(false);
+                               contextMenuSubsystem.name = name
+                               setCurrentSubsystem(currentSubsystem)
+                               setShowRenameDialog(false)
                              } }
                              defaultOpen={ contextMenuSubsystem !== null && showRenameDialog }/>
       {
         showSubsystemCreate || !currentSubsystem ?
           <NewSubsystemsPane acceptNewSubsystem={ (subsystem) => {
-            project.subsystems.push(subsystem);
-            setCurrentSubsystem(subsystem);
-            setShowSubsystemCreate(false);
+            project.subsystems.push(subsystem)
+            setCurrentSubsystem(subsystem)
+            setShowSubsystemCreate(false)
           }
           }/> :
           <SubsystemPane subsystem={ currentSubsystem } project={ project }/>
@@ -1513,7 +1541,7 @@ export function Subsystems({ project }: { project: Project }) {
             anchorReference="anchorPosition"
             anchorPosition={ contextMenu !== null ? {
               left: contextMenu.mouseX,
-              top: contextMenu.mouseY
+              top: contextMenu.mouseY,
             } : undefined }>
         <MenuItem onClick={ () => renameSubsystem(contextMenuSubsystem) }>
           Rename
@@ -1523,5 +1551,5 @@ export function Subsystems({ project }: { project: Project }) {
         </MenuItem>
       </Menu>
     </Box>
-  );
+  )
 }
