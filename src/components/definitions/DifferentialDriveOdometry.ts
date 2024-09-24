@@ -1,4 +1,4 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const DIFFERENTIAL_DRIVE_ODOMETRY: ComponentDefinition = {
   name: "Differential Drive Odometry",
@@ -16,7 +16,7 @@ export const DIFFERENTIAL_DRIVE_ODOMETRY: ComponentDefinition = {
       type: "edu.wpi.first.math.geometry.Rotation2d",
       codeName: "gyroAngle",
       setInConstructor: true,
-      defaultValue: "new Rotation2d()"
+      defaultValue: "new Rotation2d()",
     },
     {
       name: "Initial Left Distance",
@@ -24,7 +24,7 @@ export const DIFFERENTIAL_DRIVE_ODOMETRY: ComponentDefinition = {
       type: "double",
       codeName: "leftDistanceMeters",
       setInConstructor: true,
-      defaultValue: "0"
+      defaultValue: "0",
     },
     {
       name: "Initial Right Distance",
@@ -32,8 +32,8 @@ export const DIFFERENTIAL_DRIVE_ODOMETRY: ComponentDefinition = {
       type: "double",
       codeName: "rightDistanceMeters",
       setInConstructor: true,
-      defaultValue: "0"
-    }
+      defaultValue: "0",
+    },
   ],
   methods: [
     {
@@ -47,21 +47,21 @@ export const DIFFERENTIAL_DRIVE_ODOMETRY: ComponentDefinition = {
           name: "Gyro Angle",
           codeName: "gyroAngle",
           type: "edu.wpi.first.math.geometry.Rotation2d",
-          description: "The current angle reported by the gyroscope."
+          description: "The current angle reported by the gyroscope.",
         },
         {
           name: "Left Distance",
           codeName: "leftDistanceMeters",
           type: "double",
-          description: "The total distance travelled by the left side of the drive since odeomotry started"
+          description: "The total distance travelled by the left side of the drive since odeomotry started",
         },
         {
           name: "Right Distance",
           codeName: "rightDistanceMeters",
           type: "double",
-          description: "The total distance travelled by the right side of the drive since odeomotry started"
-        }
-      ]
+          description: "The total distance travelled by the right side of the drive since odeomotry started",
+        },
+      ],
     },
     {
       name: "Get Pose Estimate",
@@ -69,7 +69,7 @@ export const DIFFERENTIAL_DRIVE_ODOMETRY: ComponentDefinition = {
       description: "Gets the most recent pose estimate. Requires `Update` to have run",
       hints: ["state"],
       returns: "edu.wpi.first.math.geometry.Pose2d",
-      parameters: []
-    }
-  ]
+      parameters: [],
+    },
+  ],
 }

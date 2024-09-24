@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Subsystem, SubsystemComponent } from "../../bindings/Command";
-import { Accordion, AccordionDetails, AccordionSummary, Autocomplete, Button, Input, MenuItem, Select, Switch, TextField } from "@mui/material";
-import { Property } from "../../components/ComponentDefinition";
-import { HelpableLabel } from "../HelpableLabel";
+import React, { useEffect, useState } from "react"
+import { Subsystem, SubsystemComponent } from "../../bindings/Command"
+import { Accordion, AccordionDetails, AccordionSummary, Autocomplete, Button, Input, MenuItem, Select, Switch, TextField } from "@mui/material"
+import { Property } from "../../components/ComponentDefinition"
+import { HelpableLabel } from "../HelpableLabel"
 
 type SharedProps = {
   subsystem: Subsystem
@@ -20,7 +20,7 @@ export function ComponentColumn(props: ComponentColumnProps) {
       {
         props.components.length > 0 ?
           props.components.map(component => {
-            return <ComponentPanel key={ component.uuid } component={ component } { ...props }/>;
+            return <ComponentPanel key={ component.uuid } component={ component } { ...props }/>
           })
           : <div style={{ textTransform: 'uppercase', padding: '8px', alignContent: 'center', justifyContent:'center', display: 'flex', width: '100%' }}>Nothing here</div>
       }
@@ -34,13 +34,13 @@ type ComponentPanelProps = SharedProps & {
 }
 
 function ComponentPanel(props: ComponentPanelProps) {
-  const component = props.component;
-  const [name, setName] = useState(component.name);
+  const component = props.component
+  const [name, setName] = useState(component.name)
 
   const updateName = (newName: string) => {
-    setName(newName);
-    component.name = newName;
-    props.onChange(component);
+    setName(newName)
+    component.name = newName
+    props.onChange(component)
   }
 
   return (
@@ -80,7 +80,7 @@ function ComponentPanel(props: ComponentPanelProps) {
         </AccordionDetails>
       </Accordion>
     </div>
-  );
+  )
 }
 
 type PropertyEditorProps = SharedProps & {
@@ -89,17 +89,17 @@ type PropertyEditorProps = SharedProps & {
 }
 
 function PropertyEditor(props: PropertyEditorProps) {
-  const component = props.component;
-  const property = props.property;
-  const subsystem = props.subsystem;
+  const component = props.component
+  const property = props.property
+  const subsystem = props.subsystem
 
-  const [value, setValue] = useState(component.properties[property.codeName]);
-  useEffect(() => setValue(component.properties[property.codeName]), [property, component]);
+  const [value, setValue] = useState(component.properties[property.codeName])
+  useEffect(() => setValue(component.properties[property.codeName]), [property, component])
 
   const updateValue = (newValue: string | string[] | boolean | number) => {
-    setValue(newValue);
-    component.properties[property.codeName] = newValue;
-    props.onChange(component);
+    setValue(newValue)
+    component.properties[property.codeName] = newValue
+    props.onChange(component)
   }
 
   return (
@@ -114,23 +114,23 @@ function PropertyEditor(props: PropertyEditorProps) {
               case "int":
               case "long":
               case "double":
-                return <Input type="number" value={ value } onChange={ (e) => updateValue(e.target.value) }/>;
+                return <Input type="number" value={ value } onChange={ (e) => updateValue(e.target.value) }/>
               case "boolean":
-                return <Switch value={ value } onChange={ (e) => updateValue(e.target.checked) }/>;
+                return <Switch value={ value } onChange={ (e) => updateValue(e.target.checked) }/>
             }
 
             if (property.type.startsWith("vararg")) {
               // assume variadic components because variadic primitives is odd
               // components is also easy to implement with a multiple-select dropdown
-              const type = property.type.split("vararg ")[1];
-              console.log(type);
+              const type = property.type.split("vararg ")[1]
+              console.log(type)
               switch (type) {
                 case "boolean":
                 case "int":
                 case "long":
                 case "double":
                 case "string":
-                  return (<span>Vararg primitive types not yet supported</span>);
+                  return (<span>Vararg primitive types not yet supported</span>)
               }
 
               return (
@@ -138,14 +138,14 @@ function PropertyEditor(props: PropertyEditorProps) {
                               size="small"
                               limitTags={ 4 }
                               onChange={ (event, newValue: SubsystemComponent[]) => {
-                                updateValue(newValue.map(component => component.uuid));
+                                updateValue(newValue.map(component => component.uuid))
                               } }
                               options={ subsystem.components.filter(c => c.definition.wpilibApiTypes.find(t => t === type)) }
                               value={ subsystem.components.filter(c => value && value.includes(c.uuid)) }
                               getOptionLabel={ (option) => option.name }
                               renderInput={ (params) => (<TextField { ...params }/>) }
                 />
-              );
+              )
             }
             if (property.options?.length > 0) {
               return (
@@ -160,9 +160,9 @@ function PropertyEditor(props: PropertyEditorProps) {
                     })
                   }
                 </Select>
-              );
+              )
             }
-            return (<span>Cannot edit a { property.type }!</span>);
+            return (<span>Cannot edit a { property.type }!</span>)
           }
         )()
       }

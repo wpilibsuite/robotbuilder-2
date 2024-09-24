@@ -1,6 +1,6 @@
-import { HelpOutlineOutlined } from "@mui/icons-material";
-import { Tooltip } from "@mui/material";
-import React, { useState } from "react";
+import { HelpOutlineOutlined } from "@mui/icons-material"
+import { Tooltip } from "@mui/material"
+import React, { useState } from "react"
 
 type HelpableLabelProps = {
   description: string
@@ -8,7 +8,7 @@ type HelpableLabelProps = {
 }
 
 export function HelpableLabel({ description, children }: HelpableLabelProps) {
-  const [showIcon, setShowIcon] = useState(false);
+  const [showIcon, setShowIcon] = useState(false)
 
   return (
     <span onMouseEnter={ () => setShowIcon(true) } onMouseLeave={ () => setShowIcon(false) } className="helpable-label">

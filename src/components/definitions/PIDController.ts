@@ -1,4 +1,4 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const PID_CONTROLLER: ComponentDefinition = {
   id: "SAMPLE-pidcontroller",
@@ -21,10 +21,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
           description: "The current position of the system",
           codeName: "measurement",
           type: "double",
-          tags: []
-        }
+          tags: [],
+        },
       ],
-      returns: "double"
+      returns: "double",
     },
     {
       name: "Set Setpoint",
@@ -38,10 +38,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
           description: "The setpoint to target",
           codeName: "setpoint",
           type: "double",
-          tags: ["controller-setpoint"]
-        }
+          tags: ["controller-setpoint"],
+        },
       ],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Reset",
@@ -49,7 +49,7 @@ export const PID_CONTROLLER: ComponentDefinition = {
       codeName: "reset",
       hints: ["housekeeping"],
       parameters: [],
-      returns: "void"
+      returns: "void",
     },
     {
       name: "Reached Setpoint",
@@ -57,8 +57,8 @@ export const PID_CONTROLLER: ComponentDefinition = {
       codeName: "atSetpoint",
       hints: ["state"],
       parameters: [],
-      returns: "boolean"
-    }
+      returns: "boolean",
+    },
   ],
   properties: [
     {
@@ -79,10 +79,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "kp",
             type: "double",
-            tags: []
-          }
-        ]
-      }
+            tags: [],
+          },
+        ],
+      },
     },
     {
       name: "Integral Constant",
@@ -102,10 +102,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "ki",
             type: "double",
-            tags: []
-          }
-        ]
-      }
+            tags: [],
+          },
+        ],
+      },
     },
     {
       name: "Derivative Constant",
@@ -125,10 +125,10 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "kd",
             type: "double",
-            tags: []
-          }
-        ]
-      }
+            tags: [],
+          },
+        ],
+      },
     },
     {
       name: "Tolerance",
@@ -148,11 +148,11 @@ export const PID_CONTROLLER: ComponentDefinition = {
             description: "",
             codeName: "tolerance",
             type: "double",
-            tags: []
-          }
-        ]
-      }
-    }
+            tags: [],
+          },
+        ],
+      },
+    },
   ],
   templates: {
     actions: [
@@ -165,9 +165,9 @@ export const PID_CONTROLLER: ComponentDefinition = {
             target: '$self',
             type: 'method-call',
             methodName: 'reset',
-            params: []
-          }
-        ]
+            params: [],
+          },
+        ],
       },
       {
         name: 'Set $self Target',
@@ -175,15 +175,15 @@ export const PID_CONTROLLER: ComponentDefinition = {
         params: [
           {
             name: 'target',
-            type: 'double'
-          }
+            type: 'double',
+          },
         ],
         steps: [
           {
             target: '$self',
             type: 'method-call',
             methodName: 'reset',
-            params: []
+            params: [],
           },
           {
             target: '$self',
@@ -194,13 +194,13 @@ export const PID_CONTROLLER: ComponentDefinition = {
                 paramName: 'setpoint',
                 arg: {
                   type: 'define-passthrough-value',
-                  passthroughArgumentName: 'target'
-                }
-              }
-            ]
-          }
-        ]
-      }
+                  passthroughArgumentName: 'target',
+                },
+              },
+            ],
+          },
+        ],
+      },
     ],
     states: [
       {
@@ -210,12 +210,12 @@ export const PID_CONTROLLER: ComponentDefinition = {
           type: 'method-call',
           target: '$self',
           methodName: 'atSetpoint',
-          params: []
-        }
-      }
+          params: [],
+        },
+      },
     ],
     commands: [
 
-    ]
-  }
+    ],
+  },
 }

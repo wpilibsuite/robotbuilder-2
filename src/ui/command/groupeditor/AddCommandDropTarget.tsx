@@ -1,11 +1,11 @@
-import { findCommand, Project } from "../../../bindings/Project";
-import React, { useState } from "react";
-import { AtomicCommand, Subsystem } from "../../../bindings/Command";
-import Menu from "@mui/material/Menu";
-import { Button, Divider, MenuItem } from "@mui/material";
-import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
+import { findCommand, Project } from "../../../bindings/Project"
+import React, { useState } from "react"
+import { AtomicCommand, Subsystem } from "../../../bindings/Command"
+import Menu from "@mui/material/Menu"
+import { Button, Divider, MenuItem } from "@mui/material"
+import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor"
 import * as IR from '../../../bindings/ir'
-import { variableName } from "../../../codegen/java/util";
+import { variableName } from "../../../codegen/java/util"
 
 type AddCommandDropTargetProps = {
   sequence: EditorCommandGroup;
@@ -28,72 +28,72 @@ type AddCommandDropTargetProps = {
  * @param a2 the second array of items
  */
 function xor<T>(a1: T[], a2: T[]): T[] {
-  let items = a1.concat(...a2);
+  let items = a1.concat(...a2)
 
   // kick out anything that appears more than once
-  items = items.filter(i => items.indexOf(i) === items.lastIndexOf(i));
+  items = items.filter(i => items.indexOf(i) === items.lastIndexOf(i))
 
-  return items;
+  return items
 }
 
 export function AddCommandDropTarget({ sequence, stage, subsystem, project, onChange }: AddCommandDropTargetProps) {
   const [contextMenu, setContextMenu] = useState<{
     mouseX: number;
     mouseY: number;
-  } | null>(null);
+  } | null>(null)
 
   const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
+    event.preventDefault()
     setContextMenu(
       contextMenu == null ?
         { mouseX: event.clientX, mouseY: event.clientY } :
-        null
-    );
-  };
-  const handleClose = () => setContextMenu(null);
+        null,
+    )
+  }
+  const handleClose = () => setContextMenu(null)
 
   const addCommand = (command: AtomicCommand | IR.Group) => {
     return () => {
-      let wrapper: IR.CommandInvocation;
+      let wrapper: IR.CommandInvocation
       if (command instanceof AtomicCommand) {
         // wrap in a command invocation
         // TODO: Prevent name collisions
-        wrapper = IR.CommandInvocation.fromAtomicCommand(command);
+        wrapper = IR.CommandInvocation.fromAtomicCommand(command)
       } else {
-        console.log('Wrapping', command);
+        console.log('Wrapping', command)
         wrapper = new IR.CommandInvocation(
           command.requirements(),
           command.uuid,
           command.params
             .filter(p => p.appearsOnFactory())
             .map(p => {
-              let varname = variableName(p.name);
-              const existingParamNames = sequence.stages.flatMap(s => s.group.params).map(p => variableName(p.name));
-              let i = 2;
-              let needsSuffix = false;
+              let varname = variableName(p.name)
+              const existingParamNames = sequence.stages.flatMap(s => s.group.params).map(p => variableName(p.name))
+              let i = 2
+              let needsSuffix = false
               while (existingParamNames.includes(varname)) {
                 // conflict! increment a number suffix until we get a unique name
                 // TODO: Maybe track index numbers separately?
-                varname = `${ variableName(p.name) }${ i }`;
-                i++;
-                needsSuffix = true;
+                varname = `${ variableName(p.name) }${ i }`
+                i++
+                needsSuffix = true
               }
-              return new IR.ParamPlaceholder((needsSuffix ? `${ p.name } ${ i }` : p.name), p.original, [p], null);
-            })
+              return new IR.ParamPlaceholder((needsSuffix ? `${ p.name } ${ i }` : p.name), p.original, [p], null)
+            }),
         )
       }
-      stage.group.commands.push(wrapper);
+      stage.group.commands.push(wrapper)
       // bubble up any required params
       stage.group.params.push(...wrapper.params.map(p => {
-        return new IR.ParamPlaceholder(p.name, p.original, [p], null);
-      }));
-      onChange(stage);
-      handleClose();
-    };
+        return new IR.ParamPlaceholder(p.name, p.original, [p], null)
+      }))
+      onChange(stage)
+      handleClose()
+    }
   }
 
-  const allCommands = (project.commands as (IR.Group | AtomicCommand)[]).concat(project.subsystems.flatMap(s => s.commands));
-  console.log('[ADD-COMMAND-DROP-TARGET] All commands:', allCommands);
+  const allCommands = (project.commands as (IR.Group | AtomicCommand)[]).concat(project.subsystems.flatMap(s => s.commands))
+  console.log('[ADD-COMMAND-DROP-TARGET] All commands:', allCommands)
 
   const availableCommandsToAdd =
     allCommands
@@ -103,9 +103,9 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
       .filter(c => c.requirements().includes(subsystem.uuid)) // only allow the commands that use the subsystem we're on
       .filter(c => stage.group.commands.length === 0 || xor(c.requirements(), stage.group.commands.flatMap(sc => sc.requirements())).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
 
-  console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd);
+  console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd)
 
-  const inUse = !!sequence.stages.find(s => s.group.requirements().includes(subsystem.uuid));
+  const inUse = !!sequence.stages.find(s => s.group.requirements().includes(subsystem.uuid))
 
   return (
     <div>
@@ -137,5 +137,5 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
         </MenuItem>
       </Menu>
     </div>
-  );
+  )
 }

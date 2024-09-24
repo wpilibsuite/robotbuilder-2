@@ -1,4 +1,4 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
   id: "SAMPLE-motorcontrollergroup",
@@ -16,10 +16,10 @@ export const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
       codeName: "set",
       hints: ["action", "motor-input"],
       parameters: [
-        { name: "Speed", description: "", codeName: "speed", type: "double" }
+        { name: "Speed", description: "", codeName: "speed", type: "double" },
       ],
-      returns: "void"
-    }
+      returns: "void",
+    },
   ],
   properties: [
     {
@@ -27,7 +27,7 @@ export const MOTOR_CONTROLLER_GROUP: ComponentDefinition = {
       description: "The motors to group together",
       codeName: "motors",
       type: "vararg MotorController",
-      setInConstructor: true
-    }
-  ]
+      setInConstructor: true,
+    },
+  ],
 }

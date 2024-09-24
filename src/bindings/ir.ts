@@ -14,7 +14,7 @@
  */
 
 import { v4 as uuidV4 } from "uuid"
-import { ActionParamCallOption, AtomicCommand } from "./Command";
+import { ActionParamCallOption, AtomicCommand } from "./Command"
 
 /**
  * Decorates a command by adding a maximum duration limit.  If the command hasn't naturally completed after the
@@ -70,7 +70,7 @@ class Decorable {
    * `until(...).repeatForever()` will run the original command until the end condition is met, then run /that/
    * combination in an infinite loop!
    */
-  readonly decorators: Decorator[] = [];
+  readonly decorators: Decorator[] = []
 
   /**
    * Adds a time limit to the command.  If the command ends before the time limit is reached, it will not restart.
@@ -82,26 +82,26 @@ class Decorable {
   forNoLongerThan(seconds: number) {
     // It would be nice to have a Rails-like `10.seconds` function to help denote units. Too bad
     if (seconds <= 0) {
-      throw new Error(`Timeout must be a positive number, but was ${ seconds }`);
+      throw new Error(`Timeout must be a positive number, but was ${ seconds }`)
     }
 
-    this.decorators.push({ duration: seconds, type: "duration" });
-    return this;
+    this.decorators.push({ duration: seconds, type: "duration" })
+    return this
   }
 
   until(endCondition: BooleanCondition) {
-    this.decorators.push({ until: endCondition, type: "until" });
-    return this;
+    this.decorators.push({ until: endCondition, type: "until" })
+    return this
   }
 
   unless(condition: BooleanCondition) {
-    this.decorators.push({ unless: condition, type: "unless" });
-    return this;
+    this.decorators.push({ unless: condition, type: "unless" })
+    return this
   }
 
   repeatingForever() {
-    this.decorators.push({ type: "repeat" });
-    return this;
+    this.decorators.push({ type: "repeat" })
+    return this
   }
 }
 
@@ -114,14 +114,14 @@ export type Invocation = CommandInvocation | Group;
  * appear.
  */
 export class ParamPlaceholder {
-  readonly name: string;
+  readonly name: string
 
-  readonly uuid: UUID = uuidV4();
+  readonly uuid: UUID = uuidV4()
 
   /**
    * The base param on the command this param actually passes down to
    */
-  readonly original: ActionParamCallOption;
+  readonly original: ActionParamCallOption
 
   /**
    * The param(s) that this one is passed to within the command group.
@@ -135,25 +135,25 @@ export class ParamPlaceholder {
    *
    * Do not write to this array! Use #addPassthrough or #removePassthrough
    */
-  readonly passthroughs: ParamPlaceholder[] = [];
+  readonly passthroughs: ParamPlaceholder[] = []
 
   /**
    * The IDs of the passthrough params.  This is mostly used because checking for object equality inclusion in the
    * passthroughs array tends to fail, resulting in passthroughs not getting removed/being added multiple times
    * when they shouldn't be.
    */
-  readonly passthroughIds: UUID[] = [];
+  readonly passthroughIds: UUID[] = []
 
   /**
    * The hardcoded value for this placeholder.
    */
-  hardcodedValue: string = null;
+  hardcodedValue: string = null
 
   constructor(name: string, original: ActionParamCallOption, passthroughs: ParamPlaceholder[], hardcodedValue?: string) {
-    this.name = name;
-    this.original = original;
-    this.hardcodedValue = hardcodedValue ?? null;
-    passthroughs.forEach(p => this.addPassthrough(p));
+    this.name = name
+    this.original = original
+    this.hardcodedValue = hardcodedValue ?? null
+    passthroughs.forEach(p => this.addPassthrough(p))
   }
 
   /**
@@ -162,35 +162,35 @@ export class ParamPlaceholder {
   appearsOnFactory(): boolean {
     if (this.hardcodedValue) {
       // Has a hardcoded value on the invocation
-      return false;
+      return false
     } else {
       // Not hardcoded, but not used by any invocations under the hood
-      return this.passthroughs.length > 0;
+      return this.passthroughs.length > 0
     }
   }
 
   addPassthrough(passthrough: ParamPlaceholder) {
     if (this.passthroughs.includes(passthrough) || this.passthroughIds.includes(passthrough.uuid)) {
-      throw new Error(`Param "${ passthrough.name }"/${ passthrough.uuid } is already passed through!`);
+      throw new Error(`Param "${ passthrough.name }"/${ passthrough.uuid } is already passed through!`)
     }
 
-    this.passthroughs.push(passthrough);
-    this.passthroughIds.push(passthrough.uuid);
+    this.passthroughs.push(passthrough)
+    this.passthroughIds.push(passthrough.uuid)
   }
 
   removePassthrough(passthrough: ParamPlaceholder): boolean {
     if (!this.passesThroughTo(passthrough)) {
-      return false;
+      return false
     }
 
-    const index = this.passthroughIds.indexOf(passthrough.uuid);
-    this.passthroughs.splice(index, 1);
-    this.passthroughIds.splice(index, 1);
-    return true;
+    const index = this.passthroughIds.indexOf(passthrough.uuid)
+    this.passthroughs.splice(index, 1)
+    this.passthroughIds.splice(index, 1)
+    return true
   }
 
   passesThroughTo(other: ParamPlaceholder): boolean {
-    return this.passthroughs.includes(other) || this.passthroughIds.includes(other.uuid);
+    return this.passthroughs.includes(other) || this.passthroughIds.includes(other.uuid)
   }
 }
 
@@ -200,44 +200,44 @@ export class CommandInvocation extends Decorable {
    * being invoked is defined by that subsystem. Commands with 0 or 2 or more subsystems are assumed to be defined
    * in the main robot class.
    */
-  readonly subsystems: UUID[];
+  readonly subsystems: UUID[]
 
   /**
    * The UUID of the command being invoked.
    */
-  readonly command: UUID;
+  readonly command: UUID
 
   /**
    * The params to pass to the command. These are assumed to match 1-1 with the declared arguments to the command
    * factory. These can either be the param placeholders defined at the top-level group, or be arbitrary hardcoded
    * values.
    */
-  readonly params: ParamPlaceholder[] = [];
+  readonly params: ParamPlaceholder[] = []
 
   constructor(subsystems: UUID[], command: UUID, params: ParamPlaceholder[]) {
-    super();
-    this.subsystems = subsystems;
-    this.command = command;
-    this.params = params;
+    super()
+    this.subsystems = subsystems
+    this.command = command
+    this.params = params
   }
 
   static fromAtomicCommand(command: AtomicCommand): CommandInvocation {
-    console.log('IR from atomic', command);
+    console.log('IR from atomic', command)
     return new CommandInvocation(
       [command.subsystem],
       command.uuid,
       command.params
         .filter(p => p.invocationType !== "hardcode")
-        .map(p => new ParamPlaceholder(p.name, p, [], null))
+        .map(p => new ParamPlaceholder(p.name, p, [], null)),
     )
   }
 
   requirements(): UUID[] {
-    return this.subsystems;
+    return this.subsystems
   }
 
   runsCommand(command: UUID): boolean {
-    return command === this.command;
+    return command === this.command
   }
 }
 
@@ -248,24 +248,24 @@ export class Group extends Decorable {
    * The commands that are part of this group. Commands can either be inlined groups (eg commandA().andThen(commandB()))
    * or be invocations of predefined commands defined in subsystems or the main robot class.
    */
-  commands: Invocation[] = [];
+  commands: Invocation[] = []
 
   /**
    * The parameters on the group's definition. These are not used for inlined groups, because any params they'd need
    * will be passed directly to the commands they invoke (instead of using the inlined group as an intermediary, which
    * would just be wasteful).
    */
-  params: ParamPlaceholder[] = [];
+  params: ParamPlaceholder[] = []
 
-  uuid: UUID = uuidV4();
+  uuid: UUID = uuidV4()
 
   /**
    * The name of the command group.  This is only used by top-level command groups; nested command groups are inlined
    * without names.
    */
-  name: string;
+  name: string
 
-  readonly type: 'Sequence' | 'Parallel';
+  readonly type: 'Sequence' | 'Parallel'
 
   /**
    * Adds a new sequential command group to this group.
@@ -280,10 +280,10 @@ export class Group extends Decorable {
    * @return the sequential group
    */
   sequence(closure: (seq: SeqGroup) => void): SeqGroup {
-    const seq = new SeqGroup();
-    closure(seq);
-    this.addCommand(seq);
-    return seq;
+    const seq = new SeqGroup()
+    closure(seq)
+    this.addCommand(seq)
+    return seq
   }
 
   /**
@@ -295,10 +295,10 @@ export class Group extends Decorable {
    * @return the parallel group
    */
   parallel(endCondition: ParallelEndCondition, closure: (par: ParGroup) => void): ParGroup {
-    const par = new ParGroup(endCondition);
-    closure(par);
-    this.addCommand(par);
-    return par;
+    const par = new ParGroup(endCondition)
+    closure(par)
+    this.addCommand(par)
+    return par
   }
 
   /**
@@ -315,9 +315,9 @@ export class Group extends Decorable {
    * or can reference parameters defined in the top-level command group
    */
   run(owner: UUID, command: UUID, ...params): CommandInvocation {
-    const invocation = new CommandInvocation([owner], command, params);
-    this.addCommand(invocation);
-    return invocation;
+    const invocation = new CommandInvocation([owner], command, params)
+    this.addCommand(invocation)
+    return invocation
   }
 
   /**
@@ -326,25 +326,25 @@ export class Group extends Decorable {
    * @see #run
    */
   runGlobal(command: string, ...params): CommandInvocation {
-    return this.run("[robot]", command, params);
+    return this.run("[robot]", command, params)
   }
 
   requirements(): UUID[] {
-    return [...new Set(this.commands.flatMap(c => c.requirements()))];
+    return [...new Set(this.commands.flatMap(c => c.requirements()))]
   }
 
   runsCommand(command: UUID): boolean {
     return command === this.uuid ||
-      !!this.commands.find(c => c.runsCommand(command));
+      !!this.commands.find(c => c.runsCommand(command))
   }
 
   private addCommand(child: Invocation) {
-    this.commands.push(child);
+    this.commands.push(child)
   }
 }
 
 export class SeqGroup extends Group {
-  readonly type = 'Sequence';
+  readonly type = 'Sequence'
 }
 
 /**
@@ -359,13 +359,13 @@ export type ParallelEndCondition =
   | "any";
 
 export class ParGroup extends Group {
-  readonly type = 'Parallel';
+  readonly type = 'Parallel'
 
-  endCondition: ParallelEndCondition;
+  endCondition: ParallelEndCondition
 
   constructor(endCondition: ParallelEndCondition) {
-    super();
-    this.endCondition = endCondition;
+    super()
+    this.endCondition = endCondition
   }
 }
 
@@ -390,12 +390,12 @@ type ConfigClosure<T> = (group: T, ...params: ParamPlaceholder[]) => void;
  * @return the command group
  */
 export const sequence = function (configure: ConfigClosure<SeqGroup>): SeqGroup {
-  const sequentialGroup = new SeqGroup();
-  const params = getParams(configure).slice(1); // drop first param since it's the group. everything after is a param we want to capture
-  sequentialGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null, [])));
+  const sequentialGroup = new SeqGroup()
+  const params = getParams(configure).slice(1) // drop first param since it's the group. everything after is a param we want to capture
+  sequentialGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null, [])))
 
-  configure(sequentialGroup, ...sequentialGroup.params);
-  return sequentialGroup;
+  configure(sequentialGroup, ...sequentialGroup.params)
+  return sequentialGroup
 }
 
 /**
@@ -407,17 +407,17 @@ export const sequence = function (configure: ConfigClosure<SeqGroup>): SeqGroup 
  * @return the command group
  */
 export const parallel = function (endCondition: ParallelEndCondition, configure: ConfigClosure<ParGroup>): ParGroup {
-  const parallelGroup = new ParGroup(endCondition);
-  const params = getParams(configure).slice(1); // drop first param since it's the group. everything after is a param we want to capture
-  parallelGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null, [])));
+  const parallelGroup = new ParGroup(endCondition)
+  const params = getParams(configure).slice(1) // drop first param since it's the group. everything after is a param we want to capture
+  parallelGroup.params.push(...params.map(paramName => new ParamPlaceholder(paramName, null, [])))
 
-  configure(parallelGroup, ...parallelGroup.params);
-  return parallelGroup;
+  configure(parallelGroup, ...parallelGroup.params)
+  return parallelGroup
 }
 
 const getParams = (func): string[] => {
   // String representation of the function code
-  let str = func.toString();
+  let str = func.toString()
 
   // Remove comments of the form /* ... */
   // Removing comments of the form //
@@ -427,13 +427,13 @@ const getParams = (func): string[] => {
     .replace(/\/\/(.)*/g, '')
     .replace(/{[\s\S]*}/, '')
     .replace(/=>/g, '')
-    .trim();
+    .trim()
 
   // Start parameter names after first '('
-  const start = str.indexOf("(") + 1;
+  const start = str.indexOf("(") + 1
 
   // End parameter names is just before last ')'
-  const end = str.length - 1;
+  const end = str.length - 1
 
   return str.substring(start, end)
     .split(", ")

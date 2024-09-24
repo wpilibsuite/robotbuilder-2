@@ -1,5 +1,5 @@
-import React from "react";
-import {SubsystemState} from "../bindings/Command";
+import React from "react"
+import { SubsystemState } from "../bindings/Command"
 
 type StateProps = {
   name?: string,
@@ -8,10 +8,10 @@ type StateProps = {
 
 export default function SubsystemStateName({ name, state }: StateProps) {
   if (state) {
-    name = state.name;
+    name = state.name
   }
 
   return (
     <span className="subsystem-state-name">{ name }</span>
-  );
+  )
 }

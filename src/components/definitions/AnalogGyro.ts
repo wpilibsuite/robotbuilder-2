@@ -1,4 +1,4 @@
-import { ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition"
 
 export const ANALOG_GYRO: ComponentDefinition = {
   id: "SAMPLE-analoggyro",
@@ -16,8 +16,8 @@ export const ANALOG_GYRO: ComponentDefinition = {
       codeName: "getAngle",
       returns: "double",
       parameters: [],
-      hints: ["state", "controller-setpoint"]
-    }
+      hints: ["state", "controller-setpoint"],
+    },
   ],
   properties: [
     {
@@ -25,7 +25,7 @@ export const ANALOG_GYRO: ComponentDefinition = {
       description: "The analog port the gyro is plugged into on the RoboRIO",
       codeName: "channel",
       type: "int",
-      setInConstructor: true
-    }
-  ]
-};
+      setInConstructor: true,
+    },
+  ],
+}

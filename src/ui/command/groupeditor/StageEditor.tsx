@@ -1,11 +1,11 @@
-import { Project } from "../../../bindings/Project";
-import * as IR from "../../../bindings/ir";
-import React, { useEffect, useState } from "react";
-import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
-import { CommandTile } from "./CommandTile";
-import { AddCommandDropTarget } from "./AddCommandDropTarget";
-import { ReactSVG } from "react-svg";
-import { Button, InputLabel } from "@mui/material";
+import { Project } from "../../../bindings/Project"
+import * as IR from "../../../bindings/ir"
+import React, { useEffect, useState } from "react"
+import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor"
+import { CommandTile } from "./CommandTile"
+import { AddCommandDropTarget } from "./AddCommandDropTarget"
+import { ReactSVG } from "react-svg"
+import { Button, InputLabel } from "@mui/material"
 
 type StageEditorProps = {
   sequence: EditorCommandGroup;
@@ -16,24 +16,24 @@ type StageEditorProps = {
 };
 
 export const entryType = (stage: EditorStage, command: IR.CommandInvocation) => {
-  const endCond = stage.group.endCondition;
+  const endCond = stage.group.endCondition
   switch (endCond) {
     case "all":
-      return "full";
+      return "full"
     case "any":
-      return "racer";
+      return "racer"
     case command.command:
-      return "leader";
+      return "leader"
     default:
-      return "follower";
+      return "follower"
   }
 }
 
 export function StageEditor({ sequence, stage, project, onDelete, onChange }: StageEditorProps) {
-  const [pendingDelete, setPendingDelete] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false)
 
   // reset if the component is reused for a stage that was just deleted
-  useEffect(() => setPendingDelete(false), [stage]);
+  useEffect(() => setPendingDelete(false), [stage])
 
   return (
     <div className={ "parallel-group-editor" }>
@@ -47,20 +47,20 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
               <ReactSVG src={ 'icons/parallel-group-all-commands.svg' }
                         style={ {
                           cursor: "pointer",
-                          transform: `scale(${ stage.group.endCondition === "all" ? '112.5%' : '100%' })`
+                          transform: `scale(${ stage.group.endCondition === "all" ? '112.5%' : '100%' })`,
                         } }
                         onClick={ () => {
-                          stage.group.endCondition = "all";
-                          onChange(stage);
+                          stage.group.endCondition = "all"
+                          onChange(stage)
                         } }/>
               <ReactSVG src={ 'icons/parallel-group-any-commands.svg' }
                         style={ {
                           cursor: "pointer",
-                          transform: `scale(${ stage.group.endCondition === "any" ? '112.5%' : '100%' })`
+                          transform: `scale(${ stage.group.endCondition === "any" ? '112.5%' : '100%' })`,
                         } }
                         onClick={ () => {
-                          stage.group.endCondition = "any";
-                          onChange(stage);
+                          stage.group.endCondition = "any"
+                          onChange(stage)
                         } }/>
             </>
             : null
@@ -77,7 +77,7 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
       </div>
       {
         project.subsystems.map((subsystem) => {
-          const command = stage.group.commands.find(c => c instanceof IR.CommandInvocation && c.requirements().includes(subsystem.uuid)) as IR.CommandInvocation;
+          const command = stage.group.commands.find(c => c instanceof IR.CommandInvocation && c.requirements().includes(subsystem.uuid)) as IR.CommandInvocation
           if (command) {
             return <CommandTile key={ subsystem.uuid }
                                 project={ project }
@@ -99,5 +99,5 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
         })
       }
     </div>
-  );
+  )
 }
