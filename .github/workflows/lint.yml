@@ -21,3 +21,23 @@ jobs:
 
       - name: Lint
         run: npx eslint
+
+      - name: Diff
+        if: ${{ failure() }}
+        run: |
+          npx eslint --fix
+          git diff HEAD > eslint-fixes.patch
+      
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: eslint fixes
+          path: eslint-fixes.patch
+      
+      - name: Write to job summary
+        if: ${{ failure() }}
+        run: |
+          echo '```diff' >> $GITHUB_STEP_SUMMARY
+          cat eslint-fixes.patch >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
