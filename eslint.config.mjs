@@ -21,7 +21,7 @@ export default [
       "comma-dangle": ["error", "always-multiline"],
       "eol-last": ["error", "always"],
       "function-call-argument-newline": ["error", "consistent"],
-      "indent": ["error", 2, { "SwitchCase": 1, ignoredNodes: ["JSXAttribute", "JSXSpreadAttribute"] }],
+      "indent": ["error", 2, { SwitchCase: 1, ignoredNodes: ["JSXAttribute", "JSXSpreadAttribute"] }],
       "object-curly-spacing": ["error", "always"],
       "pluginReact/jsx-indent-props": [2, "first"],
       "quote-props": ["error", "consistent-as-needed"],
