@@ -1,7 +1,7 @@
 import { Project } from "../../bindings/Project";
 import React, { useState } from "react";
 import { CommandList } from "./CommandList";
-import { CommandGroupEditor, EditorCommandGroup, EditorStage } from "./CommandGroupEditor";
+import { CommandGroupEditor, EditorCommandGroup } from "./CommandGroupEditor";
 import { Button } from "@mui/material";
 import * as IR from '../../bindings/ir';
 
@@ -66,8 +66,8 @@ export function editorGroupToIR(project: Project, editorGroup: EditorCommandGrou
   }
 }
 
-function filterAs<T>(type: new (...a: any) => T): (value: any) => [T] | [] {
-  return (value: any): [T] | [] => {
+function filterAs<T>(type: new (...a) => T): (value) => [T] | [] {
+  return (value): [T] | [] => {
     if (value instanceof type) {
       return [value as unknown as T];
     }

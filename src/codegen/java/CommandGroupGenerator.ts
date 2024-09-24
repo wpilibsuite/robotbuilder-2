@@ -1,6 +1,5 @@
-import { ActionParamCallOption, Param } from "../../bindings/Command";
 import { findCommand, Project } from "../../bindings/Project";
-import { indent, methodName, prettify, prettifySnippet, supplierFunctionType, unindent, variableName } from "./util";
+import { indent, methodName, prettifySnippet, supplierFunctionType, unindent, variableName } from "./util";
 import * as IR from '../../bindings/ir'
 import { ParamPlaceholder } from "../../bindings/ir";
 
@@ -159,8 +158,7 @@ function findSeedCommand(group: IR.ParGroup): IR.Invocation {
         case "any":
           return group.commands[0];
         default:
-          const uuid = group.endCondition;
-          return group.commands.find(c => c instanceof IR.CommandInvocation && c.command === uuid);
+          return group.commands.find(c => c instanceof IR.CommandInvocation && c.command === group.endCondition);
       }
   }
 }
@@ -172,22 +170,23 @@ function parBody(topLevelGroup: IR.Group, group: IR.ParGroup, project: Project):
     case 1:
       return commandBody(topLevelGroup, group.commands[0], project);
     default:
-      let decoratorMethod: string;
-      switch (group.endCondition) {
-        case "all":
-          decoratorMethod = "alongWith";
-          break;
-        case "any":
-          decoratorMethod = "raceWith";
-          break;
-        default:
-          decoratorMethod = "deadlineWith";
-          break;
+      {
+        let decoratorMethod: string;
+        switch (group.endCondition) {
+          case "all":
+            decoratorMethod = "alongWith";
+            break;
+          case "any":
+            decoratorMethod = "raceWith";
+            break;
+          default:
+            decoratorMethod = "deadlineWith";
+            break;
+        }
+
+        const seedCommand = findSeedCommand(group);
+
+        return `${ commandBody(topLevelGroup, seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(c => c !== seedCommand).map(c => commandBody(topLevelGroup, c, project)).join(', ') })`
       }
-
-      const seedCommand = findSeedCommand(group);
-
-      return `${ commandBody(topLevelGroup, seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(c => c !== seedCommand).map(c => commandBody(topLevelGroup, c, project)).join(', ') })`
   }
 }
-

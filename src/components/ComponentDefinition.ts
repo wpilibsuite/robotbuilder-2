@@ -1,4 +1,4 @@
-import { ActionParamCallOptionInvocationType, StepParam, SubsystemComponent } from "../bindings/Command";
+import { ActionParamCallOptionInvocationType, StepParam } from "../bindings/Command";
 
 export type ComponentType =
   "sensor" |

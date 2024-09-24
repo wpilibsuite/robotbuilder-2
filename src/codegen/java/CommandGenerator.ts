@@ -10,26 +10,28 @@ export function generateParam(param: Param, invocation: ActionParamCallOption): 
       }
       return `${ param.type } ${ variableName(param.name) }`;
     case "passthrough-supplier":
-      console.debug('[GENERATE-PARAM] Passthrough by supplier', param, invocation);
-      let supplierType = `Supplier<${ param.type }>`;
-      switch (param.type) {
-        case "boolean":
-          supplierType = 'BooleanSupplier';
-          break;
-        case "int":
-          supplierType = "IntegerSupplier";
-          break;
-        case "long":
-          supplierType = "LongSupplier";
-          break;
-        case "double":
-          supplierType = "DoubleSupplier";
-          break;
-        default:
-          supplierType = `Supplier<${ param.type }>`;
-          break;
+      {
+        console.debug('[GENERATE-PARAM] Passthrough by supplier', param, invocation);
+        let supplierType = `Supplier<${ param.type }>`;
+        switch (param.type) {
+          case "boolean":
+            supplierType = 'BooleanSupplier';
+            break;
+          case "int":
+            supplierType = "IntegerSupplier";
+            break;
+          case "long":
+            supplierType = "LongSupplier";
+            break;
+          case "double":
+            supplierType = "DoubleSupplier";
+            break;
+          default:
+            supplierType = `Supplier<${ param.type }>`;
+            break;
+        }
+        return `${ supplierType } ${ variableName(param.name) }`;
       }
-      return `${ supplierType } ${ variableName(param.name) }`;
     default:
       // Shouldn't end up here, but it's good to have a default just in case
       return "/* hardcoded */";
@@ -51,27 +53,29 @@ export function generateActionParamValue(param: Param, invocation: ActionParamCa
         // Assumes the parameter in the factory has the same name as the parameter on the action!
         return variableName(param.name);
       case "passthrough-supplier":
-        const paramName = variableName(param.name);
-        let supplierInvocation;
-        switch (param.type) {
-          case "boolean":
-            supplierInvocation = "getAsBoolean()";
-            break;
-          case "int":
-            supplierInvocation = "getAsInt()";
-            break;
-          case "long":
-            supplierInvocation = "getAsLong()";
-            break;
-          case "double":
-            supplierInvocation = "getAsDouble()";
-            break;
-          default:
-            // Assume the type is a Java class and we'd be supplied an Object
-            supplierInvocation = "get()";
-            break;
+        {
+          const paramName = variableName(param.name);
+          let supplierInvocation;
+          switch (param.type) {
+            case "boolean":
+              supplierInvocation = "getAsBoolean()";
+              break;
+            case "int":
+              supplierInvocation = "getAsInt()";
+              break;
+            case "long":
+              supplierInvocation = "getAsLong()";
+              break;
+            case "double":
+              supplierInvocation = "getAsDouble()";
+              break;
+            default:
+              // Assume the type is a Java class and we'd be supplied an Object
+              supplierInvocation = "get()";
+              break;
+          }
+          return `${ paramName }.${ supplierInvocation }`;
         }
-        return `${ paramName }.${ supplierInvocation }`;
       default:
         // Whoops, something went wrong somewhere...
         return `/* Unsupported invocation type "${ invocation.invocationType }"! Open a bug report! */`;
@@ -125,7 +129,7 @@ function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: s
  *   return this.run(() -> this.fooAction(x, y));
  * }
  */
-export function generateCommand(name: string, subsystem: Subsystem, actionUuid: string, endCondition: EndCondition, commandParams: ActionParamCallOption[], toInitialize: string[], toComplete: string[], toInterrupt: string[]): string {
+export function generateCommand(name: string, subsystem: Subsystem, actionUuid: string, endCondition: EndCondition, commandParams: ActionParamCallOption[], toInitialize: string[]): string {
   if (!name || !subsystem) {
     // Not enough information, bail
     return '';
@@ -185,14 +189,16 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
       }
       break;
     default:
-      // assume state UUID
-      const endState = subsystem.states.find(s => s.uuid === endCondition);
-      const stateName = endState?.name;
-      if (stateName) {
-        actionLambda = `run(${ actionInvocation }).until(${ subsystemVar }::${ methodName(stateName) })`;
-      } else {
-        // TODO?
-        actionLambda = `end: ${endCondition}`;
+      {
+        // assume state UUID
+        const endState = subsystem.states.find(s => s.uuid === endCondition);
+        const stateName = endState?.name;
+        if (stateName) {
+          actionLambda = `run(${ actionInvocation }).until(${ subsystemVar }::${ methodName(stateName) })`;
+        } else {
+          // TODO?
+          actionLambda = `end: ${endCondition}`;
+        }
       }
       break;
   }
@@ -243,21 +249,23 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
         ).trimStart().trimEnd()
       );
     default:
-      // command state uuid
-      const endState = subsystem.states.find(s => s.uuid === endCondition);
-      const stateName = endState?.name;
-      return (
-        unindent(
-          `
-          /**
-           * The ${ name } command.  This will run the ${ action?.name } action until the ${ subsystem.name }
-           * has ${ stateName }.
-           */
-          ${ commandDef } {
-            return ${ commandChain };
-          }
-          `
-        ).trimStart().trimEnd()
-      );
+      {
+        // command state uuid
+        const endState = subsystem.states.find(s => s.uuid === endCondition);
+        const stateName = endState?.name;
+        return (
+          unindent(
+            `
+            /**
+             * The ${ name } command.  This will run the ${ action?.name } action until the ${ subsystem.name }
+             * has ${ stateName }.
+             */
+            ${ commandDef } {
+              return ${ commandChain };
+            }
+            `
+          ).trimStart().trimEnd()
+        );
+      }
   }
 }

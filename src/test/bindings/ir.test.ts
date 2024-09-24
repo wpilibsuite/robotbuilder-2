@@ -7,7 +7,7 @@ test("basic", () => {
   });
 
   const b = [{ name: 'p1', original: null }, {name: 'p2', original: null }]
-  expect(s.params.every((obj, i) => obj.name === b[i].name && obj.original === b[i].original)).to.be.true
+  expect(s.params.every((obj, i) => obj.name === b[i].name && obj.original === b[i].original)).toEqual(true)
 });
 
 test("nesting", () => {

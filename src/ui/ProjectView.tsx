@@ -7,7 +7,6 @@ import { makeNewProject, Project } from "../bindings/Project";
 import $ from "jquery";
 import {
   AtomicCommand,
-  Command,
   Param,
   Subsystem,
   SubsystemAction,
@@ -32,38 +31,42 @@ const saveProject = (project: Project) => {
   link.click();
 };
 
-function mapToClass<T>(data: Object, clazz: any): T {
+function mapToClass<T>(data: object, clazz): T {
   const instance = new clazz();
   Object.assign(instance, data);
   return instance;
 }
 
-function loadCommand(command: any): Command {
+function loadCommand(command: AtomicCommand | ParGroup | SeqGroup): AtomicCommand | ParGroup | SeqGroup {
   switch (command.type) {
     case 'Atomic':
       return mapToClass(command, AtomicCommand);
     case 'Parallel':
-      const group: Group = mapToClass(command, ParGroup);
-      group.commands = group.commands.map(data => {
-        if (data.type === 'Parallel' || data.type === 'Sequence') {
-          return loadCommand(data);
-        } else {
-          // invocation
-          return mapToClass(data, CommandInvocation);
-        }
-      });
-      return group;
+      {
+        const group: ParGroup = mapToClass(command, ParGroup);
+        group.commands = group.commands.map(data => {
+          if (data.type === 'Parallel' || data.type === 'Sequence') {
+            return loadCommand(data) as unknown as Group;
+          } else {
+            // invocation
+            return mapToClass(data, CommandInvocation);
+          }
+        });
+        return group;
+      }
     case 'Sequence':
-      const seq: SeqGroup = mapToClass(command, SeqGroup);
-      seq.commands = seq.commands.map(data => {
-        if (data.type === 'Parallel' || data.type === 'Sequence') {
-          return loadCommand(data);
-        } else {
-          // invocation
-          return mapToClass(data, CommandInvocation);
-        }
-      });
-      return seq;
+      {
+        const seq: SeqGroup = mapToClass(command, SeqGroup);
+        seq.commands = seq.commands.map(data => {
+          if (data.type === 'Parallel' || data.type === 'Sequence') {
+            return loadCommand(data);
+          } else {
+            // invocation
+            return mapToClass(data, CommandInvocation);
+          }
+        });
+        return seq;
+      }
     default:
       return command;
   }
@@ -119,7 +122,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
     }
   }
 
-  const [projectName, sn] = useState(project.name);
+  const [, sn] = useState(project.name);
 
   const setProjectName = (name: string) => {
     console.debug('Setting project name to', name);
@@ -156,7 +159,6 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
       <Box className="footer">
         {/* Hidden link for use by downloads */ }
-        {/* eslint-disable-next-line */ }
         <a style={ { display: "none" } } href="#" id="download-link"/>
         <Button onClick={ () => saveProject(project) }>Save</Button>
 

@@ -40,7 +40,7 @@ export function codeBlock(block: string): string {
 }
 
 export function unindent(string: string): string {
-  let lines = string.split("\n");
+  const lines = string.split("\n");
 
   if (lines.length === 0) {
     return "";

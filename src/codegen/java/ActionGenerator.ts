@@ -84,13 +84,15 @@ export function generateStepInvocations(steps: SubsystemActionStep[], subsystem:
         case "define-passthrough-value":
           return variableName(arg.passthroughArgumentName);
         case "reference-passthrough-value":
-          const referencedStep = steps.find(s => s.uuid === arg.step);
-          const referencedParam = referencedStep.params.find(p => p.paramName === arg.paramName);
-          if (referencedParam)
-            return variableName((referencedParam.arg as PassthroughValueStepArgument).passthroughArgumentName);
-          else {
-            console.error('Undefined param on argument!', arg);
-            return `/* couldn't find param ${ arg.paramName } on ${ referencedStep.methodName } */`;
+          {
+            const referencedStep = steps.find(s => s.uuid === arg.step);
+            const referencedParam = referencedStep.params.find(p => p.paramName === arg.paramName);
+            if (referencedParam) {
+              return variableName((referencedParam.arg as PassthroughValueStepArgument).passthroughArgumentName);
+            } else {
+              console.error('Undefined param on argument!', arg);
+              return `/* couldn't find param ${ arg.paramName } on ${ referencedStep.methodName } */`;
+            }
           }
         case "reference-step-output":
           return varNameForStepOutput(arg.step, steps, subsystem);

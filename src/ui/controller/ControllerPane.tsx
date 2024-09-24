@@ -7,6 +7,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -31,7 +32,7 @@ export type ControllerPaneProps = {
 type CommandSelectBoxProps = {
   project: Project;
   initialCommand: string | undefined;
-  onChange: any;
+  onChange: (event: SelectChangeEvent<string>, child: React.ReactNode) => void;
 }
 
 function groupArrayContents<K, V>(array: V[], groupingFunction: (V) => K): Map<K, V[]> {

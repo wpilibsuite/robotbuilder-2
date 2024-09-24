@@ -6,8 +6,8 @@ const ENTER_KEY_CODE = 13;
 const DEFAULT_LABEL_PLACEHOLDER = "Click To Edit";
 
 const EditableLabel = ({
-                         onFocus = (value: string) => {},
-                         onBlur = (value: string) => {},
+                         onFocus = () => {},
+                         onBlur = () => {},
                          ...props
                        }) => {
   const [isEditing, setEditing] = useState(false);
@@ -18,12 +18,15 @@ const EditableLabel = ({
     typeof value !== "undefined" && value.trim().length > 0;
 
   const handleFocus = () => {
-    const fn = isEditing ? onBlur : onFocus;
-    fn(value);
+    if (isEditing) {
+      onBlur(value)
+    } else {
+      onFocus(value)
+    }
     handleEditState();
   };
 
-  const handleChange = e => setValue(inputRef.current.value);
+  const handleChange = () => setValue(inputRef.current.value);
 
   const handleKeyDown = e => {
     if (e.keyCode === ENTER_KEY_CODE) {
@@ -57,7 +60,11 @@ const EditableLabel = ({
 
   const labelText = (isTextValueValid() && value) || DEFAULT_LABEL_PLACEHOLDER;
 
-  return <InputLabel onClick={handleFocus}>{labelText}</InputLabel>;
+  return (
+    <InputLabel onClick={ handleFocus }>
+      { labelText }
+    </InputLabel>
+  );
 };
 
 EditableLabel.propTypes = {

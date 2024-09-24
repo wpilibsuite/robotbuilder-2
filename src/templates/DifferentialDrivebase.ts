@@ -213,6 +213,8 @@ export function differentialDrivebaseTemplate() {
   });
 
   const stopCommand = drivetrain.createCommand("Stop", stopAction, "once");
+  stopCommand.params = []
+
   const tankDriveCommand = drivetrain.createCommand("Drive with Speeds", tankDriveAction, "forever");
   tankDriveCommand.params = [
     ActionParamCallOption.fromObjects(tankDriveAction, tankDriveAction.params[0], "passthrough-value"),

@@ -3,7 +3,7 @@ import { Divider, TextField } from "@mui/material";
 import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor";
 import * as IR from '../../../bindings/ir'
 import { findCommand, Project } from "../../../bindings/Project";
-import { ActionParamCallOption, AtomicCommand } from "../../../bindings/Command";
+import { AtomicCommand } from "../../../bindings/Command";
 
 type CommandTypeProps = {
   project: Project;
@@ -44,27 +44,18 @@ function removeIf<T>(arr: T[], predicate: (element: T) => boolean): boolean {
   return removed;
 }
 
-function betterIncludes<T>(arr: T[], search: T): boolean {
-  const serializedSearch = JSON.stringify(search);
-  return arr.some(element => {
-    return element === search || JSON.stringify(element) === serializedSearch;
-  });
-}
-
 type CommandTileDetailsProps = {
   command: IR.CommandInvocation;
   stage: EditorStage;
   group: EditorCommandGroup;
   onChange: (stage: EditorStage) => void;
-  entryType: "full" | "leader" | "follower" | "racer";
   hide: () => void;
 }
 
-function CommandTileDetails({ command, stage, group, entryType, onChange, hide }: CommandTileDetailsProps) {
+function CommandTileDetails({ command, stage, group, onChange, hide }: CommandTileDetailsProps) {
   const makeLeader = () => {
     if (stage.group.endCondition !== command.command) {
       stage.group.endCondition = command.command;
-      entryType = "leader";
       // leader command always goes first
       moveToStart(stage.group.commands, (c) => c === command);
     } else {
@@ -82,7 +73,6 @@ function CommandTileDetails({ command, stage, group, entryType, onChange, hide }
       stage.group.endCondition = "all";
     }
     removeIf(stage.group.params, p => command.params.some(cp => cp instanceof IR.ParamPlaceholder && cp.name === p.name));
-    entryType = null;
     onChange(stage);
     hide();
   }
@@ -102,9 +92,9 @@ function CommandTileDetails({ command, stage, group, entryType, onChange, hide }
             if (!currentGroupParam) {
               // BUG! No params on the group pass through to this one!
               return [
-                <span>No parameters pass through to { invocationParam.name }!</span>,
-                <span></span>,
-                <span></span>
+                <span key={ "errmsg" }>No parameters pass through to { invocationParam.name }!</span>,
+                <span key={ "empty1" }></span>,
+                <span key={ "empty2" }></span>
               ];
             }
 
@@ -130,11 +120,11 @@ function CommandTileDetails({ command, stage, group, entryType, onChange, hide }
             };
 
             return ([
-              <span>
+              <span key={ invocationParam.name } >
                 { invocationParam.name }
               </span>,
-              <span style={ { cursor: "pointer", margin: "0px 4px" } } onClick={ togglePassthrough }>
-                { !!invocationParam.hardcodedValue ? '</>' : '=>' }
+              <span key={ "value-type" } style={ { cursor: "pointer", margin: "0px 4px" } } onClick={ togglePassthrough }>
+                { invocationParam.hardcodedValue ? '</>' : '=>' }
               </span>,
               invocationParam.hardcodedValue ? (
                 <TextField defaultValue={ invocationParam.hardcodedValue } onBlur={ (e) => {
@@ -152,7 +142,7 @@ function CommandTileDetails({ command, stage, group, entryType, onChange, hide }
                     return; // selected a param that doesn't exist? how did this happen?
                   }
 
-                  let removed: boolean | boolean[] = group.stages.flatMap(stage => stage.group.params).map(groupParam => groupParam.removePassthrough(invocationParam));
+                  const removed: boolean | boolean[] = group.stages.flatMap(stage => stage.group.params).map(groupParam => groupParam.removePassthrough(invocationParam));
                   // const removed = currentGroupParam.removePassthrough(invocationParam);
                   if (!removed.some(wasRemoved => wasRemoved)) {
                     console.error('Invocation param', invocationParam, 'was not removed as a passthrough from group param', currentGroupParam);

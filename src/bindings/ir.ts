@@ -14,10 +14,7 @@
  */
 
 import { v4 as uuidV4 } from "uuid"
-import { Project } from "./Project";
-import { ActionParamCallOption, AtomicCommand, Subsystem } from "./Command";
-
-type GlobalRobot = "[robot]"
+import { ActionParamCallOption, AtomicCommand } from "./Command";
 
 /**
  * Decorates a command by adding a maximum duration limit.  If the command hasn't naturally completed after the
@@ -119,7 +116,7 @@ export type Invocation = CommandInvocation | Group;
 export class ParamPlaceholder {
   readonly name: string;
 
-  readonly uuid: UUID<ParamPlaceholder> = uuidV4();
+  readonly uuid: UUID = uuidV4();
 
   /**
    * The base param on the command this param actually passes down to
@@ -145,7 +142,7 @@ export class ParamPlaceholder {
    * passthroughs array tends to fail, resulting in passthroughs not getting removed/being added multiple times
    * when they shouldn't be.
    */
-  readonly passthroughIds: UUID<ParamPlaceholder>[] = [];
+  readonly passthroughIds: UUID[] = [];
 
   /**
    * The hardcoded value for this placeholder.
@@ -203,12 +200,12 @@ export class CommandInvocation extends Decorable {
    * being invoked is defined by that subsystem. Commands with 0 or 2 or more subsystems are assumed to be defined
    * in the main robot class.
    */
-  readonly subsystems: UUID<Subsystem>[];
+  readonly subsystems: UUID[];
 
   /**
    * The UUID of the command being invoked.
    */
-  readonly command: UUID<AtomicCommand | Group>;
+  readonly command: UUID;
 
   /**
    * The params to pass to the command. These are assumed to match 1-1 with the declared arguments to the command
@@ -217,7 +214,7 @@ export class CommandInvocation extends Decorable {
    */
   readonly params: ParamPlaceholder[] = [];
 
-  constructor(subsystems: UUID<Subsystem>[], command: UUID<CommandInvocation>, params: ParamPlaceholder[]) {
+  constructor(subsystems: UUID[], command: UUID, params: ParamPlaceholder[]) {
     super();
     this.subsystems = subsystems;
     this.command = command;
@@ -235,32 +232,32 @@ export class CommandInvocation extends Decorable {
     )
   }
 
-  requirements(): UUID<Subsystem>[] {
+  requirements(): UUID[] {
     return this.subsystems;
   }
 
-  runsCommand(command: UUID<CommandInvocation>): boolean {
+  runsCommand(command: UUID): boolean {
     return command === this.command;
   }
 }
 
-type UUID<T> = string;
+type UUID = string;
 
 export class Group extends Decorable {
   /**
    * The commands that are part of this group. Commands can either be inlined groups (eg commandA().andThen(commandB()))
    * or be invocations of predefined commands defined in subsystems or the main robot class.
    */
-  readonly commands: Invocation[] = [];
+  commands: Invocation[] = [];
 
   /**
    * The parameters on the group's definition. These are not used for inlined groups, because any params they'd need
    * will be passed directly to the commands they invoke (instead of using the inlined group as an intermediary, which
    * would just be wasteful).
    */
-  readonly params: ParamPlaceholder[] = [];
+  params: ParamPlaceholder[] = [];
 
-  uuid: UUID<Group> = uuidV4();
+  uuid: UUID = uuidV4();
 
   /**
    * The name of the command group.  This is only used by top-level command groups; nested command groups are inlined
@@ -317,7 +314,7 @@ export class Group extends Decorable {
    * @param params the parameters to pass to the command when called. These can be hardcoded values (e.g. "foo", "x", 1.123),
    * or can reference parameters defined in the top-level command group
    */
-  run(owner: UUID<Subsystem>, command: UUID<CommandInvocation>, ...params): CommandInvocation {
+  run(owner: UUID, command: UUID, ...params): CommandInvocation {
     const invocation = new CommandInvocation([owner], command, params);
     this.addCommand(invocation);
     return invocation;
@@ -332,11 +329,11 @@ export class Group extends Decorable {
     return this.run("[robot]", command, params);
   }
 
-  requirements(): UUID<Subsystem>[] {
+  requirements(): UUID[] {
     return [...new Set(this.commands.flatMap(c => c.requirements()))];
   }
 
-  runsCommand(command: UUID<AtomicCommand | Invocation>): boolean {
+  runsCommand(command: UUID): boolean {
     return command === this.uuid ||
       !!this.commands.find(c => c.runsCommand(command));
   }
@@ -357,7 +354,7 @@ export class SeqGroup extends Group {
  * defined command)
  */
 export type ParallelEndCondition =
-  | UUID<CommandInvocation>
+  | UUID
   | "all"
   | "any";
 

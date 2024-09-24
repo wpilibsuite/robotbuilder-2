@@ -1,7 +1,5 @@
 import { v4 as uuidV4 } from "uuid"
 import { ComponentDefinition } from "../components/ComponentDefinition";
-import { findCommand, Project } from "./Project";
-import { Group, SeqGroup } from "./ir";
 
 /**
  * The possible types that can be passed as arguments to an action invocation.
@@ -227,13 +225,13 @@ export class SubsystemActionStep {
   params: StepParam[] = [];
 
   constructor(props) {
-    if (props.hasOwnProperty('uuid')) {
+    if (Object.hasOwn(props, 'uuid')) {
       this.uuid = props.uuid;
     }
     this.component = props.component;
     this.methodName = props.methodName;
-    if (props.hasOwnProperty('params')) {
-      this.params = [...props?.params];
+    if (Object.hasOwn(props, 'params')) {
+      this.params = [...props.params];
     }
   }
 

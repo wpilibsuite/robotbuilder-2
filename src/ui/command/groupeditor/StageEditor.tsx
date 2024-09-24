@@ -85,10 +85,15 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
                                 stage={ stage }
                                 group={ sequence }
                                 onChange={ onChange }
-                                entryType={ entryType(stage, command) }/>
+                                entryType={ entryType(stage, command) } />
           } else {
             return (
-              <AddCommandDropTarget sequence={ sequence } stage={ stage } subsystem={ subsystem } project={ project } onChange={ onChange }/>
+              <AddCommandDropTarget key={ subsystem.uuid }
+                                    sequence={ sequence }
+                                    stage={ stage }
+                                    subsystem={ subsystem }
+                                    project={ project }
+                                    onChange={ onChange } />
             )
           }
         })

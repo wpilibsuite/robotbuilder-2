@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { findCommand, Project } from "../../bindings/Project";
-import { Button, InputLabel } from "@mui/material";
-import { entryType, StageEditor } from "./groupeditor/StageEditor";
+import { Button } from "@mui/material";
+import { entryType } from "./groupeditor/StageEditor";
 import EditableLabel from "../EditableLabel";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -194,7 +194,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
                           null
                           :
                           <Button className="delete-stage-button"
-                                  onClick={ (e) => {
+                                  onClick={ () => {
                                     console.log('Deleting stage', stage);
                                     const index = group.stages.indexOf(stage);
                                     group.stages.filter((_, i) => i > index).forEach((s, i) => s.name = `Stage ${ i + index + 1 }`);
@@ -225,9 +225,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
                                           stage={ stage }
                                           group={ group }
                                           entryType={ entryType(stage, command) }
-                                          onChange={ (stage) => {
-                                            updateAll()
-                                          } }/>
+                                          onChange={ updateAll }/>
                             </td>
                           )
                         } else {
@@ -238,7 +236,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
                                                     stage={ stage }
                                                     subsystem={ subsystem }
                                                     project={ project }
-                                                    onChange={ (stage) => updateAll() }/>
+                                                    onChange={ updateAll }/>
                             </td>
                           )
                         }

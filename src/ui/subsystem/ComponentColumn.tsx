@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Subsystem, SubsystemComponent } from "../../bindings/Command";
-import { Accordion, AccordionDetails, AccordionSummary, Autocomplete, Button, Divider, Input, MenuItem, Select, Switch, TextField } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Autocomplete, Button, Input, MenuItem, Select, Switch, TextField } from "@mui/material";
 import { Property } from "../../components/ComponentDefinition";
 import { HelpableLabel } from "../HelpableLabel";
 
@@ -96,7 +96,7 @@ function PropertyEditor(props: PropertyEditorProps) {
   const [value, setValue] = useState(component.properties[property.codeName]);
   useEffect(() => setValue(component.properties[property.codeName]), [property, component]);
 
-  const updateValue = (newValue: any) => {
+  const updateValue = (newValue: string | string[] | boolean | number) => {
     setValue(newValue);
     component.properties[property.codeName] = newValue;
     props.onChange(component);

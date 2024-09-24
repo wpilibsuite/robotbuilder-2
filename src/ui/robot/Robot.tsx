@@ -18,7 +18,7 @@ export function Robot({ project }: { project: Project }) {
           style={ SyntaxHighlightStyles.vs }
           showLineNumbers={ true }
           wrapLines={ true }
-          lineProps={ (lineNumber: number): { style: React.CSSProperties } => {
+          lineProps={ (): { style: React.CSSProperties } => {
             const style: CSSProperties = { display: "block", fontSize: '10pt' };
             return { style };
           } }

@@ -1,4 +1,4 @@
-import { ActionTemplate, ComponentDefinition } from "../ComponentDefinition";
+import { ComponentDefinition } from "../ComponentDefinition";
 
 export const QUADRATURE_ENCODER: ComponentDefinition = {
   id: "SAMPLE-quadratureencoder",

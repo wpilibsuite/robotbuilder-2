@@ -3,7 +3,11 @@ import {
   ActionParamCallOption,
   AtomicCommand,
   EndCondition,
+  HardcodedStepArgument,
   Param,
+  PassthroughValueStepArgument,
+  ReferencePassthroughValueStepArgument,
+  ReferencePreviousOutputStepArgument,
   StepArgument,
   StepParam,
   Subsystem,
@@ -86,7 +90,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
     backgroundColor: '#eee',
   };
 
-  const onComponentChange = (component: SubsystemComponent) => {
+  const onComponentChange = () => {
     setGeneratedCode(generateSubsystem(subsystem, project));
   }
 
@@ -124,7 +128,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
   const [showCreateCommandDialog, setShowCreateCommandDialog] = useState(false);
   const [commandDialogType, setCommandDialogType] = useState(null);
   const [editedCommand, setEditedCommand] = useState(null as AtomicCommand);
-  const [canAddCommand, setCanAddCommand] = useState(subsystem.actions.length > 0);
+  const [, setCanAddCommand] = useState(subsystem.actions.length > 0);
 
   useEffect(() => setCanAddCommand(subsystem.actions.length > 0), [subsystem.actions]);
 
@@ -259,7 +263,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                     <Button id={ `add-${actuatorDef.id}-button`}
                             className="add-component-button add-actuator-button"
                             key={ actuatorDef.id }
-                            onClick={ (e) => onComponentAdd(actuatorDef) }>
+                            onClick={ () => onComponentAdd(actuatorDef) }>
                       Add { actuatorDef.name }
                     </Button>
                   )
@@ -281,7 +285,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                     <Button id={ `add-${sensorDef.id}-button`}
                             className="add-component-button add-sensor-button"
                             key={ sensorDef.id }
-                            onClick={ (e) => onComponentAdd(sensorDef) }>
+                            onClick={ () => onComponentAdd(sensorDef) }>
                       Add { sensorDef.name }
                     </Button>
                   )
@@ -303,7 +307,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                     <Button id={ `add-${controlDef.id}-button`}
                             className="add-component-button add-control-button"
                             key={ controlDef.id }
-                            onClick={ (e) => onComponentAdd(controlDef) }>
+                            onClick={ () => onComponentAdd(controlDef) }>
                       Add { controlDef.name }
                     </Button>
                   )
@@ -331,9 +335,9 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                           action.steps.map((step, index) => {
                             const component = subsystem.components.find(c => c.uuid === step.component);
                             const method = component.definition.methods.find(m => m.codeName === step.methodName);
-                            const isAccessor = method.parameters.length === 0 && method.returns !== 'void';
+
                             return (
-                              <li>
+                              <li key={ index }>
                                 <div style={{ display: 'flex', alignItems: 'center' }}>
                                   <span className="subsystem-component-name">
                                   { component.name }
@@ -358,7 +362,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                                   step.params.map(param => {
                                     const realParam = method.parameters.find(p => p.codeName === param.paramName);
                                     return (
-                                      <tr>
+                                      <tr key={ param.paramName }>
                                         <td>
                                           <HelpableLabel description={ realParam.description }>
                                             <span className="subsystem-action-step-param-name">{ realParam.name }</span>
@@ -374,10 +378,12 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                                             case "reference-passthrough-value":
                                               return 'is unknown';
                                             case "reference-step-output":
-                                              const referencedStep = action.steps.find(s => s.uuid === arg.step);
-                                              const referencedComponent = subsystem.components.find(c => c.uuid === referencedStep.component);
-                                              const referencedMethod = referencedComponent.definition.methods.find(m => m.codeName === referencedStep.methodName);
-                                              return (<span>result of <SubsystemActionName name={ referencedMethod.name }/> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>);
+                                              {
+                                                const referencedStep = action.steps.find(s => s.uuid === arg.step);
+                                                const referencedComponent = subsystem.components.find(c => c.uuid === referencedStep.component);
+                                                const referencedMethod = referencedComponent.definition.methods.find(m => m.codeName === referencedStep.methodName);
+                                                return (<span>result of <SubsystemActionName name={ referencedMethod.name }/> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>);
+                                              }
                                             default:
                                               return 'is unknown';
                                           }
@@ -397,7 +403,10 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                         }
                         </ol>
                         <div>
-                          <Button onClick={(e) => { setEditedAction(action); setShowCreateActionDialog(true); }}>
+                          <Button onClick={ () => {
+                                    setEditedAction(action)
+                                    setShowCreateActionDialog(true)
+                                  } }>
                             Edit
                           </Button>
                         </div>
@@ -409,7 +418,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
 
               <Button id="add-action-button"
                       className="add-component-button add-action-button"
-                      onClick={(e) => setShowCreateActionDialog(true)}>
+                      onClick={ () => setShowCreateActionDialog(true) }>
                 + Add Action
               </Button>
             </div>
@@ -432,13 +441,16 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                         {
                           (() => {
                             if (state.step) {
-                              let component = subsystem.components.find(c => c.uuid === state.step.component);
+                              const component = subsystem.components.find(c => c.uuid === state.step.component);
                               return `${ component.name } ${ component.definition.methods.find(m => m.codeName === state.step.methodName).name }`;
                             }
                           })()
                         }
                         <div>
-                          <Button onClick={(e) => { setEditedState(state); setShowCreateStateDialog(true); } }>
+                          <Button onClick={ () => {
+                                    setEditedState(state)
+                                    setShowCreateStateDialog(true)
+                                  } }>
                             Edit
                           </Button>
                         </div>
@@ -450,7 +462,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
 
               <Button id="add-state-button"
                       className="add-component-button add-state-button"
-                      onClick={(e) => setShowCreateStateDialog(true)}>
+                      onClick={ () => setShowCreateStateDialog(true) }>
                 + Add State
               </Button>
             </div>
@@ -483,13 +495,18 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                                   return <span>exactly once</span>;
                                 default:
                                   // state UUID
-                                  const endState = subsystem.states.find(s => s.uuid === command.endCondition);
-                                  return (<span>until the <SubsystemName subsystem={subsystem} /> has reached <SubsystemStateName state={endState}/></span>);
+                                  {
+                                    const endState = subsystem.states.find(s => s.uuid === command.endCondition);
+                                    return (<span>until the <SubsystemName subsystem={subsystem} /> has reached <SubsystemStateName state={endState}/></span>);
+                                  }
                               }
                             })()
                           }
                         </div>
-                        <Button onClick={(e) => { setEditedCommand(command); setShowCreateCommandDialog(true); } }>
+                        <Button onClick={ () => {
+                                  setEditedCommand(command)
+                                  setShowCreateCommandDialog(true)
+                                } }>
                           Edit
                         </Button>
                       </AccordionDetails>
@@ -501,7 +518,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
             <div className="add-components-carousel" id="add-commands-carousel">
               <Button id="add-command-button"
                       className="add-component-button add-command-button"
-                      onClick={(e) => setShowCreateCommandDialog(true)}>
+                      onClick={ () => setShowCreateCommandDialog(true) }>
                 + Add Command
               </Button>
             </div>
@@ -514,7 +531,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
           style={ SyntaxHighlightStyles.vs }
           showLineNumbers={ true }
           wrapLines={ true }
-          lineProps={ (lineNumber: number): { style: React.CSSProperties } => {
+          lineProps={ (): { style: React.CSSProperties } => {
             const style: CSSProperties = { display: "block", fontSize: '10pt' };
             return { style };
           } }
@@ -644,7 +661,8 @@ function StepEditor({
           component && methodName ?
             component.definition.methods.find(m => m.codeName === methodName).parameters.map(param => {
               return (
-                <StepParameterEditor param={ param }
+                <StepParameterEditor key={ param.codeName }
+                                     param={ param }
                                      stepParam={ params.find(p => p.paramName === param.codeName) }
                                      subsystem={ subsystem }
                                      previousSteps={ previousSteps }
@@ -678,28 +696,28 @@ function StepParameterEditor({
                                previousSteps,
                                onParamChange
                              }: { param: ParameterDefinition, stepParam: StepParam, subsystem: Subsystem, previousSteps: SubsystemActionStep[], onParamChange: (newParam: StepParam) => void }) {
-  const toSelectionValue = (argType: string, others: any): StepArgument => {
+  const toSelectionValue = (argType: string, others: StepArgument): StepArgument => {
     switch (argType) {
       case "hardcode":
         return {
           type: "hardcode",
-          hardcodedValue: others.hardcodedValue
+          hardcodedValue: (others as HardcodedStepArgument).hardcodedValue
         };
       case "define-passthrough-value":
         return {
           type: "define-passthrough-value",
-          passthroughArgumentName: others.passthroughArgumentName
+          passthroughArgumentName: (others as PassthroughValueStepArgument).passthroughArgumentName
         }
       case "reference-passthrough-value":
         return {
           type: "reference-passthrough-value",
-          step: others.step,
-          paramName: others.paramName
+          step: (others as ReferencePassthroughValueStepArgument).step,
+          paramName: (others as ReferencePassthroughValueStepArgument).paramName
         };
       case "reference-step-output":
         return {
           type: "reference-step-output",
-          step: others.step
+          step: (others as ReferencePreviousOutputStepArgument).step
         }
       default:
         console.warn('Unsupported arg type!', argType);
@@ -718,13 +736,14 @@ function StepParameterEditor({
                   value={ JSON.stringify(stepParam.arg) }
                   style={ { margin: "0 8px" } }
                   onChange={ (e) => {
-                    if (!e.target.value || e.target.value === '') return;
+                    if (!e.target.value || e.target.value === '') {
+                      return
+                    }
 
                     const data = JSON.parse(e.target.value);
                     const newParam: StepParam = {
                       paramName: param.codeName,
                       arg: {
-                        // @ts-ignore
                         type: data.type as string
                       }
                     }
@@ -868,7 +887,8 @@ function CreateActionDialog({
             {
               steps.map((step, index) => {
                 console.debug('[CREATE-ACTION-DIALOG] Rendering editor for step', index + 1, step);
-                return <StepEditor subsystem={ subsystem }
+                return <StepEditor key={ subsystem.uuid  }
+                                   subsystem={ subsystem }
                                    component={ subsystem.components.find(c => c.uuid === step.component) }
                                    methodName={ step.methodName }
                                    previousSteps={ steps.slice(0, index) }
@@ -905,7 +925,11 @@ function CreateActionDialog({
         </Button>
         <Button onClick={ () => {
           const data = { name: actionName, steps: steps };
-          !!editedAction ? onUpdate(data) : onCreate(data);
+          if (editedAction) {
+            onUpdate(data)
+          } else {
+            onCreate(data)
+          }
         } }
                 disabled={ !actionName || !!steps.find(s => !s.methodName || !s.component || s.params.find(p => !p.arg.type)) }>
           OK
@@ -1003,7 +1027,11 @@ function CreateStateDialog({
             method: stateMethod,
             params: stateParams
           };
-          !!editedState ? onUpdate(data) : onCreate(data)
+          if (editedState) {
+            onUpdate(data)
+          } else {
+            onCreate(data)
+          }
         } } disabled={ !stateName }>OK</Button>
       </DialogActions>
     </Dialog>
@@ -1018,7 +1046,7 @@ class NewCommandData {
   readonly endCondition: EndCondition;
   readonly params: ActionParamCallOption[];
 
-  constructor(name, subsystem, initializeActions, action, endCondition, params) {
+  constructor(name: string, subsystem: string, initializeActions: string[], action: string, endCondition: EndCondition, params: ActionParamCallOption[]) {
     this.name = name;
     this.subsystem = subsystem;
     this.initializeActions = initializeActions;
@@ -1046,8 +1074,8 @@ function ActionInvocationEditor(param: Param, action: SubsystemAction, params: A
 
   return (
     [
-      <label>{ param.name }</label>,
-      <span>
+      <label key={ "label" }>{ param.name }</label>,
+      <span key={ "span" }>
           <Select defaultValue={ existingInvocation?.invocationType ?? "" }
                   value={ existingInvocation?.invocationType ?? "" }
                   variant="standard"
@@ -1250,7 +1278,7 @@ function CreateCommandDialog({
             {
               (() => {
                 try {
-                  return generateCommand(commandName, subsystem, selectedAction, endCondition, params, initializeActions, [], []);
+                  return generateCommand(commandName, subsystem, selectedAction, endCondition, params, initializeActions);
                 } catch (e) {
                   console.error(e);
                   return `ERROR: Failed to generate code for command ${ commandName }: ${ e }`;

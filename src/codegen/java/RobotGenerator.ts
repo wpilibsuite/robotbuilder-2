@@ -1,8 +1,9 @@
-import { Command, Subsystem } from "../../bindings/Command";
+import { AtomicCommand, Command, Subsystem } from "../../bindings/Command";
 import { Controller } from "../../bindings/Controller";
 import { Project } from "../../bindings/Project";
 import { commandMethod } from "./CommandGroupGenerator";
 import { className, indent, methodName, prettify } from "./util";
+import * as IR from "../../bindings/ir"
 
 export function generateRobotClass(project: Project): string {
   return prettify(
@@ -153,16 +154,17 @@ function findCommand(project: Project, commandUUID: string): [Project | Subsyste
     return []
   }
 
-  let cmd = null
+  let cmd: AtomicCommand | IR.Group = project.commands.find(c => c.uuid === commandUUID)
 
   // First, scan the project for globally-defined commands (eg command groups)
-  if (cmd = project.commands.find(c => c.uuid === commandUUID)) {
+  if (cmd) {
     return [project, cmd]
   }
 
   // Then fall back to the 
   for (const subsystem of project.subsystems) {
-    if (cmd = subsystem.commands.find(c => c.uuid === commandUUID)) {
+    cmd = subsystem.commands.find(c => c.uuid === commandUUID);
+    if (cmd) {
       return [subsystem, cmd]
     }
   }
