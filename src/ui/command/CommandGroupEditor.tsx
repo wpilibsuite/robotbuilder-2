@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { findCommand, Project } from "../../bindings/Project";
 import { Button, InputLabel } from "@mui/material";
-import { StageEditor } from "./groupeditor/StageEditor";
+import { entryType, StageEditor } from "./groupeditor/StageEditor";
 import EditableLabel from "../EditableLabel";
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { commandMethod } from "../../codegen/java/CommandGroupGenerator";
 import { editorGroupToIR } from "./Commands";
 import * as IR from "../../bindings/ir";
+import { CommandTile } from "./groupeditor/CommandTile";
+import { AddCommandDropTarget } from "./groupeditor/AddCommandDropTarget";
+import { ReactSVG } from "react-svg";
 
 export class EditorCommandGroup {
   name: string;
@@ -101,6 +104,12 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
     }
   }
 
+  const updateAll = () => {
+    group.stages = [...group.stages]
+    onChange({ ...group })
+    regenerateCode()
+  }
+
   return (
     <div className="sequential-group-editor">
       <div className="sequential-group-title">
@@ -115,64 +124,139 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
                          console.log('Changed sequence name to', newName);
                          regenerateCode();
                        } }/>
+        <Button onClick={ () => onSave(group) }>
+          Save Group
+        </Button>
       </div>
       <div className={ "sequential-group-editor-commands" }>
-        <div className="parallel-group-editor">
-          <div className="group-header">
-            <InputLabel>
-              Subsystems
-            </InputLabel>
-          </div>
-          {
-            project.subsystems.map((subsystem) => {
-              return (
-                <div className={ `subsystem-tile` } key={ subsystem.uuid }>
-                  <div className={ "command-title" }>
-                    { subsystem.name }
-                  </div>
-                </div>
-              )
-            })
-          }
-        </div>
-        {
-          (() => {
-            if (group.stages.length === 0) {
-              group
-            }
+        <table className="commands-table">
+          <thead>
+            <tr className="command-group-stage-row">
+              <th className="subsystem-tile">
+                Stage
+              </th>
+              {
+                project.subsystems.sort((a, b) => a.name.localeCompare(b.name)).map(subsystem => {
+                  return (
+                    <th className="subsystem-tile" key={ subsystem.uuid }>
+                      { subsystem.name }
+                    </th>
+                  )
+                })
+              }
+            </tr>
+          </thead>
+          <tbody>
+            {
+              group.stages.map((stage, index) => {
+                return (
+                  <tr key={ index } className="command-group-stage-row">
+                    <td style={{ minWidth: "150px" }} className="stage-detail-cell">
+                      <span style={{ display: "flex" }}>
+                        <EditableLabel initialValue={ stage.name }
+                                      onBlur={ (newName) => {
+                                        if (newName === stage.name) {
+                                          // no change
+                                          return
+                                        }
+                                        stage.name = newName
+                                        onChange({...group})
+                                        regenerateCode()
+                                      } }/>
 
-            return group.stages.map((stage, index) => {
-              return (
-                <StageEditor key={ `${ stage.name} | ${ index }` }
-                             sequence={ group }
-                             stage={ stage }
-                             project={ project }
-                             onDelete={ (stage) => {
-                               console.log('Deleting stage', stage);
-                               const index = group.stages.indexOf(stage);
-                               group.stages.filter((_, i) => i > index).forEach((s, i) => s.name = `Stage ${ i + index + 1 }`);
-                               group.stages = group.stages.filter(s => s !== stage);
-                               onChange({ ...group });
-                               regenerateCode();
-                             } }
-                             onChange={ (stage) => {
-                               group.stages = [...group.stages];
-                               onChange({ ...group });
-                               regenerateCode();
-                               console.log('Regenerated code');
-                             } }/>
-              )
-            })
-          })()
-        }
-        <div className="sequential-group-add-stage">
-          <Button onClick={ addStage }>
-            + Add Stage
-          </Button>
-          <Button onClick={ () => onSave(group) }>
-            Save Group
-          </Button>
-        </div>
+                        {
+                          stage.group.commands.length > 1 ?
+                            <>
+                              <ReactSVG src={ 'icons/parallel-group-all-commands.svg' }
+                                        style={ {
+                                          cursor: "pointer",
+                                          transform: `scale(${ stage.group.endCondition === "all" ? '112.5%' : '100%' })`
+                                        } }
+                                        onClick={ () => {
+                                          stage.group.endCondition = "all";
+                                          updateAll()
+                                        } }/>
+                              <ReactSVG src={ 'icons/parallel-group-any-commands.svg' }
+                                        style={ {
+                                          cursor: "pointer",
+                                          transform: `scale(${ stage.group.endCondition === "any" ? '112.5%' : '100%' })`
+                                        } }
+                                        onClick={ () => {
+                                          stage.group.endCondition = "any";
+                                          updateAll()
+                                        } }/>
+                            </>
+                            : null
+                        }
+                        {
+                          // Do not display the "Delete" button if there's only one stage remaining
+                          group.stages.length <= 1 ?
+                          null
+                          :
+                          <Button className="delete-stage-button"
+                                  onClick={ (e) => {
+                                    console.log('Deleting stage', stage);
+                                    const index = group.stages.indexOf(stage);
+                                    group.stages.filter((_, i) => i > index).forEach((s, i) => s.name = `Stage ${ i + index + 1 }`);
+                                    group.stages = group.stages.filter(s => s !== stage);
+                                    if (group.stages.length === 0) {
+                                      // Removed the last stage - add a new blank one instead of making the group have zero stages
+                                      // (Shouldn't happen if the delete button isn't displayed... but just in case)
+                                      addStage();
+                                    }
+                                    onChange({ ...group });
+                                    regenerateCode();
+                                  } }>
+                            Delete
+                          </Button>
+                        }
+                      </span>
+                    </td>
+                    {
+                      project.subsystems.sort((a, b) => a.name.localeCompare(b.name)).map(subsystem => {
+                        const command = stage.group.commands.find(c => c.requirements().includes(subsystem.uuid)) as IR.CommandInvocation
+
+                        if (command) {
+                          return (
+                            <td key={ subsystem.uuid }>
+                              <CommandTile key={ subsystem.uuid }
+                                          project={ project }
+                                          command={ command }
+                                          stage={ stage }
+                                          group={ group }
+                                          entryType={ entryType(stage, command) }
+                                          onChange={ (stage) => {
+                                            updateAll()
+                                          } }/>
+                            </td>
+                          )
+                        } else {
+                          return (
+                            <td key={ subsystem.uuid }>
+                              <AddCommandDropTarget key={ subsystem.uuid }
+                                                    sequence={ group }
+                                                    stage={ stage }
+                                                    subsystem={ subsystem }
+                                                    project={ project }
+                                                    onChange={ (stage) => updateAll() }/>
+                            </td>
+                          )
+                        }
+                      })
+                    }
+                  </tr>
+                )
+              })
+            }
+            <tr className="command-group-stage-row footer-row">
+              <td>
+              <Button onClick={ addStage }>
+                + Add Stage
+              </Button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
         <div className="sequential-group-code-preview">
           <SyntaxHighlighter
             language="java"

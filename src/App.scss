@@ -440,13 +440,14 @@ div.gutter {
 }
 
 .sequential-group-editor {
-  padding-top: 15px;
+  padding: 20px;
   background-color: #222;
 
   .MuiFormLabel-root, .MuiInputLabel-root {
     font-weight: 500;
     font-size: 12pt;
     color: #ddd;
+    align-content: center;
   }
 
   .MuiInputBase-root {
@@ -467,180 +468,209 @@ div.gutter {
   }
 }
 
-.sequential-group-title {
-  color: white;
-  font-weight: bold;
-  font-size: 14pt;
-  padding-left: 20px;
+.stage-detail-cell {
+  .delete-stage-button {
+    display: none;
+    color: crimson !important;
+    font-size: 0.75rem;
+
+    &:hover {
+      color: red;
+    }
+  }
+
+  &:hover {
+    .delete-stage-button {
+      display: block;
+    }
+  }
 }
 
 .sequential-group-editor-commands {
   display: flex;
   flex-direction: row;
-  gap: 1px;
-  padding: 8px 16px;
-  border-bottom: 2px solid #111;
+}
 
-  .parallel-group-editor {
-    display: flex;
-    flex-direction: column;
-    width: 200px;
-    max-width: 200px;
-    gap: 2px;
+.sequential-group-title {
+  color: white;
+  font-weight: bold;
+  font-size: 14pt;
+}
 
-    .command-drop-target {
-      width: 100%;
-      height: 36px; // mui likes to subtract 10 pixels for SOME REASON
-      //margin-top: 8px;
-      background-color: #1f1f1f;
-      //padding: 4px;
-      border-radius: 0px;
-      border: 1px dashed #444;
+.parallel-group-editor {
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  max-width: 200px;
+  gap: 2px;
+}
 
-      color: #666;
+.command-drop-target {
+  width: 100%;
+  height: 36px; // mui likes to subtract 10 pixels for SOME REASON
+  //margin-top: 8px;
+  background-color: #1f1f1f;
+  //padding: 4px;
+  border-radius: 0px;
+  border: 1px dashed #444;
 
-      &.idle {
-        border: 1px dashed #f44;
-        color: #f44;
-      }
-    }
+  color: #666;
+
+  &.idle {
+    border: 1px dashed #f44;
+    color: #f44;
+  }
+}
+
+.group-header {
+  margin-bottom: 5px;
+  width: 100%;
+  justify-content: center;
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid #666;
+
+  .MuiFormLabel-root, .MuiInputLabel-root {
+    font-weight: 500;
+    font-size: 12pt;
+    color: #ddd;
   }
 
-  .group-header {
-    margin-bottom: 5px;
+  .MuiInputBase-root {
+    font-weight: bold;
+    font-size: 12pt;
+    color: #eee;
     width: 100%;
-    justify-content: center;
-    display: flex;
-    flex-direction: row;
-    border-bottom: 1px solid #666;
 
-    .MuiFormLabel-root, .MuiInputLabel-root {
-      font-weight: 500;
-      font-size: 12pt;
-      color: #ddd;
-    }
-
-    .MuiInputBase-root {
-      font-weight: bold;
-      font-size: 12pt;
-      color: #eee;
+    input {
       width: 100%;
-
-      input {
-        width: 100%;
-        padding: 0;
-        text-align: center;
-      }
+      padding: 0;
+      text-align: center;
     }
   }
+}
 
-  .subsystem-tile {
+.subsystem-tile {
+  // width: 100%;
+  height: 36px;
+  // justify-content: center;
+  width: 240px;
+  padding: 8px;
+
+  color: #eeeeee;
+  background-color: #333333;
+}
+
+.command-tile-wrapper {
+  width: 100%;
+}
+
+.command-drop-target {
+  width: 100%;
+}
+
+.commands-table {
+  tr {
+    height: 36px;
+    max-height: 36px;
+  }
+
+  td, th {
+    width: 240px;
+    height: 36px;
+  }
+}
+
+.command-tile {
+  width: calc(100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: left;
+  padding: 8px;
+  background-color: #FF7F00;
+
+  &:hover {
+    //transform: scale(1.05);
+    cursor: pointer;
+  }
+
+  .command-title {
+    margin-bottom: 0;
+    color: #111;
     //width: 100%;
-    height: 36px;
-    display: flex;
-    justify-content: center;
-    padding: 8px;
-
-    color: #eeeeee;
-    background-color: #333333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .command-tile-wrapper {
-    width: 200px;
+  &.full-group-entry {
+    //background-color: #FF7F00;
   }
 
-  .command-tile {
-    width: calc(100%);
-    height: 36px;
-    display: flex;
-    flex-direction: column;
-    justify-content: left;
-    padding: 8px;
+  &.racer-group-entry {
     background-color: #FF7F00;
+    width: calc(100% - 16px);
 
-    &:hover {
-      //transform: scale(1.05);
-      cursor: pointer;
+    // clip the top-right and bottom-right corners so we get an arrow shape
+    clip-path: polygon(
+                    0 0,
+                    95% 0,
+                    100% 50%,
+                    95% 100%,
+                    0 100%,
+                    0 0
+    );
+  }
+
+  &.leader-group-entry {
+    //background-color: #FF7F00;
+    //background: linear-gradient(to bottom, #fff17e, #788613);
+    //display: flex;
+    //flex-direction: row;
+    //padding-left: 0;
+
+    .leader-icon {
+      margin: 0 4px;
+      width: 20px;
+      height: 100%;
+      fill: gold;
     }
+  }
+
+  &.follower-group-entry {
+    //background-color: #007900;
+    // margin-left: 20px;
+    // width: calc(100% - 16px - 20px);
+
+    // clip the top-right and bottom-right corners so we get an arrow shape
+    clip-path: polygon(
+                    0 0,
+                    95% 0,
+                    100% 50%,
+                    95% 100%,
+                    0 100%,
+                    0 0
+    );
+  }
+
+  &.sequence-group, &.parallel-group {
+    //width: 100%;
+    background: repeating-linear-gradient(to right, maroon 0%, lighten(indigo, 20%) 50%, maroon 100%) 0 100%;
+    background-size: 200% auto;
+    animation: scroll-gradient 8s infinite;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
 
     .command-title {
-      margin-bottom: 0;
-      color: #111;
-      //width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      color: #cccccc;
     }
 
-    &.full-group-entry {
-      //background-color: #FF7F00;
-    }
-
-    &.racer-group-entry {
-      background-color: #FF7F00;
-      width: calc(100% - 16px);
-
-      // clip the top-right and bottom-right corners so we get an arrow shape
-      clip-path: polygon(
-                      0 0,
-                      95% 0,
-                      100% 50%,
-                      95% 100%,
-                      0 100%,
-                      0 0
-      );
-    }
-
-    &.leader-group-entry {
-      //background-color: #FF7F00;
-      //background: linear-gradient(to bottom, #fff17e, #788613);
-      //display: flex;
-      //flex-direction: row;
-      //padding-left: 0;
-
-      .leader-icon {
-        margin: 0 4px;
-        width: 20px;
-        height: 100%;
-        fill: gold;
+    @keyframes scroll-gradient {
+      0% {
+        background-position: 0 0;
       }
-    }
-
-    &.follower-group-entry {
-      //background-color: #007900;
-      // margin-left: 20px;
-      // width: calc(100% - 16px - 20px);
-
-      // clip the top-right and bottom-right corners so we get an arrow shape
-      clip-path: polygon(
-                      0 0,
-                      95% 0,
-                      100% 50%,
-                      95% 100%,
-                      0 100%,
-                      0 0
-      );
-    }
-
-    &.sequence-group, &.parallel-group {
-      //width: 100%;
-      background: repeating-linear-gradient(to right, maroon 0%, lighten(indigo, 20%) 50%, maroon 100%) 0 100%;
-      background-size: 200% auto;
-      animation: scroll-gradient 8s infinite;
-      animation-timing-function: linear;
-      animation-fill-mode: forwards;
-
-      .command-title {
-        color: #cccccc;
-      }
-
-      @keyframes scroll-gradient {
-        0% {
-          background-position: 0 0;
-        }
-        100% {
-          background-position: -200% 0;
-        }
+      100% {
+        background-position: -200% 0;
       }
     }
   }

@@ -15,21 +15,21 @@ type StageEditorProps = {
   onChange: (stage: EditorStage) => void
 };
 
-export function StageEditor({ sequence, stage, project, onDelete, onChange }: StageEditorProps) {
-  const entryType = (stage: EditorStage, command: IR.CommandInvocation) => {
-    const endCond = stage.group.endCondition;
-    switch (endCond) {
-      case "all":
-        return "full";
-      case "any":
-        return "racer";
-      case command.command:
-        return "leader";
-      default:
-        return "follower";
-    }
+export const entryType = (stage: EditorStage, command: IR.CommandInvocation) => {
+  const endCond = stage.group.endCondition;
+  switch (endCond) {
+    case "all":
+      return "full";
+    case "any":
+      return "racer";
+    case command.command:
+      return "leader";
+    default:
+      return "follower";
   }
+}
 
+export function StageEditor({ sequence, stage, project, onDelete, onChange }: StageEditorProps) {
   const [pendingDelete, setPendingDelete] = useState(false);
 
   // reset if the component is reused for a stage that was just deleted

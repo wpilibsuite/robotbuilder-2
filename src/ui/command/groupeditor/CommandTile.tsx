@@ -62,10 +62,15 @@ type CommandTileDetailsProps = {
 
 function CommandTileDetails({ command, stage, group, entryType, onChange, hide }: CommandTileDetailsProps) {
   const makeLeader = () => {
-    stage.group.endCondition = command.command;
-    entryType = "leader";
-    // leader command always goes first
-    moveToStart(stage.group.commands, (c) => c === command);
+    if (stage.group.endCondition !== command.command) {
+      stage.group.endCondition = command.command;
+      entryType = "leader";
+      // leader command always goes first
+      moveToStart(stage.group.commands, (c) => c === command);
+    } else {
+      // Reset
+      stage.group.endCondition = "all"
+    }
     onChange(stage);
   }
 
