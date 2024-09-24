@@ -3,7 +3,7 @@ import { Project } from "../../bindings/Project"
 import { generateRobotClass } from "../../codegen/java/RobotGenerator"
 import { Box } from "@mui/material"
 import SyntaxHighlighter from "react-syntax-highlighter"
-import * as SyntaxHighlightStyles from "react-syntax-highlighter/dist/esm/styles/hljs"
+import * as SyntaxHighlightStyles from "react-syntax-highlighter/dist/cjs/styles/hljs"
 
 export function Robot({ project }: { project: Project }) {
   const [generatedCode, setGeneratedCode] = useState(generateRobotClass(project))

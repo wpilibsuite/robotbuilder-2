@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  - push
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.tool-versions'
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Install Packages
+        run: |
+          npm ci
+
+      - name: Run Tests
+        run: |
+          npm run test
