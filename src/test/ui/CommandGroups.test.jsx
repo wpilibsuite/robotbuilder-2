@@ -1,10 +1,10 @@
-import { act, render, screen } from '@testing-library/react'
-import React from 'react'
-import { click } from '@testing-library/user-event/dist/click'
-import { ProjectView } from '../../ui/ProjectView'
-import { makeNewProject } from '../../bindings/Project'
-import * as IR from '../../bindings/ir'
-import { test, expect } from 'vitest'
+import { act, render, screen } from "@testing-library/react"
+import React from "react"
+import { click } from "@testing-library/user-event/dist/click"
+import { ProjectView } from "../../ui/ProjectView"
+import { makeNewProject } from "../../bindings/Project"
+import * as IR from "../../bindings/ir"
+import { test, expect } from "vitest"
 
 function setup() {
   const project = makeNewProject()
@@ -23,9 +23,9 @@ const drivebase = project.subsystems[0]
 const commands = drivebase.commands
 const driveWithSpeeds = commands.find(c => c.name === "Drive with Speeds")
 
-test('creating a command group with a single atomic command', () => {
+test("creating a command group with a single atomic command", () => {
   act(() => click(document.getElementById("add-command-button")))
-  act(() => click(document.querySelectorAll('li.MuiMenuItem-root')[commands.indexOf(driveWithSpeeds)]))
+  act(() => click(document.querySelectorAll("li.MuiMenuItem-root")[commands.indexOf(driveWithSpeeds)]))
   act(() => click(screen.getByText("Save Group")))
 
   expect(project.commands.length).toEqual(1)
@@ -97,7 +97,7 @@ test("nesting command groups", () => {
 
   act(() => click(document.getElementById("new-command-group-button")))
   act(() => click(document.getElementById("add-command-button")))
-  act(() => click(document.querySelectorAll('li.MuiMenuItem-root')[0]))
+  act(() => click(document.querySelectorAll("li.MuiMenuItem-root")[0]))
   act(() => click(screen.getByText("Save Group")))
 
   expect(project.commands.length).toEqual(2)

@@ -57,8 +57,8 @@ function CommandSelectBox({ project, initialCommand, onChange }: CommandSelectBo
   return (
     <FormControl size="small" style={ { width: "100%" } }>
       <Select className={ "command-select" } variant={ "standard" } onChange={ onChange }
-              defaultValue={ initialCommand ?? '' }>
-        <MenuItem value={ '' } selected={ !initialCommand }>
+              defaultValue={ initialCommand ?? "" }>
+        <MenuItem value={ "" } selected={ !initialCommand }>
           Unbound
         </MenuItem>
         {
@@ -115,55 +115,55 @@ function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
               <TableRow>
                 <TableCell>Press and hold</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whileHeld }
-                                    onChange={ (event) => updateButtonCommand('whileHeld', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whileHeld", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Press</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whenPressed }
-                                    onChange={ (event) => updateButtonCommand('whenPressed', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whenPressed", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Toggle on press</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.toggleOnPress }
-                                    onChange={ (event) => updateButtonCommand('toggleOnPress', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("toggleOnPress", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>When released</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whenReleased }
-                                    onChange={ (event) => updateButtonCommand('whenReleased', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whenReleased", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>While released</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.whileReleased }
-                                    onChange={ (event) => updateButtonCommand('whileReleased', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("whileReleased", event.target.value) }/>
                 </TableCell>
               </TableRow>
               <TableRow>
                 <TableCell>Toggle on release</TableCell>
                 <TableCell>
-                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? '[none]' }` }
+                  <CommandSelectBox key={ `${ button.name }-${ button?.whileHeld ?? "[none]" }` }
                                     project={ project }
                                     initialCommand={ button.toggleOnRelease }
-                                    onChange={ (event) => updateButtonCommand('toggleOnRelease', event.target.value) }/>
+                                    onChange={ (event) => updateButtonCommand("toggleOnRelease", event.target.value) }/>
                 </TableCell>
               </TableRow>
             </TableBody>

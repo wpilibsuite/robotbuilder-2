@@ -3,7 +3,7 @@ import { indent, methodName, unindent } from "./util"
 import { generateStepInvocations, generateStepParams } from "./ActionGenerator"
 
 export function generateState(state: SubsystemState, subsystem: Subsystem): string {
-  console.log('[STATE-GENERATOR] Generating code for state', state)
+  console.log("[STATE-GENERATOR] Generating code for state", state)
   return unindent(
     `
     @Logged(name = "${ state.name }?")

@@ -120,7 +120,7 @@ export class SubsystemAction {
     return this.steps.flatMap(step => {
       const component = subsystem.components.find(c => c.uuid === step.component)
       const method = component.definition.methods.find(m => m.codeName === step.methodName)
-      console.debug('[GENERATE-PARAMS] Generating param for method', step.methodName, 'on', component)
+      console.debug("[GENERATE-PARAMS] Generating param for method", step.methodName, "on", component)
 
       return step.params.flatMap(stepParam => {
         const parameterDefinition = method.parameters.find(p => p.codeName === stepParam.paramName)
@@ -128,16 +128,16 @@ export class SubsystemAction {
           const existingParam = this.params.find(p => p.name === stepParam.paramName)
           if (existingParam) {
             // No changes
-            console.debug('[GENERATE-PARAMS] Found existing param for', stepParam.paramName, '- skipping regeneration', existingParam)
+            console.debug("[GENERATE-PARAMS] Found existing param for", stepParam.paramName, "- skipping regeneration", existingParam)
             return [existingParam]
           } else {
             const newParam = Param.create(stepParam.arg.passthroughArgumentName, parameterDefinition.type)
-            console.debug('[GENERATE-PARAMS] Did not find an existing param for', stepParam.paramName, 'in', this.params, '- generated new param:', newParam)
+            console.debug("[GENERATE-PARAMS] Did not find an existing param for", stepParam.paramName, "in", this.params, "- generated new param:", newParam)
             return [newParam]
           }
         } else {
           // The param on the step is hardcoded or references the output of another step, we don't need to bubble up another param
-          console.debug('[GENERATE-PARAMS] Param', stepParam.paramName, 'does not bubble up to the action definition because its arg type is', stepParam.arg.type)
+          console.debug("[GENERATE-PARAMS] Param", stepParam.paramName, "does not bubble up to the action definition because its arg type is", stepParam.arg.type)
           return []
         }
       })
@@ -225,12 +225,12 @@ export class SubsystemActionStep {
   params: StepParam[] = []
 
   constructor(props) {
-    if (Object.hasOwn(props, 'uuid')) {
+    if (Object.hasOwn(props, "uuid")) {
       this.uuid = props.uuid
     }
     this.component = props.component
     this.methodName = props.methodName
-    if (Object.hasOwn(props, 'params')) {
+    if (Object.hasOwn(props, "params")) {
       this.params = [...props.params]
     }
   }

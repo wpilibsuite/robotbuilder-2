@@ -60,7 +60,7 @@ const TANK_DRIVE_ACTION: ActionTemplate = {
 export const DIFFERENTIAL_DRIVE: ComponentDefinition = {
   id: "SAMPLE-differentialdrive",
   name: "Differential Drive",
-  description: 'Provides high-level control for driving a robot. Can be operated with Tank Drive (each side controlled independently) or with Arcade Drive (linear and turning speeds controlled independently)',
+  description: "Provides high-level control for driving a robot. Can be operated with Tank Drive (each side controlled independently) or with Arcade Drive (linear and turning speeds controlled independently)",
   fqn: "edu.wpi.first.wpilibj.drive.DifferentialDrive",
   className: "DifferentialDrive",
   wpilibApiTypes: [],

@@ -3,8 +3,8 @@ import { findCommand, Project } from "../../bindings/Project"
 import { Button } from "@mui/material"
 import { entryType } from "./groupeditor/StageEditor"
 import EditableLabel from "../EditableLabel"
-import SyntaxHighlighter from 'react-syntax-highlighter'
-import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import SyntaxHighlighter from "react-syntax-highlighter"
+import * as SyntaxHighlightStyles from "react-syntax-highlighter/dist/esm/styles/hljs"
 import { commandMethod } from "../../codegen/java/CommandGroupGenerator"
 import { editorGroupToIR } from "./Commands"
 import * as IR from "../../bindings/ir"
@@ -18,7 +18,7 @@ export class EditorCommandGroup {
   stages: EditorStage[] = []
 
   static fromGroup(project: Project, group: IR.Group): EditorCommandGroup {
-    console.log('EditorSequence.fromGroup(', group, ')')
+    console.log("EditorSequence.fromGroup(", group, ")")
     const sequence = new EditorCommandGroup()
     sequence.name = group.name
     sequence.groupId = group.uuid
@@ -34,7 +34,7 @@ export class EditorCommandGroup {
       // ... shouldn't happen
     }
     sequence.stages.forEach((stage, i) => stage.name = `Stage ${ i + 1 }`)
-    console.log('[EditorSequence.fromGroup] Created sequence:', sequence)
+    console.log("[EditorSequence.fromGroup] Created sequence:", sequence)
     return sequence
   }
 }
@@ -121,7 +121,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
                          }
                          group.name = newName
                          onChange({ ...group })
-                         console.log('Changed sequence name to', newName)
+                         console.log("Changed sequence name to", newName)
                          regenerateCode()
                        } }/>
         <Button onClick={ () => onSave(group) }>
@@ -167,19 +167,19 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
                         {
                           stage.group.commands.length > 1 ?
                             <>
-                              <ReactSVG src={ 'icons/parallel-group-all-commands.svg' }
+                              <ReactSVG src={ "icons/parallel-group-all-commands.svg" }
                                         style={ {
                                           cursor: "pointer",
-                                          transform: `scale(${ stage.group.endCondition === "all" ? '112.5%' : '100%' })`,
+                                          transform: `scale(${ stage.group.endCondition === "all" ? "112.5%" : "100%" })`,
                                         } }
                                         onClick={ () => {
                                           stage.group.endCondition = "all"
                                           updateAll()
                                         } }/>
-                              <ReactSVG src={ 'icons/parallel-group-any-commands.svg' }
+                              <ReactSVG src={ "icons/parallel-group-any-commands.svg" }
                                         style={ {
                                           cursor: "pointer",
-                                          transform: `scale(${ stage.group.endCondition === "any" ? '112.5%' : '100%' })`,
+                                          transform: `scale(${ stage.group.endCondition === "any" ? "112.5%" : "100%" })`,
                                         } }
                                         onClick={ () => {
                                           stage.group.endCondition = "any"
@@ -195,7 +195,7 @@ export function CommandGroupEditor({ group, project, onSave, onChange }: Command
                             :
                             <Button className="delete-stage-button"
                                     onClick={ () => {
-                                      console.log('Deleting stage', stage)
+                                      console.log("Deleting stage", stage)
                                       const index = group.stages.indexOf(stage)
                                       group.stages.filter((_, i) => i > index).forEach((s, i) => s.name = `Stage ${ i + index + 1 }`)
                                       group.stages = group.stages.filter(s => s !== stage)

@@ -22,7 +22,7 @@ import { ActionParamCallOption, AtomicCommand } from "./Command"
  */
 export type DurationDecorator = {
   duration: number;
-  type: 'duration';
+  type: "duration";
 }
 
 // TODO: Support subsystem states and OI buttons
@@ -33,7 +33,7 @@ export type BooleanCondition = string;
  */
 export type UntilDecorator = {
   until: BooleanCondition;
-  type: 'until';
+  type: "until";
 }
 
 /**
@@ -42,7 +42,7 @@ export type UntilDecorator = {
  */
 export type UnlessDecorator = {
   unless: BooleanCondition;
-  type: 'unless';
+  type: "unless";
 }
 
 /**
@@ -52,7 +52,7 @@ export type UnlessDecorator = {
  * from running forever.
  */
 export type RepeatDecorator = {
-  type: 'repeat';
+  type: "repeat";
 }
 
 export type Decorator =
@@ -222,7 +222,7 @@ export class CommandInvocation extends Decorable {
   }
 
   static fromAtomicCommand(command: AtomicCommand): CommandInvocation {
-    console.log('IR from atomic', command)
+    console.log("IR from atomic", command)
     return new CommandInvocation(
       [command.subsystem],
       command.uuid,
@@ -265,7 +265,7 @@ export class Group extends Decorable {
    */
   name: string
 
-  readonly type: 'Sequence' | 'Parallel'
+  readonly type: "Sequence" | "Parallel"
 
   /**
    * Adds a new sequential command group to this group.
@@ -344,7 +344,7 @@ export class Group extends Decorable {
 }
 
 export class SeqGroup extends Group {
-  readonly type = 'Sequence'
+  readonly type = "Sequence"
 }
 
 /**
@@ -359,7 +359,7 @@ export type ParallelEndCondition =
   | "any";
 
 export class ParGroup extends Group {
-  readonly type = 'Parallel'
+  readonly type = "Parallel"
 
   endCondition: ParallelEndCondition
 
@@ -423,10 +423,10 @@ const getParams = (func): string[] => {
   // Removing comments of the form //
   // Remove body of the function { ... }
   // removing '=>' if func is arrow function
-  str = str.replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/(.)*/g, '')
-    .replace(/{[\s\S]*}/, '')
-    .replace(/=>/g, '')
+  str = str.replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/(.)*/g, "")
+    .replace(/{[\s\S]*}/, "")
+    .replace(/=>/g, "")
     .trim()
 
   // Start parameter names after first '('
@@ -437,6 +437,6 @@ const getParams = (func): string[] => {
 
   return str.substring(start, end)
     .split(", ")
-    .map(e => e.replace(/=[\s\S]*/g, '').trim()) // remove default values, if present
+    .map(e => e.replace(/=[\s\S]*/g, "").trim()) // remove default values, if present
     .filter(e => e.length > 0)
 }

@@ -4,18 +4,18 @@ import { indent, methodName, unindent, variableName } from "./util"
 export function generateParam(param: Param, invocation: ActionParamCallOption): string {
   switch (invocation.invocationType) {
     case "passthrough-value":
-      console.debug('[GENERATE-PARAM] Passthrough by value', param, invocation)
+      console.debug("[GENERATE-PARAM] Passthrough by value", param, invocation)
       if (!param) {
         return `[UNKNOWN PARAM]`
       }
       return `${ param.type } ${ variableName(param.name) }`
     case "passthrough-supplier":
     {
-      console.debug('[GENERATE-PARAM] Passthrough by supplier', param, invocation)
+      console.debug("[GENERATE-PARAM] Passthrough by supplier", param, invocation)
       let supplierType = `Supplier<${ param.type }>`
       switch (param.type) {
         case "boolean":
-          supplierType = 'BooleanSupplier'
+          supplierType = "BooleanSupplier"
           break
         case "int":
           supplierType = "IntegerSupplier"
@@ -43,7 +43,7 @@ export function generateActionParamValue(param: Param, invocation: ActionParamCa
     switch (invocation.invocationType) {
       case "hardcode":
         // Easiest case.  Assumes the hardcoded value is valid Java code
-        if (!invocation.hardcodedValue || invocation.hardcodedValue === '') {
+        if (!invocation.hardcodedValue || invocation.hardcodedValue === "") {
           // User didn't set a value, indicate that on the output
           return `/* ${ param.name } */`
         }
@@ -88,7 +88,7 @@ export function generateActionParamValue(param: Param, invocation: ActionParamCa
 
 function generateActionInvocation(action: SubsystemAction, subsystemVar: string, commandParams: ActionParamCallOption[]) {
   const actionMethod = methodName(action.name)
-  return `${ subsystemVar }.${ actionMethod }(${ action.params.map(param => generateActionParamValue(param, commandParams.find(c => c.param === param.uuid))).join(', ') })`
+  return `${ subsystemVar }.${ actionMethod }(${ action.params.map(param => generateActionParamValue(param, commandParams.find(c => c.param === param.uuid))).join(", ") })`
 }
 
 function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: string, commandParams: ActionParamCallOption[]): string | null {
@@ -132,7 +132,7 @@ function generateActionInvocationLambda(action: SubsystemAction, subsystemVar: s
 export function generateCommand(name: string, subsystem: Subsystem, actionUuid: string, endCondition: EndCondition, commandParams: ActionParamCallOption[], toInitialize: string[]): string {
   if (!name || !subsystem) {
     // Not enough information, bail
-    return ''
+    return ""
   }
 
   const action = subsystem.actions.find(a => a.uuid === actionUuid)
@@ -141,17 +141,17 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
     // return '';
   }
 
-  console.debug('Generating Java command code for command', name, 'subsystem', subsystem.name, 'action', actionUuid, 'end condition', endCondition, 'with params', commandParams)
+  console.debug("Generating Java command code for command", name, "subsystem", subsystem.name, "action", actionUuid, "end condition", endCondition, "with params", commandParams)
 
-  const subsystemVar = 'this'
-  let paramDefs = ''
+  const subsystemVar = "this"
+  let paramDefs = ""
   if (commandParams.length > 0) {
     // All passthrough invocations require parameters on the command factory
     // Hardcoded values are, obviously, hardcoded in the method body
     paramDefs = commandParams.filter(p => p.invocationType !== "hardcode").map(invocation => {
       const param = subsystem.actions.flatMap(a => a.params).find(p => p.uuid === invocation.param)
-      console.log('Command found param', param, 'for UUID', invocation.param)
-      console.log('Available params:', subsystem.actions.flatMap(a => a.params))
+      console.log("Command found param", param, "for UUID", invocation.param)
+      console.log("Available params:", subsystem.actions.flatMap(a => a.params))
       return generateParam(param, invocation)
     }).join(", ")
   }
@@ -212,12 +212,12 @@ export function generateCommand(name: string, subsystem: Subsystem, actionUuid: 
   const chainItems = [initializeLambda, actionLambda, setName].filter(i => !!i) // kick out undefined steps
   let commandChain: string
   if (chainItems.length === 0) {
-    commandChain = '/* No action specified! */'
+    commandChain = "/* No action specified! */"
   } else if (chainItems.length === 1) {
     // only one method call
     commandChain = chainItems.join(".")
   } else {
-    commandChain = chainItems.join("\n" + indent('.', 21)) // need to indent each line
+    commandChain = chainItems.join("\n" + indent(".", 21)) // need to indent each line
   }
 
   switch (endCondition) {

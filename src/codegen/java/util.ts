@@ -9,7 +9,7 @@ import prettier from "prettier"
  *
  * @return the cleaned up string without punctuation
  */
-export function removePunctuation(string: string, replacement: string = ' '): string {
+export function removePunctuation(string: string, replacement: string = " "): string {
   return string.replaceAll(/[^a-zA-Z0-9_]/ig, replacement)
 }
 
@@ -77,8 +77,8 @@ export function variableName(name: string): string {
 }
 
 export function objectName(name: string): string {
-  if (name === null || name === undefined || name === '') {
-    return '<unknown>'
+  if (name === null || name === undefined || name === "") {
+    return "<unknown>"
   } else {
     return variableName(name)
   }
@@ -158,7 +158,7 @@ export function prettify(code: string): string {
       code,
       {
         plugins: [parsers],
-        parser: 'java',
+        parser: "java",
         tabWidth: 2,
         printWidth: 100,
         useTabs: false,
@@ -167,7 +167,7 @@ export function prettify(code: string): string {
   } catch (e) {
     // Couldn't prettify - return the unprettified contents
     // This can happen if the code is invalid Java and the parser barfs
-    console.error('Encountered an error while prettifying generated code', e)
+    console.error("Encountered an error while prettifying generated code", e)
     return code
   }
 }
@@ -175,8 +175,8 @@ export function prettify(code: string): string {
 export function prettifySnippet(code: string): string {
   // Awkwardly, prettifying only works on fully defined classes or interfaces; it won't work on method snippets
   // So we wrap the snippet in a class declaration, prettify THAT, and then remove the declaration at the end
-  const wrapperStart = 'interface $$$$ {\n'
-  const wrapperEnd = '}'
+  const wrapperStart = "interface $$$$ {\n"
+  const wrapperEnd = "}"
 
   const prettified = prettify(unindent(
     `
@@ -186,7 +186,7 @@ export function prettifySnippet(code: string): string {
   )
 
   if (prettified.startsWith(wrapperStart)) {
-    return unindent(prettified.replace(wrapperStart, '').replace(/\}\n*$/, '')).trim()
+    return unindent(prettified.replace(wrapperStart, "").replace(/\}\n*$/, "")).trim()
   } else {
     return code
   }

@@ -1,7 +1,7 @@
 import { ControllerConfig } from "../ControllerConfig"
 
 export const PS5Controller: ControllerConfig = {
-  name: 'PS5',
+  name: "PS5",
   svg: "controllers/ps5.svg",
   buttons: [
     {

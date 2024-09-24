@@ -1,12 +1,12 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from "vite"
 
 export default defineConfig({
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
     browser: {
       enabled: false,
-      provider: 'playwright',
-      name: 'chromium',
+      provider: "playwright",
+      name: "chromium",
     },
   },
 })

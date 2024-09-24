@@ -18,7 +18,7 @@ export function HelpableLabel({ description, children }: HelpableLabelProps) {
         }
       </span>
       <Tooltip title={ description }>
-        <HelpOutlineOutlined className={ `helpable-label-icon ${ showIcon ? 'visible' : 'invisible' }` } />
+        <HelpOutlineOutlined className={ `helpable-label-icon ${ showIcon ? "visible" : "invisible" }` } />
       </Tooltip>
     </span>
   )

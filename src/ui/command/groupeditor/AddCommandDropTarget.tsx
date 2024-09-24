@@ -4,7 +4,7 @@ import { AtomicCommand, Subsystem } from "../../../bindings/Command"
 import Menu from "@mui/material/Menu"
 import { Button, Divider, MenuItem } from "@mui/material"
 import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor"
-import * as IR from '../../../bindings/ir'
+import * as IR from "../../../bindings/ir"
 import { variableName } from "../../../codegen/java/util"
 
 type AddCommandDropTargetProps = {
@@ -60,7 +60,7 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
         // TODO: Prevent name collisions
         wrapper = IR.CommandInvocation.fromAtomicCommand(command)
       } else {
-        console.log('Wrapping', command)
+        console.log("Wrapping", command)
         wrapper = new IR.CommandInvocation(
           command.requirements(),
           command.uuid,
@@ -93,7 +93,7 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
   }
 
   const allCommands = (project.commands as (IR.Group | AtomicCommand)[]).concat(project.subsystems.flatMap(s => s.commands))
-  console.log('[ADD-COMMAND-DROP-TARGET] All commands:', allCommands)
+  console.log("[ADD-COMMAND-DROP-TARGET] All commands:", allCommands)
 
   const availableCommandsToAdd =
     allCommands
@@ -103,19 +103,19 @@ export function AddCommandDropTarget({ sequence, stage, subsystem, project, onCh
       .filter(c => c.requirements().includes(subsystem.uuid)) // only allow the commands that use the subsystem we're on
       .filter(c => stage.group.commands.length === 0 || xor(c.requirements(), stage.group.commands.flatMap(sc => sc.requirements())).length === project.subsystems.length) // exclude any commands that use a subsystem already in use
 
-  console.log('[ADD-COMMAND-DROP-TARGET] Available commands for stage', stage.name, ', subsystem', subsystem.name, ':', availableCommandsToAdd)
+  console.log("[ADD-COMMAND-DROP-TARGET] Available commands for stage", stage.name, ", subsystem", subsystem.name, ":", availableCommandsToAdd)
 
   const inUse = !!sequence.stages.find(s => s.group.requirements().includes(subsystem.uuid))
 
   return (
     <div>
-      <Button id="add-command-button" className={ `command-drop-target ${ inUse ? 'idle' : 'open' }` }
+      <Button id="add-command-button" className={ `command-drop-target ${ inUse ? "idle" : "open" }` }
               onClick={ handleContextMenu }
               disabled={ availableCommandsToAdd.length < 1 }>
         {
           availableCommandsToAdd.length > 0 && !inUse ?
-            '+ Add Command' :
-            'Uncontrolled' // No commands available for this subsystem
+            "+ Add Command" :
+            "Uncontrolled" // No commands available for this subsystem
         }
       </Button>
 

@@ -3,7 +3,7 @@ import React, { useState } from "react"
 import { CommandList } from "./CommandList"
 import { CommandGroupEditor, EditorCommandGroup } from "./CommandGroupEditor"
 import { Button } from "@mui/material"
-import * as IR from '../../bindings/ir'
+import * as IR from "../../bindings/ir"
 
 function createParallelGroup(project: Project, editorGroup: EditorCommandGroup): IR.ParGroup {
   const stage = editorGroup.stages[0]
@@ -20,8 +20,8 @@ function createSequentialGroup(project: Project, editorGroup: EditorCommandGroup
     const relevantGroups = editorGroup.stages.map(stage => stage.group).filter(g => g.commands.length > 0)
     s.commands.push(...relevantGroups)
     s.params.push(...s.commands.flatMap(c => c.params).flatMap(filterAs(IR.ParamPlaceholder)))
-    console.log('Relevant groups', relevantGroups)
-    console.log('Group params', s.params)
+    console.log("Relevant groups", relevantGroups)
+    console.log("Group params", s.params)
   })
 }
 
@@ -32,7 +32,7 @@ function replace<T>(arr: T[], finder: (T) => boolean, newValue: T): T[] {
 }
 
 export function saveEditorGroup(project: Project, editorGroup: EditorCommandGroup): IR.Group {
-  console.log('[SAVE-SEQUENCE] Sequence:', editorGroup)
+  console.log("[SAVE-SEQUENCE] Sequence:", editorGroup)
   let group: IR.Group = editorGroupToIR(project, editorGroup)
   if (editorGroup.stages.length === 0) {
     // empty group, just have something basic
@@ -49,7 +49,7 @@ export function saveEditorGroup(project: Project, editorGroup: EditorCommandGrou
     project.commands.push(group)
   }
 
-  console.log('[SAVE-SEQUENCE] Saved command group', group)
+  console.log("[SAVE-SEQUENCE] Saved command group", group)
 
   return group
 }
@@ -99,7 +99,7 @@ export function Commands({ project }: { project: Project }) {
                                 setSequenceSaved(true)
                               } }
                               onChange={ (seq) => {
-                                console.log('Sequence changed to', seq)
+                                console.log("Sequence changed to", seq)
                                 setEditedSequence({ ...seq })
                                 setSequenceSaved(false)
                               } }/> :

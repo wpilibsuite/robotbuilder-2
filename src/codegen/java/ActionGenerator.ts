@@ -18,7 +18,7 @@ export function generateAction(action: SubsystemAction): string {
 
 const varNameForStepOutput = (stepOrUuid: SubsystemActionStep | string, previousSteps: SubsystemActionStep[], subsystem: Subsystem) => {
   let step: SubsystemActionStep
-  if (typeof stepOrUuid === 'string') {
+  if (typeof stepOrUuid === "string") {
     step = previousSteps.find(s => s.uuid === stepOrUuid)
   } else {
     step = stepOrUuid as SubsystemActionStep
@@ -33,11 +33,11 @@ const varNameForStepOutput = (stepOrUuid: SubsystemActionStep | string, previous
 export function generateStepParams(steps: SubsystemActionStep[], subsystem: Subsystem): string[] {
   return steps
     .flatMap(step => {
-      console.debug('Generating parameters for step', step)
+      console.debug("Generating parameters for step", step)
       const params = step.params.filter(p => p.arg.type === "define-passthrough-value")
-      console.debug('  Params:', params)
+      console.debug("  Params:", params)
       const component = subsystem.components.find(c => c.uuid === step.component)
-      console.debug('  Component:', component)
+      console.debug("  Component:", component)
       if (!component) {
         // throw new Error(`Couldn't find component for UUID ${ step.component } in subsystem components: ${ subsystem.components.map(c => `"${ c.name }"/${ c.uuid }`) }`);
         return null
@@ -62,13 +62,13 @@ export function generateStepInvocations(steps: SubsystemActionStep[], subsystem:
 
     if (!component || !methodDef) {
       // not enough info - could be that the user is actively editing the step
-      console.warn('[GENERATE-STEP-INVOCATION] Could not find component and/or method', component, methodDef)
+      console.warn("[GENERATE-STEP-INVOCATION] Could not find component and/or method", component, methodDef)
       return null
     }
 
     // Checks if we need to store the output of this step in a variable so later steps can reference it
     const outputRequired = steps.slice(i + 1).find((futureStep) => futureStep.params.find(p => p.arg.type === "reference-step-output" && p.arg.step === step.uuid))
-    let varDef = ''
+    let varDef = ""
     if (outputRequired) {
       // Store output in a final variable
       // Use the return type for clarity - `final var` isn't helpful when a lot of method names don't imply a particular return type
@@ -90,7 +90,7 @@ export function generateStepInvocations(steps: SubsystemActionStep[], subsystem:
           if (referencedParam) {
             return variableName((referencedParam.arg as PassthroughValueStepArgument).passthroughArgumentName)
           } else {
-            console.error('Undefined param on argument!', arg)
+            console.error("Undefined param on argument!", arg)
             return `/* couldn't find param ${ arg.paramName } on ${ referencedStep.methodName } */`
           }
         }
@@ -114,8 +114,8 @@ export function generateAction_future(action: SubsystemAction, subsystem: Subsys
 
   return codeBlock(
     `
-    private void ${ action.name && action.name.length > 0 ? methodName(action.name) : 'unnamedAction' }(${ paramDefs.join(", ") }) {
-${ stepInvocations.length > 0 ? stepInvocations.filter(i => !!i).map(invoke => indent(invoke, 6)).join("\n") : indent('// Add your custom logic here!', 6) }
+    private void ${ action.name && action.name.length > 0 ? methodName(action.name) : "unnamedAction" }(${ paramDefs.join(", ") }) {
+${ stepInvocations.length > 0 ? stepInvocations.filter(i => !!i).map(invoke => indent(invoke, 6)).join("\n") : indent("// Add your custom logic here!", 6) }
     }
     `,
   )

@@ -3,7 +3,7 @@ import { ComponentDefinition } from "../ComponentDefinition"
 export const QUADRATURE_ENCODER: ComponentDefinition = {
   id: "SAMPLE-quadratureencoder",
   name: "Quadrature Encoder",
-  description: 'Measures the rotation of a shaft. Velocities are measured accurately, but displacement is relative to when the encoder started measuring - either robot boot or the last call to Reset',
+  description: "Measures the rotation of a shaft. Velocities are measured accurately, but displacement is relative to when the encoder started measuring - either robot boot or the last call to Reset",
   fqn: "edu.wpi.first.wpilibj.Encoder",
   className: "Encoder",
   wpilibApiTypes: [],

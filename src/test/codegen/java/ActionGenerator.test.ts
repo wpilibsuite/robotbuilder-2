@@ -1,11 +1,11 @@
 import { Subsystem, SubsystemActionStep, SubsystemComponent } from "../../../bindings/Command"
 import { ComponentDefinition } from "../../../components/ComponentDefinition"
 import { generateAction_future } from "../../../codegen/java/ActionGenerator"
-import { test, expect } from 'vitest'
+import { test, expect } from "vitest"
 
 const GENERIC_ACTUATOR: ComponentDefinition = {
   name: "Generic Actuator",
-  description: '',
+  description: "",
   className: "GenericActuator",
   fqn: "com.example.GenericActuator",
   hints: ["action"],
@@ -42,7 +42,7 @@ const GENERIC_ACTUATOR: ComponentDefinition = {
 
 const GENERIC_SENSOR: ComponentDefinition = {
   name: "Generic Sensor",
-  description: '',
+  description: "",
   className: "GenericSensor",
   fqn: "com.example.GenericSensor",
   hints: ["state", "action"],
@@ -64,7 +64,7 @@ const GENERIC_SENSOR: ComponentDefinition = {
 
 const GENERIC_CONTROLLER: ComponentDefinition = {
   name: "Generic Controller",
-  description: '',
+  description: "",
   className: "GenericController",
   fqn: "com.example.GenericController",
   hints: ["action"],

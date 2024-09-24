@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { Divider, TextField } from "@mui/material"
 import { EditorCommandGroup, EditorStage } from "../CommandGroupEditor"
-import * as IR from '../../../bindings/ir'
+import * as IR from "../../../bindings/ir"
 import { findCommand, Project } from "../../../bindings/Project"
 import { AtomicCommand } from "../../../bindings/Command"
 
@@ -99,22 +99,22 @@ function CommandTileDetails({ command, stage, group, onChange, hide }: CommandTi
             }
 
             const togglePassthrough = () => {
-              console.log('Clicked on invocation param', invocationParam, ', current group param is', currentGroupParam)
+              console.log("Clicked on invocation param", invocationParam, ", current group param is", currentGroupParam)
               if (currentGroupParam) {
                 // toggle between hardcode and passthrough for now
                 if (invocationParam.hardcodedValue) {
-                  console.log('Making', invocationParam.name, 'pass through')
+                  console.log("Making", invocationParam.name, "pass through")
                   currentGroupParam.addPassthrough(invocationParam)
                   invocationParam.hardcodedValue = null
                 } else {
-                  console.log('Making', invocationParam.name, 'hardcoded')
+                  console.log("Making", invocationParam.name, "hardcoded")
                   // look, this is overkill, but somehow params aren't always removed when they should be when
                   // looking only at currentGroupCommand and this is enough to make sure it gets completely removed
                   group.stages.flatMap(stage => stage.group.params).map(groupParam => groupParam.removePassthrough(invocationParam))
                   invocationParam.hardcodedValue = "/*TODO*/"
                 }
               } else {
-                console.warn("Couldn't find param referencing", invocationParam, 'in', group.stages.flatMap(stage => stage.group.params))
+                console.warn("Couldn't find param referencing", invocationParam, "in", group.stages.flatMap(stage => stage.group.params))
               }
               onChange(stage)
             }
@@ -124,7 +124,7 @@ function CommandTileDetails({ command, stage, group, onChange, hide }: CommandTi
                 { invocationParam.name }
               </span>,
               <span key={ "value-type" } style={ { cursor: "pointer", margin: "0px 4px" } } onClick={ togglePassthrough }>
-                { invocationParam.hardcodedValue ? '</>' : '=>' }
+                { invocationParam.hardcodedValue ? "</>" : "=>" }
               </span>,
               invocationParam.hardcodedValue ? (
                 <TextField defaultValue={ invocationParam.hardcodedValue } onBlur={ (e) => {
@@ -138,20 +138,20 @@ function CommandTileDetails({ command, stage, group, onChange, hide }: CommandTi
 
                   const newGroupCommand = group.stages.flatMap(stage => stage.group.params).find(p => p.name === newCallerName)
                   if (!newGroupCommand) {
-                    console.log('No caller found with name', newCallerName)
+                    console.log("No caller found with name", newCallerName)
                     return // selected a param that doesn't exist? how did this happen?
                   }
 
                   const removed: boolean | boolean[] = group.stages.flatMap(stage => stage.group.params).map(groupParam => groupParam.removePassthrough(invocationParam))
                   // const removed = currentGroupParam.removePassthrough(invocationParam);
                   if (!removed.some(wasRemoved => wasRemoved)) {
-                    console.error('Invocation param', invocationParam, 'was not removed as a passthrough from group param', currentGroupParam)
+                    console.error("Invocation param", invocationParam, "was not removed as a passthrough from group param", currentGroupParam)
                   }
                   if (newGroupCommand.passesThroughTo(invocationParam)) {
                     // shouldn't happen...
-                    console.error(`Trying to add`, invocationParam, 'multiple times as a passthrough to', newGroupCommand)
+                    console.error(`Trying to add`, invocationParam, "multiple times as a passthrough to", newGroupCommand)
                   } else {
-                    console.log('Passing through', newGroupCommand, 'to invocation param', invocationParam)
+                    console.log("Passing through", newGroupCommand, "to invocation param", invocationParam)
                     newGroupCommand.addPassthrough(invocationParam)
                   }
                   onChange(stage)
@@ -190,7 +190,7 @@ export function CommandTile({ project, command, stage, group, entryType, onChang
   return (
     <div className="command-tile-wrapper">
       <div
-        className={ `command-tile ${ entryType }-group-entry ${ originalCommand instanceof AtomicCommand ? 'basic-command' : originalCommand instanceof IR.SeqGroup ? 'sequence-group' : originalCommand instanceof IR.ParGroup ? 'parallel-group' : 'unknown-type' }` }
+        className={ `command-tile ${ entryType }-group-entry ${ originalCommand instanceof AtomicCommand ? "basic-command" : originalCommand instanceof IR.SeqGroup ? "sequence-group" : originalCommand instanceof IR.ParGroup ? "parallel-group" : "unknown-type" }` }
         key={ command.command }
         onClick={ toggleDetails }>
         <div className={ "command-title" }>

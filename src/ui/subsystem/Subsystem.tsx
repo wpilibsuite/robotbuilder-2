@@ -38,8 +38,8 @@ import {
 import React, { CSSProperties, useEffect, useState } from "react"
 import Menu from "@mui/material/Menu"
 import MenuItem from "@mui/material/MenuItem"
-import SyntaxHighlighter from 'react-syntax-highlighter'
-import * as SyntaxHighlightStyles from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import SyntaxHighlighter from "react-syntax-highlighter"
+import * as SyntaxHighlightStyles from "react-syntax-highlighter/dist/esm/styles/hljs"
 import { ComponentDefinition, MethodDefinition, ParameterDefinition } from "../../components/ComponentDefinition"
 import { generateCommand } from "../../codegen/java/CommandGenerator"
 import { generateSubsystem } from "../../codegen/java/SubsystemGenerator"
@@ -86,8 +86,8 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
     //   color: '#eee',
     //   fontWeight: 'bold'
     // }
-    fontWeight: 'bold',
-    backgroundColor: '#eee',
+    fontWeight: "bold",
+    backgroundColor: "#eee",
   }
 
   const onComponentChange = () => {
@@ -338,11 +338,11 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
 
                               return (
                                 <li key={ index }>
-                                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <div style={{ display: "flex", alignItems: "center" }}>
                                     <span className="subsystem-component-name">
                                       { component.name }
                                     </span>
-                                    <ChevronRightSharp style={{ height: '16px' }}/>
+                                    <ChevronRightSharp style={{ height: "16px" }}/>
                                     <HelpableLabel description={ method.description }>
                                       <SubsystemActionName name={ method.name }/>
                                     </HelpableLabel> 
@@ -374,9 +374,9 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                                                       case "hardcode":
                                                         return (<span><code className="hardcoded-value">{ arg.hardcodedValue }</code></span>)
                                                       case "define-passthrough-value":
-                                                        return (<span style={{ color: '#aaa' }}>specified when the action runs</span>)
+                                                        return (<span style={{ color: "#aaa" }}>specified when the action runs</span>)
                                                       case "reference-passthrough-value":
-                                                        return 'is unknown'
+                                                        return "is unknown"
                                                       case "reference-step-output":
                                                       {
                                                         const referencedStep = action.steps.find(s => s.uuid === arg.step)
@@ -385,7 +385,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                                                         return (<span>result of <SubsystemActionName name={ referencedMethod.name }/> from <span className="subsystem-component-name">{ referencedComponent.name }</span></span>)
                                                       }
                                                       default:
-                                                        return 'is unknown'
+                                                        return "is unknown"
                                                     }
                                                   })() }
                                                   </td>
@@ -525,14 +525,14 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
           </AccordionDetails>
         </Accordion>
       </div>
-      <div style={{ height: '100%', overflow: 'scroll' }}>
+      <div style={{ height: "100%", overflow: "scroll" }}>
         <SyntaxHighlighter
           language="java"
           style={ SyntaxHighlightStyles.vs }
           showLineNumbers={ true }
           wrapLines={ true }
           lineProps={ (): { style: React.CSSProperties } => {
-            const style: CSSProperties = { display: "block", fontSize: '10pt' }
+            const style: CSSProperties = { display: "block", fontSize: "10pt" }
             return { style }
           } }
         >
@@ -594,7 +594,7 @@ function StepEditor({
   }
 
   useEffect(() => {
-    console.debug('[STEP-EDITOR] Rendering step editor for step using component', component, 'with method', methodName)
+    console.debug("[STEP-EDITOR] Rendering step editor for step using component", component, "with method", methodName)
   })
 
   return (
@@ -603,7 +603,7 @@ function StepEditor({
         Using
         <Select variant="standard"
                 style={ { margin: "0 8px" } }
-                value={ component?.uuid ?? '' }
+                value={ component?.uuid ?? "" }
                 onChange={ (e) => {
                   const componentUuid = e.target.value
                   const newComponent = subsystem.components.find(c => c.uuid === componentUuid)
@@ -625,7 +625,7 @@ function StepEditor({
         , call
         <Select variant="standard"
                 style={ { margin: "0 8px" } }
-                value={ methodName ?? '' }
+                value={ methodName ?? "" }
                 onChange={ (e) => onMethodChange(component, e.target.value, buildDummyParams(component, e.target.value)) }
         >
           {
@@ -667,7 +667,7 @@ function StepEditor({
                                      subsystem={ subsystem }
                                      previousSteps={ previousSteps }
                                      onParamChange={ (newParam) => {
-                                       console.log('Setting new params for step to', newParam)
+                                       console.log("Setting new params for step to", newParam)
                                        const existingParamIndex = params.indexOf(params.find(p => p.paramName === newParam.paramName))
 
                                        let newParams: StepParam[]
@@ -720,7 +720,7 @@ function StepParameterEditor({
           step: (others as ReferencePreviousOutputStepArgument).step,
         }
       default:
-        console.warn('Unsupported arg type!', argType)
+        console.warn("Unsupported arg type!", argType)
         return null
     }
   }
@@ -736,7 +736,7 @@ function StepParameterEditor({
                 value={ JSON.stringify(stepParam.arg) }
                 style={ { margin: "0 8px" } }
                 onChange={ (e) => {
-                  if (!e.target.value || e.target.value === '') {
+                  if (!e.target.value || e.target.value === "") {
                     return
                   }
 
@@ -759,7 +759,7 @@ function StepParameterEditor({
                   } else if (arg.type === "reference-step-output") {
                     arg.step = data.step
                   }
-                  console.debug('Created new param', newParam)
+                  console.debug("Created new param", newParam)
                   onParamChange(newParam)
                 } }
         >
@@ -803,7 +803,7 @@ function StepParameterEditor({
                   <span style={ {
                     textTransform: "uppercase",
                     color: "blue",
-                  } }>{ component.definition.methods.find(m => m.codeName === s.methodName)?.name ?? '[UNDEFINED METHOD]' }</span>&nbsp;
+                  } }>{ component.definition.methods.find(m => m.codeName === s.methodName)?.name ?? "[UNDEFINED METHOD]" }</span>&nbsp;
                     on&nbsp;
                   <span style={ { textTransform: "uppercase", color: "blue" } }>{ component.name }</span>&nbsp;
                   <span>in step { index + 1 }</span>&nbsp;
@@ -814,7 +814,7 @@ function StepParameterEditor({
           <Divider/>
           <MenuItem value={ JSON.stringify({
             type: "hardcode",
-            hardcodedValue: stepParam?.arg['hardcodedValue'] ?? 'SET ME',
+            hardcodedValue: stepParam?.arg["hardcodedValue"] ?? "SET ME",
           }) }>
               Hardcoded
           </MenuItem>
@@ -877,7 +877,7 @@ function CreateActionDialog({
 
   return (
     <Dialog open={ open }>
-      <DialogTitle>{ editedAction ? 'Edit' : 'Create' } Action</DialogTitle>
+      <DialogTitle>{ editedAction ? "Edit" : "Create" } Action</DialogTitle>
       <DialogContent>
         <Box style={ { display: "flex", flexDirection: "column", gap: "12px" } }>
           <TextField variant="standard"
@@ -886,14 +886,14 @@ function CreateActionDialog({
           <Box style={ { display: "flex", flexDirection: "column", gap: "22px" } }>
             {
               steps.map((step, index) => {
-                console.debug('[CREATE-ACTION-DIALOG] Rendering editor for step', index + 1, step)
+                console.debug("[CREATE-ACTION-DIALOG] Rendering editor for step", index + 1, step)
                 return <StepEditor key={ subsystem.uuid  }
                                    subsystem={ subsystem }
                                    component={ subsystem.components.find(c => c.uuid === step.component) }
                                    methodName={ step.methodName }
                                    previousSteps={ steps.slice(0, index) }
                                    onMethodChange={ (component, methodName, params) => {
-                                     console.debug('[CREATE-ACTION-DIALOG] Updating step', step, 'to match component:', component, 'method:', methodName, 'with params: ', params)
+                                     console.debug("[CREATE-ACTION-DIALOG] Updating step", step, "to match component:", component, "method:", methodName, "with params: ", params)
                                      step.component = component.uuid
                                      step.methodName = methodName
                                      step.params = params
@@ -979,7 +979,7 @@ function CreateStateDialog({
 
   return (
     <Dialog open={ open }>
-      <DialogTitle>{ editedState ? 'Edit ' : 'Create '} State</DialogTitle>
+      <DialogTitle>{ editedState ? "Edit " : "Create "} State</DialogTitle>
       <DialogContent>
         <TextField label="Name"
                    variant="standard"
@@ -992,7 +992,7 @@ function CreateStateDialog({
                     previousSteps={ [] }
                     componentMapper={ null }
                     methodMapper={ (methods) => {
-                      const nonVoidMethods = methods.filter(m => m.returns !== 'void')
+                      const nonVoidMethods = methods.filter(m => m.returns !== "void")
                       const booleansFirst = (a: MethodDefinition, b: MethodDefinition): number => {
                         return ((b.hints.includes("state") as unknown as number) - (a.hints.includes("state") as unknown as number)) ||
                           (((b.returns === "boolean") as unknown as number) - ((a.returns === "boolean") as unknown as number)) ||
@@ -1008,7 +1008,7 @@ function CreateStateDialog({
                     } }/>
         <SyntaxHighlighter language="java" style={ SyntaxHighlightStyles.vs }>
           { (() => {
-            const dummyState = new SubsystemState(stateName ?? 'Unnamed State', subsystem.uuid)
+            const dummyState = new SubsystemState(stateName ?? "Unnamed State", subsystem.uuid)
             dummyState.step = new SubsystemActionStep({
               component: stateComponent?.uuid,
               methodName: stateMethod,
@@ -1070,7 +1070,7 @@ class NewCommandData {
 function ActionInvocationEditor(param: Param, action: SubsystemAction, params: ActionParamCallOption[], setParams: (params: ActionParamCallOption[]) => void) {
   let hardCodedValue = null
   const existingInvocation: ActionParamCallOption | undefined = params.find(p => p.param === param.uuid)
-  console.debug('Rendering controls for existing argument invocation:', existingInvocation)
+  console.debug("Rendering controls for existing argument invocation:", existingInvocation)
 
   return (
     [
@@ -1115,7 +1115,7 @@ function ActionInvocationEditor(param: Param, action: SubsystemAction, params: A
                      const newParam = ActionParamCallOption.fromObjects(action, param, "hardcode", hardCodedValue)
                      const existingParam = params.find(p => p.param === param.uuid)
 
-                     console.debug('Replacing existing param', existingParam, 'with new param', newParam)
+                     console.debug("Replacing existing param", existingParam, "with new param", newParam)
 
                      params.splice(params.indexOf(existingParam), 1, newParam)
                      setParams([...params])
@@ -1181,7 +1181,7 @@ function CreateCommandDialog({
               })
             }
             <Divider/>
-            <MenuItem value={ "" } key={ 'none' }>
+            <MenuItem value={ "" } key={ "none" }>
               None
             </MenuItem>
           </Select>
@@ -1230,7 +1230,7 @@ function CreateCommandDialog({
           <Select className="state-select"
                   variant="standard"
                   onChange={ (e) => {
-                    console.debug('Setting end condition to', e.target.value)
+                    console.debug("Setting end condition to", e.target.value)
                     setEndCondition(e.target.value)
                   } }
                   defaultValue={ editedCommand?.endCondition || "forever" }>
@@ -1323,7 +1323,7 @@ function RenameSubsystemDialog({
   let name = subsystem?.name
 
   if (!subsystem) {
-    console.warn('No subsystem given?')
+    console.warn("No subsystem given?")
     return null
   }
 
@@ -1383,7 +1383,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" } alt={ "" } title={ "DRIVETRAIN IMAGE" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-single-jointed-arm" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-single-jointed-arm" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip title={ "A rotating arm with a single pivot point" }>
             <h3>Single-Jointed Arm</h3>
@@ -1391,7 +1391,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-double-jointed-arm" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-double-jointed-arm" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip title={ "A rotating arm with two pivot points" }>
             <h3>Double-Jointed Arm</h3>
@@ -1399,7 +1399,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-wrist" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-wrist" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip
             title={ "A wrist at the end of an arm, or a low-mass pivoting mechanism that doesn't require sophisticated controls like an arm would" }>
@@ -1408,7 +1408,7 @@ function NewSubsystemsPane({ acceptNewSubsystem }: { acceptNewSubsystem: (Subsys
           <img src={ "logo192.png" }/>
         </Box>
       </Button>
-      <Button id="subsystem-button-elevator" onClick={ () => alert('Not implemented yet') }>
+      <Button id="subsystem-button-elevator" onClick={ () => alert("Not implemented yet") }>
         <Box>
           <Tooltip
             title={ "A subsystem that has a linear extension and retraction. This could be vertical, in the case of a traditional elevator, or angled, or even horizontal" }
@@ -1453,7 +1453,7 @@ export function Subsystems({ project }: { project: Project }) {
   const handleContextMenu = (subsystem: Subsystem) => {
     return (event: React.MouseEvent) => {
       event.preventDefault()
-      console.log('handleContextMenu(', subsystem, ')')
+      console.log("handleContextMenu(", subsystem, ")")
       setContextMenuSubsystem(subsystem)
       setContextMenu(
         contextMenu == null ?
@@ -1470,14 +1470,14 @@ export function Subsystems({ project }: { project: Project }) {
 
   const [showRenameDialog, setShowRenameDialog] = useState(false)
   const renameSubsystem = (subsystem: Subsystem) => {
-    console.log('RENAME', subsystem)
+    console.log("RENAME", subsystem)
     setContextMenuSubsystem(subsystem)
     setShowRenameDialog(true)
     handleClose()
   }
 
   const deleteSubsystem = (subsystem: Subsystem) => {
-    console.log('DELETE', subsystem)
+    console.log("DELETE", subsystem)
     const index = project.subsystems.indexOf(subsystem)
     project.subsystems = project.subsystems.filter(s => s !== subsystem)
     if (currentSubsystem === subsystem) {

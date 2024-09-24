@@ -3,7 +3,7 @@ import { ComponentDefinition } from "../ComponentDefinition"
 export const CAN_TALON_FX: ComponentDefinition = {
   id: "SAMPLE-cantalonfx",
   name: "Talon FX (CAN)",
-  description: 'A CTRE-manufactured Talon FX controlled via a CAN bus',
+  description: "A CTRE-manufactured Talon FX controlled via a CAN bus",
   fqn: "com.ctre.phoenix.motorcontrol.can.WPI_TalonFX",
   className: "WPI_TalonFX",
   type: "actuator",

@@ -22,7 +22,7 @@ export function ComponentColumn(props: ComponentColumnProps) {
           props.components.map(component => {
             return <ComponentPanel key={ component.uuid } component={ component } { ...props }/>
           })
-          : <div style={{ textTransform: 'uppercase', padding: '8px', alignContent: 'center', justifyContent:'center', display: 'flex', width: '100%' }}>Nothing here</div>
+          : <div style={{ textTransform: "uppercase", padding: "8px", alignContent: "center", justifyContent:"center", display: "flex", width: "100%" }}>Nothing here</div>
       }
     </div>
   )
@@ -49,7 +49,7 @@ function ComponentPanel(props: ComponentPanelProps) {
         <AccordionSummary className="component-accordion-summary">
           <div className="component-panel-header">
             <span>{ name }</span>
-            <span style={{ fontWeight: 'initial' }}>
+            <span style={{ fontWeight: "initial" }}>
               <HelpableLabel description={ component.definition.description }>
                 { component.definition.name }
               </HelpableLabel>

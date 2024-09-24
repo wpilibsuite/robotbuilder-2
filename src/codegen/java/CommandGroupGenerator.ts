@@ -1,6 +1,6 @@
 import { findCommand, Project } from "../../bindings/Project"
 import { indent, methodName, prettifySnippet, supplierFunctionType, unindent, variableName } from "./util"
-import * as IR from '../../bindings/ir'
+import * as IR from "../../bindings/ir"
 import { ParamPlaceholder } from "../../bindings/ir"
 
 const flattenCommands = (allCommands: IR.CommandInvocation[], group: IR.Group) => {
@@ -27,30 +27,30 @@ function findParamType(invokedCommands: IR.CommandInvocation[], p: ParamPlacehol
         throw new Error(`Unknown invocation type ${ realParam.invocationType }`)
     }
   }
-  return '/* unknown */'
+  return "/* unknown */"
 }
 
 export function commandMethod(name: string, command: IR.Group, project: Project): string {
-  console.log('[COMMAND-METHOD] Generating factory method for command group', command)
+  console.log("[COMMAND-METHOD] Generating factory method for command group", command)
   const invokedCommands = flattenCommands([], command)
 
   const params = command.params.filter(p => p.appearsOnFactory()).map(p => {
     const paramType = findParamType(invokedCommands, p, project)
     return `${ paramType } ${ variableName(p.name) }`
-  }).join(', ')
+  }).join(", ")
 
   const stageLine = (line: string, lineno: number): string => {
     if (lineno === 0) {
       return line
     } else {
-      const baseIndentation = 6 + 'return '.length
+      const baseIndentation = 6 + "return ".length
       return indent(line, baseIndentation + 2)
     }
   }
 
-  let body = '/* Add some commands! */'
+  let body = "/* Add some commands! */"
   if (command.commands.length > 0) {
-    body = 'return ' + commandBody(command, command, project).split('\n').map(stageLine).join('\n') + `.withName("${ name }")`
+    body = "return " + commandBody(command, command, project).split("\n").map(stageLine).join("\n") + `.withName("${ name }")`
   }
 
   return prettifySnippet(unindent(
@@ -80,7 +80,7 @@ function decorators(decorators: IR.Decorator[]): string {
         // unsupported
         return null
     }
-  }).filter(d => !!d).join('.')
+  }).filter(d => !!d).join(".")
 }
 
 function generateOwnerRef(command: IR.CommandInvocation, project: Project, forMainRobot: boolean = true): string {
@@ -91,18 +91,18 @@ function generateOwnerRef(command: IR.CommandInvocation, project: Project, forMa
       return `${ variableName(subsystem.name) }.`
     } else {
       // probably a command group that only uses commands that use a single subsystem (eg drive and then stop)
-      return ''
+      return ""
     }
   } else {
     // defined in the same scope, no owner necessary
-    return ''
+    return ""
   }
 }
 
 function commandBody(topLevelGroup: IR.Group, command: IR.Invocation, project: Project): string {
   const decoratorCalls = decorators(command.decorators)
 
-  let base = ''
+  let base = ""
   if (command instanceof IR.CommandInvocation) {
     const ownerRef = generateOwnerRef(command, project)
     const params = command.params.map(p => {
@@ -115,13 +115,13 @@ function commandBody(topLevelGroup: IR.Group, command: IR.Invocation, project: P
           return variableName(args[0].name)
         } else {
           // This shouldn't happen, but just in case the validation checks fall through...
-          return `/* ${ args.length } passthroughs to ${ p.name }! ${ args.map(a => a.name).join(' and ') } */`
+          return `/* ${ args.length } passthroughs to ${ p.name }! ${ args.map(a => a.name).join(" and ") } */`
         }
       }
-    }).join(', ')
+    }).join(", ")
 
     const calledCommand = findCommand(project, command.command)
-    base = `${ ownerRef }${ methodName(calledCommand?.name ?? 'unknown command') }(${ params })`
+    base = `${ ownerRef }${ methodName(calledCommand?.name ?? "unknown command") }(${ params })`
   } else if (command instanceof IR.SeqGroup) {
     base = seqBody(topLevelGroup, command, project)
   } else if (command instanceof IR.ParGroup) {
@@ -129,7 +129,7 @@ function commandBody(topLevelGroup: IR.Group, command: IR.Invocation, project: P
   }
 
   if (decoratorCalls) {
-    return base + '.' + decoratorCalls
+    return base + "." + decoratorCalls
   } else {
     return base
   }
@@ -138,11 +138,11 @@ function commandBody(topLevelGroup: IR.Group, command: IR.Invocation, project: P
 function seqBody(topLevelGroup: IR.Group, group: IR.SeqGroup, project: Project): string {
   switch (group.commands.length) {
     case 0:
-      return '(/* empty group */)'
+      return "(/* empty group */)"
     case 1:
       return commandBody(topLevelGroup, group.commands[0], project)
     default:
-      return `${ commandBody(topLevelGroup, group.commands[0], project) }${ group.commands.slice(1).map(c => commandBody(topLevelGroup, c, project)).map(c => `\n.andThen(${ c })`).join('') }`
+      return `${ commandBody(topLevelGroup, group.commands[0], project) }${ group.commands.slice(1).map(c => commandBody(topLevelGroup, c, project)).map(c => `\n.andThen(${ c })`).join("") }`
   }
 }
 
@@ -166,7 +166,7 @@ function findSeedCommand(group: IR.ParGroup): IR.Invocation {
 function parBody(topLevelGroup: IR.Group, group: IR.ParGroup, project: Project): string {
   switch (group.commands.length) {
     case 0:
-      return '(/* empty group */)'
+      return "(/* empty group */)"
     case 1:
       return commandBody(topLevelGroup, group.commands[0], project)
     default:
@@ -186,7 +186,7 @@ function parBody(topLevelGroup: IR.Group, group: IR.ParGroup, project: Project):
 
       const seedCommand = findSeedCommand(group)
 
-      return `${ commandBody(topLevelGroup, seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(c => c !== seedCommand).map(c => commandBody(topLevelGroup, c, project)).join(', ') })`
+      return `${ commandBody(topLevelGroup, seedCommand, project) }.${ decoratorMethod }(${ group.commands.filter(c => c !== seedCommand).map(c => commandBody(topLevelGroup, c, project)).join(", ") })`
     }
   }
 }

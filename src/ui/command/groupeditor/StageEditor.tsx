@@ -44,19 +44,19 @@ export function StageEditor({ sequence, stage, project, onDelete, onChange }: St
         {
           stage.group.commands.length > 1 ?
             <>
-              <ReactSVG src={ 'icons/parallel-group-all-commands.svg' }
+              <ReactSVG src={ "icons/parallel-group-all-commands.svg" }
                         style={ {
                           cursor: "pointer",
-                          transform: `scale(${ stage.group.endCondition === "all" ? '112.5%' : '100%' })`,
+                          transform: `scale(${ stage.group.endCondition === "all" ? "112.5%" : "100%" })`,
                         } }
                         onClick={ () => {
                           stage.group.endCondition = "all"
                           onChange(stage)
                         } }/>
-              <ReactSVG src={ 'icons/parallel-group-any-commands.svg' }
+              <ReactSVG src={ "icons/parallel-group-any-commands.svg" }
                         style={ {
                           cursor: "pointer",
-                          transform: `scale(${ stage.group.endCondition === "any" ? '112.5%' : '100%' })`,
+                          transform: `scale(${ stage.group.endCondition === "any" ? "112.5%" : "100%" })`,
                         } }
                         onClick={ () => {
                           stage.group.endCondition = "any"

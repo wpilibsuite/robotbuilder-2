@@ -111,37 +111,37 @@ function generateButtonBindings(project: Project, controller: Controller): strin
 
     const [whenPressedOwner, whenPressed] = findCommand(project, button.whenPressed)
     if (whenPressed) {
-      const scope = whenPressedOwner === project ? 'this' : methodName((whenPressedOwner as Subsystem).name)
+      const scope = whenPressedOwner === project ? "this" : methodName((whenPressedOwner as Subsystem).name)
       commands.push(`${ methodName(controller.name) }.${ buttonName }().onTrue(${ scope }.${ methodName(whenPressed.name) }());`)
     }
 
     const [whenReleasedOwner, whenReleased] = findCommand(project, button.whenReleased)
     if (whenReleased) {
-      const scope = whenReleasedOwner === project ? 'this' : methodName((whenReleasedOwner as Subsystem).name)
+      const scope = whenReleasedOwner === project ? "this" : methodName((whenReleasedOwner as Subsystem).name)
       commands.push(`${ methodName(controller.name) }.${ buttonName }().onFalse(${ scope }.${ methodName(whenReleased.name) }());`)
     }
 
     const [whileHeldOwner, whileHeld] = findCommand(project, button.whileHeld)
     if (whileHeld) {
-      const scope = whileHeldOwner === project ? 'this' : methodName((whileHeldOwner as Subsystem).name)
+      const scope = whileHeldOwner === project ? "this" : methodName((whileHeldOwner as Subsystem).name)
       commands.push(`${ methodName(controller.name) }.${ buttonName }().whileTrue(${ scope }.${ methodName(whileHeld.name) }());`)
     }
 
     const [whileReleasedOwner, whileReleased] = findCommand(project, button.whileReleased)
     if (whileReleased) {
-      const scope = whileReleasedOwner === project ? 'this' : methodName((whileReleasedOwner as Subsystem).name)
+      const scope = whileReleasedOwner === project ? "this" : methodName((whileReleasedOwner as Subsystem).name)
       commands.push(`${ methodName(controller.name) }.${ buttonName }().whileFalse(${ scope }.${ methodName(whileReleased.name) }());`)
     }
 
     const [toggleOnPressOwner, toggleOnPress] = findCommand(project, button.toggleOnPress)
     if (toggleOnPress) {
-      const scope = toggleOnPressOwner === project ? 'this' : methodName((toggleOnPressOwner as Subsystem).name)
+      const scope = toggleOnPressOwner === project ? "this" : methodName((toggleOnPressOwner as Subsystem).name)
       commands.push(`${ methodName(controller.name) }.${ buttonName }().toggleOnTrue(${ scope }.${ methodName(toggleOnPress.name) }());`)
     }
 
     const [toggleOnReleaseOwner, toggleOnRelease] = findCommand(project, button.toggleOnRelease)
     if (toggleOnRelease) {
-      const scope = toggleOnReleaseOwner === project ? 'this' : methodName((toggleOnReleaseOwner as Subsystem).name)
+      const scope = toggleOnReleaseOwner === project ? "this" : methodName((toggleOnReleaseOwner as Subsystem).name)
       commands.push(`${ methodName(controller.name) }.${ buttonName }().toggleOnFalse(${ scope }.${ methodName(toggleOnRelease.name) }());`)
     }
 

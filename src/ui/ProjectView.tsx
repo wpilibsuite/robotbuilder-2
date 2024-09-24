@@ -2,7 +2,7 @@ import { Box, Button, Tab, Tabs, TextField } from "@mui/material"
 import { Controllers } from "./controller/Controller"
 import { Subsystems } from "./subsystem/Subsystem"
 import { Commands } from "./command/Commands"
-import React, { useState } from 'react'
+import React, { useState } from "react"
 import { makeNewProject, Project } from "../bindings/Project"
 import $ from "jquery"
 import {
@@ -23,7 +23,7 @@ const saveProject = (project: Project) => {
   const savedProject = JSON.stringify(project, null, 2)
   console.log(savedProject)
 
-  const link = document.getElementById('download-link')
+  const link = document.getElementById("download-link")
   const fileName = `${ project.name }.json`
   const file = new Blob([savedProject], { type: "text/plain" })
   link.setAttribute("href", window.URL.createObjectURL(file))
@@ -39,13 +39,13 @@ function mapToClass<T>(data: object, clazz): T {
 
 function loadCommand(command: AtomicCommand | ParGroup | SeqGroup): AtomicCommand | ParGroup | SeqGroup {
   switch (command.type) {
-    case 'Atomic':
+    case "Atomic":
       return mapToClass(command, AtomicCommand)
-    case 'Parallel':
+    case "Parallel":
     {
       const group: ParGroup = mapToClass(command, ParGroup)
       group.commands = group.commands.map(data => {
-        if (data.type === 'Parallel' || data.type === 'Sequence') {
+        if (data.type === "Parallel" || data.type === "Sequence") {
           return loadCommand(data) as unknown as Group
         } else {
           // invocation
@@ -54,11 +54,11 @@ function loadCommand(command: AtomicCommand | ParGroup | SeqGroup): AtomicComman
       })
       return group
     }
-    case 'Sequence':
+    case "Sequence":
     {
       const seq: SeqGroup = mapToClass(command, SeqGroup)
       seq.commands = seq.commands.map(data => {
-        if (data.type === 'Parallel' || data.type === 'Sequence') {
+        if (data.type === "Parallel" || data.type === "Sequence") {
           return loadCommand(data)
         } else {
           // invocation
@@ -73,7 +73,7 @@ function loadCommand(command: AtomicCommand | ParGroup | SeqGroup): AtomicComman
 }
 
 const loadProject = (file: File): Promise<Project> => {
-  console.log('[LOAD-PROJECT] loadProject(', file, ')')
+  console.log("[LOAD-PROJECT] loadProject(", file, ")")
   return file.text()
     .then(text => {
       console.log(text)
@@ -94,7 +94,7 @@ const loadProject = (file: File): Promise<Project> => {
       })
       // Controllers don't have classes, just a shape - so no prototype assignment is necessary
 
-      console.log('[LOAD-PROJECT]', project)
+      console.log("[LOAD-PROJECT]", project)
       return project
     })
 }
@@ -125,7 +125,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
   const [, sn] = useState(project.name)
 
   const setProjectName = (name: string) => {
-    console.debug('Setting project name to', name)
+    console.debug("Setting project name to", name)
     sn(name)
     project.name = name
   }
@@ -171,7 +171,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
                  setProject(p)
                  setProjectName(p.name)
                }) }/>
-        <Button onClick={ () => $('#load-project').click() }>Load</Button>
+        <Button onClick={ () => $("#load-project").click() }>Load</Button>
 
         <Button onClick={ () => {
           // Create a new barebones project

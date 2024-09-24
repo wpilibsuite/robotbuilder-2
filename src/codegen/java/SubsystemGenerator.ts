@@ -10,18 +10,18 @@ import { COMPONENT_DEFINITIONS } from "../../components/ComponentDefinitions"
 
 function propertyToValue(property: Property, value, subsystem: Subsystem): string {
   const type = property.type
-  console.debug('propertyToValue(', type, ', ', value, ', ', subsystem, ')')
-  if (!type) return 'null'
+  console.debug("propertyToValue(", type, ", ", value, ", ", subsystem, ")")
+  if (!type) return "null"
 
-  if (value === null || value === undefined || value === '') {
+  if (value === null || value === undefined || value === "") {
     if (property.defaultValue !== undefined) {
       return property.defaultValue
     }
-    console.warn('No value provided!')
+    console.warn("No value provided!")
     return `/* You forgot to set a value for the ${ property.name }! */`
   }
 
-  if (typeof value === 'string' && value.length === 36) {
+  if (typeof value === "string" && value.length === 36) {
     // might be a UUID for another component
     const maybeComp: SubsystemComponent = subsystem.components.find(c => c.uuid === value)
     if (maybeComp) {
@@ -63,7 +63,7 @@ function generatePropertySetting(subsystem: Subsystem, component: SubsystemCompo
     if (propsForSetter.length === 0 ||
       propsForSetter.filter(p => Object.hasOwn(component.properties, p.codeName)).length === 0) {
       // No configured properties for this, kick it out
-      console.debug('Not generating property setter for', setterName, 'because no configured properties exist that use it.')
+      console.debug("Not generating property setter for", setterName, "because no configured properties exist that use it.")
       delete groupedProperties[setterName]
     }
   })
@@ -143,7 +143,7 @@ ${
         6,
       )
     } else {
-      return ''
+      return ""
     }
   })()
 }
