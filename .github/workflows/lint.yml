@@ -1,0 +1,23 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # Install asdf version manager to reuse the versions declared in .tool-versions
+      - name: Install asdf and tools
+        uses: asdf-vm/actions/install@v3
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Lint
+        run: npx eslint
