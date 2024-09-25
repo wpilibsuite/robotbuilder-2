@@ -53,6 +53,8 @@ import { ChevronRightSharp } from "@mui/icons-material"
 import SubsystemName from "../SubsystemName"
 import SubsystemActionName from "../SubsystemActionName"
 import SubsystemStateName from "../SubsystemStateName"
+import { ROBOT_CLASS_PATH, className } from "../../codegen/java/util"
+import { generateRobotClass } from "../../codegen/java/RobotGenerator"
 
 
 type BasicOpts = {
@@ -69,7 +71,11 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
   const [states, setStates] = useState(subsystem.states)
   const [commands, setCommands] = useState(subsystem.commands)
 
-  useEffect(() => setGeneratedCode(generateSubsystem(subsystem, project)), [subsystem, project, sensors, actuators, controls, actions, states, commands])
+  useEffect(() => {
+    setGeneratedCode(generateSubsystem(subsystem, project))
+    project.generatedFiles.find(f => f.name === ROBOT_CLASS_PATH).contents = generateRobotClass(project)
+  }, [subsystem, project, sensors, actuators, controls, actions, states, commands])
+
   useEffect(() => {
     setSensors(subsystem.getSensors())
     setActuators(subsystem.getActuators())
@@ -92,6 +98,7 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
 
   const onComponentChange = () => {
     setGeneratedCode(generateSubsystem(subsystem, project))
+    project.generatedFiles.find(f => f.name === ROBOT_CLASS_PATH).contents = generateRobotClass(project)
   }
 
   const onComponentAdd = (componentDef: ComponentDefinition) => {
@@ -1480,6 +1487,7 @@ export function Subsystems({ project }: { project: Project }) {
     console.log("DELETE", subsystem)
     const index = project.subsystems.indexOf(subsystem)
     project.subsystems = project.subsystems.filter(s => s !== subsystem)
+    project.generatedFiles = project.generatedFiles.filter(f => f.name !== `src/main/java/frc/robot/subsystems/${ className(subsystem.name) }.java`)
     if (currentSubsystem === subsystem) {
       // Deleted the selected subsystem - select the tab to the left, or, if it was the leftmost one already,
       // select the new leftmost subsystem
@@ -1520,6 +1528,7 @@ export function Subsystems({ project }: { project: Project }) {
       <RenameSubsystemDialog subsystem={ contextMenuSubsystem }
                              onCancel={ () => setShowRenameDialog(false) }
                              onAccept={ (name: string) => {
+                               project.generatedFiles.find(f => f.name === `src/main/java/frc/robot/subsystems/${ className(contextMenuSubsystem.name) }.java`).name = `src/main/java/frc/robot/subsystems/${ className(name) }.java`
                                contextMenuSubsystem.name = name
                                setCurrentSubsystem(currentSubsystem)
                                setShowRenameDialog(false)
@@ -1529,6 +1538,12 @@ export function Subsystems({ project }: { project: Project }) {
         showSubsystemCreate || !currentSubsystem ?
           <NewSubsystemsPane acceptNewSubsystem={ (subsystem) => {
             project.subsystems.push(subsystem)
+            project.generatedFiles.push({
+              name: `src/main/java/frc/robot/subsystems/${ className(subsystem.name) }.java`,
+              description: `The ${ subsystem.name } subsystem`,
+              contents: generateSubsystem(subsystem, project),
+            })
+            project.generatedFiles.find(f => f.name === ROBOT_CLASS_PATH).contents = generateRobotClass(project)
             setCurrentSubsystem(subsystem)
             setShowSubsystemCreate(false)
           }

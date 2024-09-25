@@ -37,8 +37,13 @@ html, body {
 
     &.Mui-selected {
       color: white;
-      border-color: white;
+      border-top: white solid 2px;
+      border-bottom: white solid 2px;
     }
+  }
+
+  .MuiTabs-indicator {
+    background-color: white;
   }
 
   .project-name-input {
@@ -674,4 +679,9 @@ div.gutter {
       }
     }
   }
+}
+
+.code-panel-divider {
+  width: 0.125em;
+  background: #ccc;
 }

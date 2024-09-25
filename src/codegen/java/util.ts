@@ -1,5 +1,13 @@
 import parsers from "prettier-plugin-java"
 import prettier from "prettier"
+import { Subsystem } from "../../bindings/Command"
+
+export const MAIN_CLASS_PATH = "src/main/java/frc/robot/Main.java"
+export const ROBOT_CLASS_PATH = "src/main/java/frc/robot/Robot.java"
+
+export const subsystemPath = (subsystem: Subsystem): string => {
+  return `src/main/java/frc/robot/subsystems/${ subsystem.name }`
+}
 
 /**
  * Removes punctuation from a string, replacing them with the given replacement string (defaults to a single space char)
