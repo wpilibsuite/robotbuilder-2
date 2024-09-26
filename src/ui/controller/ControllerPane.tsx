@@ -23,6 +23,8 @@ import React, { useState } from "react"
 import $ from "jquery"
 import { ReactSVG } from "react-svg"
 import { Project } from "../../bindings/Project"
+import { ROBOT_CLASS_PATH } from "../../codegen/java/util"
+import { generateRobotClass } from "../../codegen/java/RobotGenerator"
 
 export type ControllerPaneProps = {
   project: Project;
@@ -97,6 +99,7 @@ type ButtonBindingDialogProps = {
 function ButtonBindingDialog({ button, project }: ButtonBindingDialogProps) {
   const updateButtonCommand = (bindingType: string, uuid: string) => {
     button[bindingType] = uuid
+    project.generatedFiles.find(f => f.name == ROBOT_CLASS_PATH).contents = generateRobotClass(project)
   }
 
   return (

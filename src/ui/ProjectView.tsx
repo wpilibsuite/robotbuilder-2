@@ -14,6 +14,7 @@ import {
 } from "../bindings/Command"
 import { CommandInvocation, Group, ParGroup, SeqGroup } from "../bindings/ir"
 import { Robot } from "./robot/Robot"
+import { generateReadme } from "../bundled_files/README.md"
 
 type ProjectProps = {
   initialProject: Project;
@@ -134,6 +135,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
     if (!newName || newName.length < 1) return // blank name, ignore the change
 
     setProjectName(newName)
+    project.generatedFiles.find(f => f.name === "README.md").contents = generateReadme(project)
   }
 
   return (
