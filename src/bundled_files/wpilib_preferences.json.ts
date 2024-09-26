@@ -1,4 +1,4 @@
-import { unindent } from "../codegen/java/util";
+import { unindent } from "../codegen/java/util"
 
 export const BundledPreferences = unindent(`
   {

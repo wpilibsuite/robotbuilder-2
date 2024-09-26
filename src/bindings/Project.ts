@@ -31,17 +31,17 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
     {
       name: ".vscode/launch.json",
       description: "",
-      contents: BundledLaunchJson
+      contents: BundledLaunchJson,
     },
     {
       name: ".vscode/settings.json",
       description: "",
-      contents: BundledSettingsJson
+      contents: BundledSettingsJson,
     },
     {
       name: ".wpilib/wpilib_preferences.json",
       description: "",
-      contents: BundledPreferences
+      contents: BundledPreferences,
     },
     {
       name: ".gitignore",
@@ -76,7 +76,7 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
     {
       name: "vendordeps/WPILibNewCommands.json",
       description: "Vendordep file for the V2 command framework",
-      contents: BundledWpilibCommandsV2
+      contents: BundledWpilibCommandsV2,
     },
   ]
 }

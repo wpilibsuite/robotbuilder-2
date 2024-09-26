@@ -102,8 +102,8 @@ const loadProject = (file: File): Promise<Project> => {
 }
 
 const exportProject = async (project: Project) => {
-  const zipFileWriter = new BlobWriter();
-  const zipWriter = new ZipWriter(zipFileWriter);
+  const zipFileWriter = new BlobWriter()
+  const zipWriter = new ZipWriter(zipFileWriter)
 
   await Promise.all(project.generatedFiles.map(file => {
     return zipWriter.add(file.name, new TextReader(file.contents))
