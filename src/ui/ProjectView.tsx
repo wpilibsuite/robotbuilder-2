@@ -102,8 +102,6 @@ const loadProject = (file: File): Promise<Project> => {
 }
 
 const exportProject = async (project: Project) => {
-  const dir = `/Users/sam/code/robotbuilder2-generated-code/${ project.name }`
-
   const zipFileWriter = new BlobWriter();
   const zipWriter = new ZipWriter(zipFileWriter);
 
