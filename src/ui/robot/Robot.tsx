@@ -75,7 +75,7 @@ export function Robot({ project }: { project: Project }) {
                           console.log("  All files:", project.generatedFiles.map(f => f.name))
                           const file = project.generatedFiles.find(file => file.name === id)
                           console.log("  File:", file)
-                          if (file && file.contents) {
+                          if (file && !file.hidden && file.contents) {
                             setSelectedFile(file)
                           }
                         } }>
