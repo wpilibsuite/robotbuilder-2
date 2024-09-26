@@ -10,7 +10,10 @@ export function generateRobotClass(project: Project): string {
     `
     package frc.robot;
 
+    import edu.wpi.first.epilogue.Epilogue;
     import edu.wpi.first.epilogue.Logged;
+    import edu.wpi.first.epilogue.NotLogged;
+    import edu.wpi.first.wpilibj.RuntimeType;
     import edu.wpi.first.wpilibj.TimedRobot;
     import edu.wpi.first.wpilibj2.command.Command;
     import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -36,7 +39,7 @@ ${
         Epilogue.configure(config -> {
           // TODO: Add a UI for customizing epilogue
 
-          if (isRio1()) {
+          if (getRuntimeType() == RuntimeType.kRoboRIO) {
             // Only log to networktables on a roboRIO 1 because of limited disk space.
             // If the disk fills up, there's a real risk of getting locked out of the rio!
             config.dataLogger = new NTDataLogger(NetworkTablesInstance.getDefault());

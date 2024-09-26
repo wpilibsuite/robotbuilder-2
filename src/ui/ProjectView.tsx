@@ -15,6 +15,7 @@ import {
 import { CommandInvocation, Group, ParGroup, SeqGroup } from "../bindings/ir"
 import { Robot } from "./robot/Robot"
 import { generateReadme } from "../bundled_files/README.md"
+import { BlobWriter, TextReader, ZipWriter } from "@zip.js/zip.js"
 
 type ProjectProps = {
   initialProject: Project;
@@ -100,6 +101,25 @@ const loadProject = (file: File): Promise<Project> => {
     })
 }
 
+const exportProject = async (project: Project) => {
+  const zipFileWriter = new BlobWriter()
+  const zipWriter = new ZipWriter(zipFileWriter)
+
+  await Promise.all(project.generatedFiles.map(file => {
+    return zipWriter.add(file.name, new TextReader(file.contents))
+  }))
+
+  await zipWriter.close()
+  const zipFile = await zipFileWriter.getData()
+
+  const link = document.createElement("a")
+  const objurl = URL.createObjectURL(zipFile)
+
+  link.download = `${ project.name }.zip`
+  link.href = objurl
+  link.click()
+}
+
 export function ProjectView({ initialProject }: ProjectProps) {
   type Tab = "robot" | "controllers" | "subsystems" | "commands";
   const defaultTab: Tab = "subsystems"
@@ -164,7 +184,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
         <a style={ { display: "none" } } href="#" id="download-link"/>
         <Button onClick={ () => saveProject(project) }>Save</Button>
 
-        <Button>Export</Button>
+        <Button onClick={ () => exportProject(project) }>Export</Button>
 
         <input style={ { display: "none" } }
                type="file"

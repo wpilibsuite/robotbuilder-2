@@ -4,9 +4,12 @@ import { v4 as uuidV4 } from "uuid"
 import * as IR from "../bindings/ir"
 import { BundledMain } from "../bundled_files/Main.java"
 import { BundledGitignore } from "../bundled_files/.gitignore"
+import { BundledPreferences } from "../bundled_files/wpilib_preferences.json"
 import { generateRobotClass } from "../codegen/java/RobotGenerator"
 import { BundledGradleBuild } from "../bundled_files/build.gradle"
 import { generateReadme } from "../bundled_files/README.md"
+import { BundledLaunchJson, BundledSettingsJson } from "../bundled_files/vscode"
+import { BundledWpilibCommandsV2 } from "../bundled_files/vendordeps"
 
 export type GeneratedFile = {
   name: string
@@ -25,6 +28,21 @@ export type Project = {
 
 const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
   return [
+    {
+      name: ".vscode/launch.json",
+      description: "",
+      contents: BundledLaunchJson,
+    },
+    {
+      name: ".vscode/settings.json",
+      description: "",
+      contents: BundledSettingsJson,
+    },
+    {
+      name: ".wpilib/wpilib_preferences.json",
+      description: "",
+      contents: BundledPreferences,
+    },
     {
       name: ".gitignore",
       description: "",
@@ -54,6 +72,11 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
       name: "src/main/java/frc/robot/Robot.java",
       description: "The main robot class",
       contents: null,
+    },
+    {
+      name: "vendordeps/WPILibNewCommands.json",
+      description: "Vendordep file for the V2 command framework",
+      contents: BundledWpilibCommandsV2,
     },
   ]
 }
