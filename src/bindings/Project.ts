@@ -4,7 +4,7 @@ import { v4 as uuidV4 } from "uuid"
 import * as IR from "../bindings/ir"
 import { BundledMain } from "../bundled_files/Main.java"
 import { BundledGitignore } from "../bundled_files/.gitignore"
-import { BundledPreferences } from "../bundled_files/wpilib_preferences.json"
+import { generateBundledPreferences } from "../bundled_files/wpilib_preferences.json"
 import { generateRobotClass } from "../codegen/java/RobotGenerator"
 import { BundledGradleBuild } from "../bundled_files/build.gradle"
 import { generateReadme } from "../bundled_files/README.md"
@@ -24,7 +24,27 @@ export type Project = {
   subsystems: Subsystem[]
   commands: IR.Group[]
   generatedFiles: GeneratedFile[]
+  settings: Settings
 };
+
+export type Settings = {
+  /**
+   * The number of the FRC team the project targets. This is used in the wpilib_preferences.json file
+   * and in the build.gradle file. Defaults to 0; users will need to change it to their team number
+   * before being able to export.
+   */
+  teamNumber: number
+
+  /**
+   * Whether or not to include Epilogue logging support in generated files. Defaults to `true`.
+   */
+  epilogueSupport: boolean
+
+  /**
+   * Any custom project settings provided by third party extensions.
+   */
+  custom: Record<string, unknown>
+}
 
 const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
   return [
@@ -41,7 +61,7 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
     {
       name: ".wpilib/wpilib_preferences.json",
       description: "",
-      contents: BundledPreferences,
+      contents: "",
     },
     {
       name: ".gitignore",
@@ -90,13 +110,18 @@ export const makeNewProject = (): Project => {
     subsystems: [],
     commands: [],
     generatedFiles: makeDefaultGeneratedFiles(),
-  }
-
-  // Update the robot class contents
-  project.generatedFiles.find(f => f.name === "src/main/java/frc/robot/Robot.java").contents = generateRobotClass(project)
-
-  // Update the readme
-  project.generatedFiles.find(f => f.name === "README.md").contents = generateReadme(project)
+    settings: {
+      teamNumber: 0,
+      epilogueSupport: true,
+      custom: {},
+    },
+  } 
+  
+  // Update pregenerated files to give them a valid initial state
+  // These files may need to be updated over time while the project is edited
+  updateFile(project, ".wpilib/wpilib_preferences.json",  generateBundledPreferences(project))
+  updateFile(project, "src/main/java/frc/robot/Robot.java", generateRobotClass(project))
+  updateFile(project, "README.md", generateReadme(project))
 
   return project
 }
