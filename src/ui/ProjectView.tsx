@@ -105,9 +105,17 @@ const exportProject = async (project: Project) => {
   const zipFileWriter = new BlobWriter()
   const zipWriter = new ZipWriter(zipFileWriter)
 
+  // Work on a copy so we can exclude some things, like generated file contents, from the JSON
+  // No need to include copies of files that are already in the export
+  const projectCopy: Project = { ...project, generatedFiles: [] }
+  const savedProjectContents = JSON.stringify(projectCopy, null, 2)
+
   await Promise.all(project.generatedFiles.map(file => {
     return zipWriter.add(file.name, new TextReader(file.contents))
-  }))
+  }).concat([
+    zipWriter.add(`${ project.name }.json`, new TextReader(savedProjectContents)),
+  ]))
+
 
   await zipWriter.close()
   const zipFile = await zipFileWriter.getData()
