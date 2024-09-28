@@ -67,11 +67,14 @@ export function Robot({ project }: { project: Project }) {
   // Reload the current file when the project changes
   useEffect(() => {
     const currentFile = selectedFile
-    setSelectedFile(project.generatedFiles.find(f => f.name === "README.md"))
+    const correspondingFile = project.generatedFiles.find(f => f.name === currentFile.name)
 
-    if (project.generatedFiles.find(f => f.name === currentFile.name)) {
-      // Show the original file if it still exists
-      setSelectedFile({ ...currentFile })
+    if (correspondingFile !== undefined) {
+      // The project changed but still has a file in the same path. Keep it rendered.
+      setSelectedFile(correspondingFile)
+    } else {
+      // Fall back to render the README. This should still exist, right?
+      setSelectedFile(project.generatedFiles.find(f => f.name === "README.md"))
     }
   }, [project])
 
