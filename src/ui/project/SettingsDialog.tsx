@@ -30,7 +30,7 @@ export default function SettingsDialog({ project, visible, allowCancel, onSave, 
   return (
     <Dialog open={ visible } className="project-settings-dialog">
       <DialogTitle style={{ textAlign: "center" }}>
-      Project Settings
+        Project Settings
       </DialogTitle>
       <DialogContent>
         <Table>
@@ -96,13 +96,13 @@ export default function SettingsDialog({ project, visible, allowCancel, onSave, 
         {
           allowCancel ? (
             <Button onClick={ () => onCancel(settings) }>
-            Cancel
+              Cancel
             </Button>
           )
             : <></>
         }
         <Button disabled={ !isValid } onClick={ () => onSave(settings) }>
-        Apply
+          Apply
         </Button>
       </DialogActions>
     </Dialog>
