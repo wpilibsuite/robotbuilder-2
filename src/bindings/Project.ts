@@ -105,7 +105,7 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
 
 export const makeNewProject = (): Project => {
   const project: Project = {
-    name: "New Project",
+    name: "",
     controllers: [
       { name: "New Controller", uuid: uuidV4(), type: "ps5", className: "CommandPS5Controller", fqn: "", port: 1 , buttons: [] },
     ],
