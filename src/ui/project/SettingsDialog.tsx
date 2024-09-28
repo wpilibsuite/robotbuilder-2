@@ -1,7 +1,7 @@
 import { DialogTitle, DialogContent, Table, TableBody, TableRow, TableCell, Input, Switch, DialogActions, Button } from "@mui/material"
 import Dialog from "@mui/material/Dialog"
 import React, { useEffect, useState } from "react"
-import { Project, Settings, regenerateFiles } from "../../bindings/Project"
+import { Project, Settings } from "../../bindings/Project"
 import { HelpableLabel } from "../HelpableLabel"
 
 type SettingsDialogProps = {
@@ -12,7 +12,7 @@ type SettingsDialogProps = {
   onCancel: (projectSettings: Settings) => void
 }
 
-export default function({ project, visible, allowCancel, onSave, onCancel  }: SettingsDialogProps) {
+export default function SettingsDialog({ project, visible, allowCancel, onSave, onCancel  }: SettingsDialogProps) {
   const blankStringRegex = /^[ ]*$/
 
   const [settings, setSettings] = useState({ ...project.settings })
