@@ -134,7 +134,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
   const [project, setProject] = React.useState(initialProject)
   const [selectedTab, setSelectedTab] = React.useState(defaultTab)
   const [showSettings, setShowSettings] = React.useState(true)
-  const [projectSnapshot, setProjectSnapshot] = React.useState({ ...initialProject })
+  const [projectSnapshot, setProjectSnapshot] = React.useState(JSON.parse(JSON.stringify(project)))
 
   const handleChange = (event, newValue) => {
     setSelectedTab(newValue)
@@ -251,7 +251,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
         {/* Hidden link for use by downloads */ }
         <a style={ { display: "none" } } href="#" id="download-link"/>
         <Button onClick={ () => {
-          setProjectSnapshot({ ...project })
+          setProjectSnapshot(JSON.parse(JSON.stringify(project)))
           setShowSettings(true) 
         } }>
           Settings
@@ -273,6 +273,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
           // Create a new barebones project
           const newProject = makeNewProject()
           setProject(newProject)
+          setProjectSnapshot(JSON.parse(JSON.stringify(newProject)))
 
           // Select the default tab
           handleChange(null, defaultTab)
