@@ -38,7 +38,7 @@ export default function({ project, visible, allowCancel, onSave, onCancel  }: Se
             <TableRow>
               <TableCell>
                 <HelpableLabel description="The name of your robot project">
-                Project Name
+                  Project Name
                 </HelpableLabel>
               </TableCell>
               <TableCell>
@@ -52,7 +52,7 @@ export default function({ project, visible, allowCancel, onSave, onCancel  }: Se
             <TableRow>
               <TableCell>
                 <HelpableLabel description="Your FRC team number. You ought to know this!">
-                Team Number
+                  Team Number
                 </HelpableLabel>
               </TableCell>
               <TableCell>
@@ -81,7 +81,7 @@ export default function({ project, visible, allowCancel, onSave, onCancel  }: Se
             <TableRow>
               <TableCell>
                 <HelpableLabel description="Enables support for automatic data logging in your project via the Epilogue library">
-                Enable Epilogue Logging
+                  Enable Epilogue Logging
                 </HelpableLabel>
               </TableCell>
               <TableCell>
