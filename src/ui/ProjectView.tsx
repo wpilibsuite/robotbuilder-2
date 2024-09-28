@@ -1,8 +1,8 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Input, Switch, Tab, Table, TableBody, TableCell, TableRow, Tabs } from "@mui/material"
+import { Box, Button, Tab, Tabs } from "@mui/material"
 import { Controllers } from "./controller/Controller"
 import { Subsystems } from "./subsystem/Subsystem"
 import { Commands } from "./command/Commands"
-import React from "react"
+import React, { useState } from "react"
 import { makeNewProject, Project, regenerateFiles } from "../bindings/Project"
 import $ from "jquery"
 import {
@@ -15,7 +15,7 @@ import {
 import { CommandInvocation, Group, ParGroup, SeqGroup } from "../bindings/ir"
 import { Robot } from "./robot/Robot"
 import { BlobWriter, TextReader, ZipWriter } from "@zip.js/zip.js"
-import { HelpableLabel } from "./HelpableLabel"
+import SettingsDialog from "./project/SettingsDialog"
 
 type ProjectProps = {
   initialProject: Project;
@@ -26,7 +26,7 @@ const saveProject = (project: Project) => {
   console.log(savedProject)
 
   const link = document.getElementById("download-link")
-  const fileName = `${ project.name }.json`
+  const fileName = `${ project.settings.name }.json`
   const file = new Blob([savedProject], { type: "text/plain" })
   link.setAttribute("href", window.URL.createObjectURL(file))
   link.setAttribute("download", fileName)
@@ -113,7 +113,7 @@ const exportProject = async (project: Project) => {
   await Promise.all(project.generatedFiles.map(file => {
     return zipWriter.add(file.name, new TextReader(file.contents))
   }).concat([
-    zipWriter.add(`${ project.name }.json`, new TextReader(savedProjectContents)),
+    zipWriter.add(`${ project.settings.name }.json`, new TextReader(savedProjectContents)),
   ]))
 
 
@@ -123,7 +123,7 @@ const exportProject = async (project: Project) => {
   const link = document.createElement("a")
   const objurl = URL.createObjectURL(zipFile)
 
-  link.download = `${ project.name }.zip`
+  link.download = `${ project.settings.name }.zip`
   link.href = objurl
   link.click()
 }
@@ -131,10 +131,11 @@ const exportProject = async (project: Project) => {
 export function ProjectView({ initialProject }: ProjectProps) {
   type Tab = "robot" | "controllers" | "subsystems" | "commands";
   const defaultTab: Tab = "robot"
-  const [project, setProject] = React.useState(initialProject)
-  const [selectedTab, setSelectedTab] = React.useState(defaultTab)
-  const [showSettings, setShowSettings] = React.useState(true)
-  const [projectSnapshot, setProjectSnapshot] = React.useState(JSON.parse(JSON.stringify(project)))
+  const [project, setProject] = useState(initialProject)
+  const [selectedTab, setSelectedTab] = useState(defaultTab)
+  const [settingsDialogProps, setSettingsDialogProps] = useState({ visible: true, allowCancel: false })
+
+  const hideSettings = () => setSettingsDialogProps({ ...settingsDialogProps, visible: false })
 
   const handleChange = (event, newValue) => {
     setSelectedTab(newValue)
@@ -155,83 +156,28 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
   return (
     <Box className="project-view">
-      <Dialog open={ showSettings } className="project-settings-dialog">
-        <DialogTitle style={{ textAlign: "center" }}>
-          Project Settings
-        </DialogTitle>
-        <DialogContent>
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell>
-                  <HelpableLabel description="The name of your robot project">
-                    Project Name
-                  </HelpableLabel>
-                </TableCell>
-                <TableCell>
-                  <Input type="text"
-                         placeholder={ "New Project" }
-                         defaultValue={ project.name }
-                         onChange={ (event) => project.name = event.target.value } />
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <HelpableLabel description="Your FRC team number. You ought to know this!">
-                    Team Number
-                  </HelpableLabel>
-                </TableCell>
-                <TableCell>
-                  <Input type="text"
-                         inputProps={{ min: 1 }}
-                         placeholder="0000"
-                         defaultValue={ project.settings.teamNumber }
-                         onChange={ (event) => {
-                           // Prevent non-numeric values from being entered
-                           const input = event.target.value
-                           if (!input.match(/^[0-9]*$/)) {
-                             event.target.value = input.replaceAll(/[^0-9]+/g, "")
-                             return
-                           }
-                           project.settings.teamNumber = parseInt(event.target.value)
-                         } }/>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>
-                  <HelpableLabel description="Enables support for automatic data logging in your project via the Epilogue library">
-                    Enable Epilogue Logging
-                  </HelpableLabel>
-                </TableCell>
-                <TableCell>
-                  <Switch defaultChecked={ project.settings.epilogueSupport }
-                          onChange={ (event) => project.settings.epilogueSupport = event.target.checked } />
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={ () => {
-            setProject({ ... projectSnapshot })
-            setShowSettings(false)
-          } }>
-            Cancel
-          </Button>
-          <Button onClick={ () => {
-            regenerateFiles(project)
-            setProject({ ...project })
-            setShowSettings(false)
-          } }>
-            Apply
-          </Button>
-        </DialogActions>
-      </Dialog>
-
+      <SettingsDialog project={ project }
+                      visible={ settingsDialogProps.visible }
+                      allowCancel={ settingsDialogProps.allowCancel }
+                      onCancel={ () => hideSettings() }
+                      onSave={ (settings) => {
+                        const newProject = { ...project, settings }
+                        regenerateFiles(newProject)
+                        hideSettings()
+                        setProject(newProject)
+                      } } />
       <Box className="header">
         <Box className="project-name-input">
-          <span style={{ color: "white", fontWeight: "bold", margin: "auto", marginLeft: "1rem" }}>
-            Team { project.settings.teamNumber } - { project.name }
+          <span style={{ color: "white", fontWeight: "500", margin: "auto", marginLeft: "1rem", fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif', textTransform: "uppercase", letterSpacing: "0.02857em", lineHeight: "1.25", fontSize: "0.875rem" }}>
+            {
+              (() => {
+                if (/^[ ]*$/.test(project.settings.name) || !(project.settings.teamNumber > 0)) {
+                  return null
+                } else {
+                  return (<>Team { project.settings.teamNumber } - { project.settings.name }</>)
+                }
+              })()
+            }
           </span>
         </Box>
 
@@ -251,8 +197,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
         {/* Hidden link for use by downloads */ }
         <a style={ { display: "none" } } href="#" id="download-link"/>
         <Button onClick={ () => {
-          setProjectSnapshot(JSON.parse(JSON.stringify(project)))
-          setShowSettings(true) 
+          setSettingsDialogProps({ visible: true, allowCancel: true })
         } }>
           Settings
         </Button>
@@ -273,11 +218,11 @@ export function ProjectView({ initialProject }: ProjectProps) {
           // Create a new barebones project
           const newProject = makeNewProject()
           setProject(newProject)
-          setProjectSnapshot(JSON.parse(JSON.stringify(newProject)))
 
           // Select the default tab
           handleChange(null, defaultTab)
-          setShowSettings(true)
+          console.log('Opening settings')
+          setSettingsDialogProps({ visible: true, allowCancel: false })
         } }>
           New
         </Button>

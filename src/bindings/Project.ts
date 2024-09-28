@@ -21,7 +21,6 @@ export type GeneratedFile = {
 }
 
 export type Project = {
-  name: string
   controllers: Controller[]
   subsystems: Subsystem[]
   commands: IR.Group[]
@@ -30,6 +29,7 @@ export type Project = {
 };
 
 export type Settings = {
+  name: string
   /**
    * The number of the FRC team the project targets. This is used in the wpilib_preferences.json file
    * and in the build.gradle file. Defaults to 0; users will need to change it to their team number
@@ -105,7 +105,6 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
 
 export const makeNewProject = (): Project => {
   const project: Project = {
-    name: "",
     controllers: [
       { name: "New Controller", uuid: uuidV4(), type: "ps5", className: "CommandPS5Controller", fqn: "", port: 1 , buttons: [] },
     ],
@@ -113,7 +112,8 @@ export const makeNewProject = (): Project => {
     commands: [],
     generatedFiles: makeDefaultGeneratedFiles(),
     settings: {
-      teamNumber: 0,
+      name: "",
+      teamNumber: null,
       epilogueSupport: true,
       custom: {},
     },
