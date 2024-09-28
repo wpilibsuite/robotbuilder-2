@@ -7,7 +7,7 @@ export function generateState(project: Project, state: SubsystemState, subsystem
   console.log("[STATE-GENERATOR] Generating code for state", state)
   return unindent(
     `
-    ${ project.settings.epilogueSupport ?  `@Logged(name = "${ state.name }?")` : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ?  `@Logged(name = "${ state.name }?")` : "" }
     public boolean ${ methodName(state.name) }(${ generateStepParams([state.step].filter(s => !!s), subsystem) }) {
 ${ generateStepInvocations([state.step].filter(s => !!s), subsystem).map(i => indent(`return ${ i }`, 6)).join("\n") }
     }

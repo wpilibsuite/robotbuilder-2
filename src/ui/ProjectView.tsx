@@ -26,7 +26,7 @@ const saveProject = (project: Project) => {
   console.log(savedProject)
 
   const link = document.getElementById("download-link")
-  const fileName = `${ project.settings.name }.json`
+  const fileName = `${ project.settings["robotbuilder.general.project_name"] }.json`
   const file = new Blob([savedProject], { type: "text/plain" })
   link.setAttribute("href", window.URL.createObjectURL(file))
   link.setAttribute("download", fileName)
@@ -113,7 +113,7 @@ const exportProject = async (project: Project) => {
   await Promise.all(project.generatedFiles.map(file => {
     return zipWriter.add(file.name, new TextReader(file.contents))
   }).concat([
-    zipWriter.add(`${ project.settings.name }.json`, new TextReader(savedProjectContents)),
+    zipWriter.add(`${ project.settings["robotbuilder.general.project_name"] }.json`, new TextReader(savedProjectContents)),
   ]))
 
 
@@ -123,7 +123,7 @@ const exportProject = async (project: Project) => {
   const link = document.createElement("a")
   const objurl = URL.createObjectURL(zipFile)
 
-  link.download = `${ project.settings.name }.zip`
+  link.download = `${ project.settings["robotbuilder.general.project_name"] }.zip`
   link.href = objurl
   link.click()
 }
@@ -162,7 +162,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
                       onCancel={ () => hideSettings() }
                       onSave={ (settings) => {
                         // Remove leading and trailing whitespace on save
-                        settings.name = settings.name.trim()
+                        // settings.name = settings.name.trim()
                         const newProject = { ...project, settings }
                         regenerateFiles(newProject)
                         hideSettings()
@@ -173,10 +173,10 @@ export function ProjectView({ initialProject }: ProjectProps) {
           <span style={{ color: "white", fontWeight: "500", margin: "auto", marginLeft: "1rem", fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif', textTransform: "uppercase", letterSpacing: "0.02857em", lineHeight: "1.25", fontSize: "0.875rem" }}>
             {
               (() => {
-                if (/^[ ]*$/.test(project.settings.name) || !(project.settings.teamNumber > 0)) {
+                if (/^[ ]*$/.test(project.settings["robotbuilder.general.project_name"] as string) || !(project.settings["robotbuilder.general.team_number"] as number > 0)) {
                   return null
                 } else {
-                  return (<>Team { project.settings.teamNumber } - { project.settings.name }</>)
+                  return (<>Team { project.settings["robotbuilder.general.team_number"] } - { project.settings["robotbuilder.general.project_name"] }</>)
                 }
               })()
             }

@@ -1,8 +1,9 @@
 import { DialogTitle, DialogContent, Table, TableBody, TableRow, TableCell, Input, Switch, DialogActions, Button } from "@mui/material"
 import Dialog from "@mui/material/Dialog"
 import React, { useEffect, useState } from "react"
-import { Project, Settings } from "../../bindings/Project"
+import { Project, Settings, SettingsCategory } from "../../bindings/Project"
 import { HelpableLabel } from "../HelpableLabel"
+import { ALL_SETTINGS } from "../../settings/Settings"
 
 type SettingsDialogProps = {
   project: Project
@@ -23,7 +24,32 @@ export default function SettingsDialog({ project, visible, allowCancel, onSave, 
   }, [project, visible])
 
   useEffect(() => {
-    const isValid = !blankStringRegex.test(settings.name) && settings.teamNumber > 0
+    let isValid = true
+
+    for (const key in settings) {
+      const value = settings[key]
+
+      const category: SettingsCategory = ALL_SETTINGS[key.substring(0, key.lastIndexOf("."))]
+      const setting = category.settings.find(s => s.key === key)
+      if (setting.required) {
+        switch (setting.type) {
+          case "string":
+            isValid &&= !blankStringRegex.test(value as string)
+            break
+          case "number":
+            isValid &&= value as number > 0
+            break
+          case "boolean":
+            break
+        }
+      }
+
+      if (!isValid) {
+        // Early exit if any required value is missing
+        break
+      }
+    }
+
     setValid(isValid)
   }, [settings])
 
@@ -35,60 +61,88 @@ export default function SettingsDialog({ project, visible, allowCancel, onSave, 
       <DialogContent>
         <Table>
           <TableBody>
-            <TableRow>
-              <TableCell>
-                <HelpableLabel description="The name of your robot project">
-                  Project Name
-                </HelpableLabel>
-              </TableCell>
-              <TableCell>
-                <Input type="text"
-                       placeholder={ "New Project" }
-                       value={ settings.name }
-                       error={ blankStringRegex.test(settings.name) }
-                       onChange={ (event) => setSettings({ ...settings, name: event.target.value }) } />
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <HelpableLabel description="Your FRC team number. You ought to know this!">
-                  Team Number
-                </HelpableLabel>
-              </TableCell>
-              <TableCell>
-                <Input type="text"
-                       placeholder="0000"
-                       value={ isNaN(settings.teamNumber) ? "" : settings.teamNumber?.toFixed(0) ?? "" }
-                       // Using not-greater-than-zero to account for null and NaN when the number field is blank
-                       error={ !(settings.teamNumber > 0) }
-                       onChange={ (event) => {
-                       // Prevent non-numeric values from being entered
-                         const input = event.target.value
-                         if (!input.match(/^([1-9]+[0-9]*)?$/g)) {
-                           event.target.value = input.replaceAll(/[^0-9]+/g, "")
+            {
+              (() => {
+                const elements = []
+                for (const categoryKey in ALL_SETTINGS) {
+                  const category: SettingsCategory = ALL_SETTINGS[categoryKey]
+                  elements.push((
+                    <TableRow>
+                      <TableCell>
+                        <h3>
+                          { category.name }
+                        </h3>
+                      </TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  ))
+                  category.settings.forEach(setting => {
+                    elements.push((
+                      <TableRow key={ setting.key }>
+                        <TableCell>
+                          <HelpableLabel description={ setting.description }>
+                            { setting.name }
+                          </HelpableLabel>
+                        </TableCell>
+                        <TableCell>
+                          {
+                            (() => {
+                              switch (setting.type) {
+                                case "string":
+                                  return (
+                                    <Input type="text"
+                                           placeholder={ "Value" }
+                                           value={ settings[setting.key] }
+                                           error={ setting.required && blankStringRegex.test(settings[setting.key] as string) }
+                                           onChange={ (event) => setSettings({ ...settings, [setting.key]: event.target.value }) } />
+                                  )
+                                case "number":
+                                  return (
+                                    <Input type="text"
+                                           placeholder={ "Value" }
+                                           value={ isNaN(settings[setting.key] as number) ? "" : settings[setting.key]?.toFixed(0) ?? "" }
+                                           // Using not-greater-than-zero to account for null and NaN when the number field is blank
+                                           error={ setting.required && !(settings[setting.key] as number > 0) }
+                                           onChange={ (event) => {
+                                             // Prevent non-numeric values from being entered
+                                             const input = event.target.value
 
-                           // Prevent leading zeroes
-                           if (event.target.value.charAt(0) === "0") {
-                             event.target.value = event.target.value.substring(1)
-                           }
-                           return
-                         }
+                                             if (!input.match(/^([1-9]+[0-9]*)?$/g)) {
+                                               event.target.value = input.replaceAll(/[^0-9]+/g, "")
 
-                         setSettings({ ...settings, teamNumber: parseInt(event.target.value) })
-                       } }/>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <HelpableLabel description="Enables support for automatic data logging in your project via the Epilogue library">
-                  Enable Epilogue Logging
-                </HelpableLabel>
-              </TableCell>
-              <TableCell>
-                <Switch checked={ settings.epilogueSupport }
-                        onChange={ (event) => setSettings({ ...settings, epilogueSupport: event.target.checked }) } />
-              </TableCell>
-            </TableRow>
+                                               // Prevent leading zeroes
+                                               if (event.target.value.charAt(0) === "0") {
+                                                 event.target.value = event.target.value.substring(1)
+                                               }
+                                               return
+                                             }
+
+                                             setSettings({ ...settings, [setting.key]: parseInt(event.target.value) })
+                                           } }/>
+                                  )
+                                case "boolean":
+                                  return (
+                                    <Switch checked={ settings[setting.key] as boolean }
+                                            onChange={ (event) => setSettings({ ...settings, [setting.key]: event.target.checked }) } />
+                                  )
+                                default:
+                                  // No editor, just show the value as text
+                                  return (
+                                    <span>
+                                      { settings[setting.key] }
+                                    </span>
+                                  )
+                              }
+                            })()
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  })
+                }
+                return elements
+              })()
+            }
           </TableBody>
         </Table>
       </DialogContent>

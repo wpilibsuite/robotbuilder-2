@@ -95,7 +95,7 @@ export function objectName(name: string): string {
 
 export function fieldDeclaration(project: Project, type: string, name: string): string {
   return unindent(`
-    ${ project.settings.epilogueSupport ? `@Logged(name = "${ name }")` : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? `@Logged(name = "${ name }")` : "" }
     private final ${ type } ${ objectName(name) }
   `).trim()
 }

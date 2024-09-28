@@ -7,7 +7,7 @@ export const generateBundledPreferences = (project: Project): string => {
       "enableCppIntellisense": false,
       "currentLanguage": "java",
       "projectYear": "2025",
-      "teamNumber": ${ project.settings.teamNumber }
+      "teamNumber": ${ project.settings["robotbuilder.general.team_number"] }
     }
   `).trim()
 }

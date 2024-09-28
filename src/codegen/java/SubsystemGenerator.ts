@@ -115,8 +115,8 @@ export function generateSubsystem(subsystem: Subsystem, project: Project) {
 
 ${ [...new Set(subsystem.components.map(c => c.definition.fqn))].sort().map(fqn => indent(`import ${ fqn };`, 4)).join("\n") }
 
-    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.Logged;" : "" }
-    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.NotLogged;" : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.Logged;" : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.NotLogged;" : "" }
     import edu.wpi.first.units.*;
     import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
     import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -127,7 +127,7 @@ ${ [...new Set(subsystem.components.map(c => c.definition.fqn))].sort().map(fqn 
     /**
      * The ${ subsystem.name } subsystem.
      */
-    ${ project.settings.epilogueSupport ? "@Logged" : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? "@Logged" : "" }
     public class ${ clazz } extends SubsystemBase {
 
 ${ subsystem.components.map(c => indent(`${ fieldDeclaration(project, c.definition.className, c.name) };`, 6)).join("\n") }
@@ -152,7 +152,7 @@ ${
 ${ subsystem.states.map(state => {
     return indent(unindent(
       `
-      ${ project.settings.epilogueSupport ? "@NotLogged" : "" }
+      ${ project.settings["wpilib.epilogue.enabled"] ? "@NotLogged" : "" }
       public final Trigger ${ methodName(state.name) } = new Trigger(this::${ methodName(state.name) });
     `,
     ).trim(), 6)

@@ -10,16 +10,16 @@ export function generateRobotClass(project: Project): string {
     `
     package frc.robot;
 
-    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.Epilogue;" : "" }
-    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.Logged;" : "" }
-    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.NotLogged;" : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.Epilogue;" : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.Logged;" : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.NotLogged;" : "" }
     import edu.wpi.first.wpilibj.RuntimeType;
     import edu.wpi.first.wpilibj.TimedRobot;
     import edu.wpi.first.wpilibj2.command.Command;
     import edu.wpi.first.wpilibj2.command.CommandScheduler;
     import frc.robot.subsystems.*;
 
-    ${ project.settings.epilogueSupport ? "@Logged" : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? "@Logged" : "" }
     public class Robot extends TimedRobot {
 ${
   project.subsystems.map(s => generateSubsystemDeclaration(project, s)).join("\n")
@@ -27,7 +27,7 @@ ${
 
 ${
   project.controllers.map(c => `
-    ${ project.settings.epilogueSupport ? `@NotLogged // Controllers are not loggable` : "" }
+    ${ project.settings["wpilib.epilogue.enabled"] ? `@NotLogged // Controllers are not loggable` : "" }
     private final ${ c.className } ${ methodName(c.name) } = new ${ c.className }(${ c.port });
     `)
 }
@@ -36,7 +36,7 @@ ${
         configureButtonBindings();
         configureAutomaticBindings();
 
-        ${ project.settings.epilogueSupport ? `
+        ${ project.settings["wpilib.epilogue.enabled"] ? `
           Epilogue.configure(config -> {
             // TODO: Add a UI for customizing epilogue
 
@@ -59,7 +59,7 @@ ${
         CommandScheduler.getInstance().run();
 
         ${
-  project.settings.epilogueSupport ?
+  project.settings["wpilib.epilogue.enabled"] ?
     `
             // Update our data logs
             Epilogue.update(this);
@@ -108,7 +108,7 @@ ${
 function generateSubsystemDeclaration(project: Project, subsystem: Subsystem): string {
   return indent(
     `
-      ${ project.settings.epilogueSupport ? `@Logged(name = "${ subsystem.name }")` : "" }
+      ${ project.settings["wpilib.epilogue.enabled"] ? `@Logged(name = "${ subsystem.name }")` : "" }
       private final ${ className(subsystem.name) } ${ methodName(subsystem.name) } = new ${ className(subsystem.name) }();
     `.trim(),
     2,

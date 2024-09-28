@@ -28,24 +28,48 @@ export type Project = {
   settings: Settings
 };
 
-export type Settings = {
+export type SettingsKey = string
+export type SettingsType = string | number | boolean | null
+export type SettingsTypeName = "string" | "number" | "boolean"
+
+export type Settings = Record<SettingsKey, SettingsType>
+
+export type SettingsCategory = {
+  key: string
   name: string
+  settings: SettingConfig[]
+}
+
+export type SettingConfig = {
   /**
-   * The number of the FRC team the project targets. This is used in the wpilib_preferences.json file
-   * and in the build.gradle file. Defaults to 0; users will need to change it to their team number
-   * before being able to export.
+   * A unique key to identify this setting. For example, a UUID or a unique identifier like "wpilib.epilogue.enabled".
    */
-  teamNumber: number
+  key: SettingsKey
 
   /**
-   * Whether or not to include Epilogue logging support in generated files. Defaults to `true`.
+   * The name of the setting to display to users.
    */
-  epilogueSupport: boolean
+  name: string
 
   /**
-   * Any custom project settings provided by third party extensions.
+   * A description of this setting and what it does or how it's used.
    */
-  custom: Record<string, unknown>
+  description: string
+
+  /**
+   * Whether or not the setting is required.
+   */
+  required: boolean
+
+  /**
+   * The data type of the setting object. This will be used to determine the UI element that edits this setting.
+   */
+  type: SettingsTypeName
+
+  /**
+   * The default value of the setting.
+   */
+  defaultValue: SettingsType
 }
 
 const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
@@ -112,10 +136,10 @@ export const makeNewProject = (): Project => {
     commands: [],
     generatedFiles: makeDefaultGeneratedFiles(),
     settings: {
-      name: "",
-      teamNumber: null,
-      epilogueSupport: true,
-      custom: {},
+      "robotbuilder.general.project_name": "",
+      "robotbuilder.general.team_number": null,
+      // "robotbuilder.general.cache_sensor_values": false,
+      "wpilib.epilogue.enabled": true,
     },
   } 
   
