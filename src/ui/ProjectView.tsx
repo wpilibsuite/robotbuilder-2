@@ -161,6 +161,8 @@ export function ProjectView({ initialProject }: ProjectProps) {
                       allowCancel={ settingsDialogProps.allowCancel }
                       onCancel={ () => hideSettings() }
                       onSave={ (settings) => {
+                        // Remove leading and trailing whitespace on save
+                        settings.name = settings.name.trim()
                         const newProject = { ...project, settings }
                         regenerateFiles(newProject)
                         hideSettings()
