@@ -1,4 +1,4 @@
-import { Box, Button, Tab, Tabs, TextField } from "@mui/material"
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Input, Switch, Tab, Table, TableBody, TableCell, TableHead, TableRow, Tabs, TextField } from "@mui/material"
 import { Controllers } from "./controller/Controller"
 import { Subsystems } from "./subsystem/Subsystem"
 import { Commands } from "./command/Commands"
@@ -16,6 +16,7 @@ import { CommandInvocation, Group, ParGroup, SeqGroup } from "../bindings/ir"
 import { Robot } from "./robot/Robot"
 import { generateReadme } from "../bundled_files/README.md"
 import { BlobWriter, TextReader, ZipWriter } from "@zip.js/zip.js"
+import { HelpableLabel } from "./HelpableLabel"
 
 type ProjectProps = {
   initialProject: Project;
@@ -133,6 +134,8 @@ export function ProjectView({ initialProject }: ProjectProps) {
   const defaultTab: Tab = "subsystems"
   const [project, setProject] = React.useState(initialProject)
   const [selectedTab, setSelectedTab] = React.useState(defaultTab)
+  const [showSettings, setShowSettings] = React.useState(true)
+  const [projectSnapshot, setProjectSnapshot] = React.useState({ ...initialProject })
 
   const handleChange = (event, newValue) => {
     setSelectedTab(newValue)
@@ -151,28 +154,67 @@ export function ProjectView({ initialProject }: ProjectProps) {
     }
   }
 
-  const [, sn] = useState(project.name)
-
-  const setProjectName = (name: string) => {
-    console.debug("Setting project name to", name)
-    sn(name)
-    project.name = name
-  }
-
-  const updateProjectName = (newName) => {
-    if (!newName || newName.length < 1) return // blank name, ignore the change
-
-    setProjectName(newName)
-    project.generatedFiles.find(f => f.name === "README.md").contents = generateReadme(project)
-  }
-
   return (
     <Box className="project-view">
+      <Dialog open={ showSettings } className="project-settings-dialog">
+        <DialogTitle>
+          Project Settings
+        </DialogTitle>
+        <DialogContent>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Setting</TableCell>
+                <TableCell>Value</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell>
+                  <HelpableLabel description="The name of your robot project">
+                    Project Name
+                  </HelpableLabel>
+                </TableCell>
+                <TableCell>
+                  <Input type="text"
+                         placeholder={ "New Project" }
+                         defaultValue={ project.name }
+                         onChange={ (event) => project.name = event.target.value } />
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>
+                  <HelpableLabel description="Enables support for automatic data logging in your project via the Epilogue library">
+                    Enable Epilogue Logging
+                  </HelpableLabel>
+                </TableCell>
+                <TableCell>
+                  <Switch defaultChecked={ project.settings.epilogueSupport }
+                          onChange={ (event) => project.settings.epilogueSupport = event.target.checked } />
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={ () => {
+            setProject({ ... projectSnapshot })
+            setShowSettings(false)
+          } }>
+            Cancel
+          </Button>
+          <Button onClick={ () => {
+            setProject({ ...project })
+            setShowSettings(false)
+          } }>
+            Apply
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Box className="header">
         <Box className="project-name-input">
-          <TextField variant="standard"
-                     value={ project.name }
-                     onChange={ e => updateProjectName(e.target.value) }/>
+          <span style={{ color: "white", fontWeight: "bold", margin: "auto", marginLeft: "1rem" }}>{ project.name }</span>
         </Box>
 
         <Box>
@@ -190,6 +232,13 @@ export function ProjectView({ initialProject }: ProjectProps) {
       <Box className="footer">
         {/* Hidden link for use by downloads */ }
         <a style={ { display: "none" } } href="#" id="download-link"/>
+        <Button onClick={ () => {
+          setProjectSnapshot({ ...project })
+          setShowSettings(true) 
+        } }>
+          Settings
+        </Button>
+
         <Button onClick={ () => saveProject(project) }>Save</Button>
 
         <Button onClick={ () => exportProject(project) }>Export</Button>
@@ -199,7 +248,6 @@ export function ProjectView({ initialProject }: ProjectProps) {
                id="load-project"
                onChange={ (e) => loadProject(e.target.files[0]).then(p => {
                  setProject(p)
-                 setProjectName(p.name)
                }) }/>
         <Button onClick={ () => $("#load-project").click() }>Load</Button>
 
