@@ -1,9 +1,9 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Input, Switch, Tab, Table, TableBody, TableCell, TableHead, TableRow, Tabs, TextField } from "@mui/material"
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Input, Switch, Tab, Table, TableBody, TableCell, TableRow, Tabs } from "@mui/material"
 import { Controllers } from "./controller/Controller"
 import { Subsystems } from "./subsystem/Subsystem"
 import { Commands } from "./command/Commands"
-import React, { useState } from "react"
-import { makeNewProject, Project } from "../bindings/Project"
+import React from "react"
+import { makeNewProject, Project, regenerateFiles } from "../bindings/Project"
 import $ from "jquery"
 import {
   AtomicCommand,
@@ -14,7 +14,6 @@ import {
 } from "../bindings/Command"
 import { CommandInvocation, Group, ParGroup, SeqGroup } from "../bindings/ir"
 import { Robot } from "./robot/Robot"
-import { generateReadme } from "../bundled_files/README.md"
 import { BlobWriter, TextReader, ZipWriter } from "@zip.js/zip.js"
 import { HelpableLabel } from "./HelpableLabel"
 
@@ -131,7 +130,7 @@ const exportProject = async (project: Project) => {
 
 export function ProjectView({ initialProject }: ProjectProps) {
   type Tab = "robot" | "controllers" | "subsystems" | "commands";
-  const defaultTab: Tab = "subsystems"
+  const defaultTab: Tab = "robot"
   const [project, setProject] = React.useState(initialProject)
   const [selectedTab, setSelectedTab] = React.useState(defaultTab)
   const [showSettings, setShowSettings] = React.useState(true)
@@ -157,17 +156,11 @@ export function ProjectView({ initialProject }: ProjectProps) {
   return (
     <Box className="project-view">
       <Dialog open={ showSettings } className="project-settings-dialog">
-        <DialogTitle>
+        <DialogTitle style={{ textAlign: "center" }}>
           Project Settings
         </DialogTitle>
         <DialogContent>
           <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Setting</TableCell>
-                <TableCell>Value</TableCell>
-              </TableRow>
-            </TableHead>
             <TableBody>
               <TableRow>
                 <TableCell>
@@ -180,6 +173,28 @@ export function ProjectView({ initialProject }: ProjectProps) {
                          placeholder={ "New Project" }
                          defaultValue={ project.name }
                          onChange={ (event) => project.name = event.target.value } />
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>
+                  <HelpableLabel description="Your FRC team number. You ought to know this!">
+                    Team Number
+                  </HelpableLabel>
+                </TableCell>
+                <TableCell>
+                  <Input type="text"
+                         inputProps={{ min: 1 }}
+                         placeholder="0000"
+                         defaultValue={ project.settings.teamNumber }
+                         onChange={ (event) => {
+                           // Prevent non-numeric values from being entered
+                           const input = event.target.value
+                           if (!input.match(/^[0-9]*$/)) {
+                             event.target.value = input.replaceAll(/[^0-9]+/g, "")
+                             return
+                           }
+                           project.settings.teamNumber = parseInt(event.target.value)
+                         } }/>
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -204,6 +219,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
             Cancel
           </Button>
           <Button onClick={ () => {
+            regenerateFiles(project)
             setProject({ ...project })
             setShowSettings(false)
           } }>
@@ -214,7 +230,9 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
       <Box className="header">
         <Box className="project-name-input">
-          <span style={{ color: "white", fontWeight: "bold", margin: "auto", marginLeft: "1rem" }}>{ project.name }</span>
+          <span style={{ color: "white", fontWeight: "bold", margin: "auto", marginLeft: "1rem" }}>
+            Team { project.settings.teamNumber } - { project.name }
+          </span>
         </Box>
 
         <Box>

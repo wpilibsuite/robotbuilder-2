@@ -238,7 +238,8 @@ function SubsystemPane({ subsystem, project }: BasicOpts) {
                             setEditedAction(null)
                           } }/>
 
-      <CreateStateDialog open={ showCreateStateDialog }
+      <CreateStateDialog project={ project }
+                         open={ showCreateStateDialog }
                          subsystem={ subsystem }
                          editedState={ editedState }
                          onCancel={ closeStateDialog }
@@ -954,6 +955,7 @@ type StateParams = {
 };
 
 type CreateStateDialogProps = {
+  project: Project;
   open: boolean;
   subsystem: Subsystem;
   editedState: SubsystemState | null;
@@ -963,6 +965,7 @@ type CreateStateDialogProps = {
 };
 
 function CreateStateDialog({
+  project,
   open,
   subsystem,
   editedState,
@@ -1021,7 +1024,7 @@ function CreateStateDialog({
               methodName: stateMethod,
               params: stateParams,
             })
-            return generateState(dummyState, subsystem)
+            return generateState(project, dummyState, subsystem)
           })() }
         </SyntaxHighlighter>
       </DialogContent>

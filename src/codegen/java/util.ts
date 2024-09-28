@@ -1,6 +1,7 @@
 import parsers from "prettier-plugin-java"
 import prettier from "prettier"
 import { Subsystem } from "../../bindings/Command"
+import { Project } from "../../bindings/Project"
 
 export const MAIN_CLASS_PATH = "src/main/java/frc/robot/Main.java"
 export const ROBOT_CLASS_PATH = "src/main/java/frc/robot/Robot.java"
@@ -92,9 +93,9 @@ export function objectName(name: string): string {
   }
 }
 
-export function fieldDeclaration(type: string, name: string): string {
+export function fieldDeclaration(project: Project, type: string, name: string): string {
   return unindent(`
-    @Logged(name = "${ name }")
+    ${ project.settings.epilogueSupport ? `@Logged(name = "${ name }")` : "" }
     private final ${ type } ${ objectName(name) }
   `).trim()
 }

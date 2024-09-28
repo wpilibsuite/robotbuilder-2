@@ -10,6 +10,8 @@ import { BundledGradleBuild } from "../bundled_files/build.gradle"
 import { generateReadme } from "../bundled_files/README.md"
 import { BundledLaunchJson, BundledSettingsJson } from "../bundled_files/vscode"
 import { BundledWpilibCommandsV2 } from "../bundled_files/vendordeps"
+import { className } from "../codegen/java/util"
+import { generateSubsystem } from "../codegen/java/SubsystemGenerator"
 
 export type GeneratedFile = {
   name: string
@@ -128,6 +130,23 @@ export const makeNewProject = (): Project => {
 
 export function updateFile(project: Project, path: string, contents: string): void {
   project.generatedFiles.find(f => f.name === path).contents = contents
+}
+
+/**
+ * Regenerates all dynamic project files.
+ * 
+ * @param project the project to regenerate
+ */
+export function regenerateFiles(project: Project): void {
+  // Regenerate subsystems
+  project.subsystems.forEach(subsytem => {
+    updateFile(project, `src/main/java/frc/robot/subsystems/${ className(subsytem.name) }.java`, generateSubsystem(subsytem, project))
+  })
+  
+  updateFile(project, "src/main/java/frc/robot/Robot.java", generateRobotClass(project))
+
+  updateFile(project, `README.md`, generateReadme(project))
+  updateFile(project, ".wpilib/wpilib_preferences.json", generateBundledPreferences(project))
 }
 
 export function findCommand(project: Project, commandOrId: AtomicCommand | IR.Group | string): AtomicCommand | IR.Group | null {

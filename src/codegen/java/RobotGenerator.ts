@@ -10,24 +10,24 @@ export function generateRobotClass(project: Project): string {
     `
     package frc.robot;
 
-    import edu.wpi.first.epilogue.Epilogue;
-    import edu.wpi.first.epilogue.Logged;
-    import edu.wpi.first.epilogue.NotLogged;
+    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.Epilogue;" : "" }
+    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.Logged;" : "" }
+    ${ project.settings.epilogueSupport ? "import edu.wpi.first.epilogue.NotLogged;" : "" }
     import edu.wpi.first.wpilibj.RuntimeType;
     import edu.wpi.first.wpilibj.TimedRobot;
     import edu.wpi.first.wpilibj2.command.Command;
     import edu.wpi.first.wpilibj2.command.CommandScheduler;
     import frc.robot.subsystems.*;
 
-    @Logged
+    ${ project.settings.epilogueSupport ? "@Logged" : "" }
     public class Robot extends TimedRobot {
 ${
-  project.subsystems.map(s => generateSubsystemDeclaration(s)).join("\n")
+  project.subsystems.map(s => generateSubsystemDeclaration(project, s)).join("\n")
 }
 
 ${
   project.controllers.map(c => `
-    @NotLogged // Controllers are not loggable
+    ${ project.settings.epilogueSupport ? `@NotLogged // Controllers are not loggable` : "" }
     private final ${ c.className } ${ methodName(c.name) } = new ${ c.className }(${ c.port });
     `)
 }
@@ -36,18 +36,21 @@ ${
         configureButtonBindings();
         configureAutomaticBindings();
 
-        Epilogue.configure(config -> {
-          // TODO: Add a UI for customizing epilogue
+        ${ project.settings.epilogueSupport ? `
+          Epilogue.configure(config -> {
+            // TODO: Add a UI for customizing epilogue
 
-          if (getRuntimeType() == RuntimeType.kRoboRIO) {
-            // Only log to networktables on a roboRIO 1 because of limited disk space.
-            // If the disk fills up, there's a real risk of getting locked out of the rio!
-            config.dataLogger = new NTDataLogger(NetworkTablesInstance.getDefault());
-          } else {
-            // On a roboRIO 2 there's enough disk space to be able to safely log to disk
-            config.dataLogger = new FileSystemLogger(DataLogManager.getDataLog());
-          }
-        });
+            if (getRuntimeType() == RuntimeType.kRoboRIO) {
+              // Only log to networktables on a roboRIO 1 because of limited disk space.
+              // If the disk fills up, there's a real risk of getting locked out of the rio!
+              config.dataLogger = new NTDataLogger(NetworkTablesInstance.getDefault());
+            } else {
+              // On a roboRIO 2 there's enough disk space to be able to safely log to disk
+              config.dataLogger = new FileSystemLogger(DataLogManager.getDataLog());
+            }
+          });
+          ` : ""
+}
       }
 
       @Override
@@ -55,8 +58,13 @@ ${
         // Run our commands
         CommandScheduler.getInstance().run();
 
-        // Update our data logs
-        Epilogue.update(this);
+        ${
+  project.settings.epilogueSupport ?
+    `
+            // Update our data logs
+            Epilogue.update(this);
+          ` : ""
+}
       }
 
       @Override
@@ -97,10 +105,10 @@ ${
   )
 }
 
-function generateSubsystemDeclaration(subsystem: Subsystem): string {
+function generateSubsystemDeclaration(project: Project, subsystem: Subsystem): string {
   return indent(
     `
-      @Logged(name = "${ subsystem.name }")
+      ${ project.settings.epilogueSupport ? `@Logged(name = "${ subsystem.name }")` : "" }
       private final ${ className(subsystem.name) } ${ methodName(subsystem.name) } = new ${ className(subsystem.name) }();
     `.trim(),
     2,
