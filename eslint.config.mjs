@@ -6,6 +6,9 @@ import pluginReact from "eslint-plugin-react"
 
 export default [
   {
+    ignores: ["build/**"],
+  },
+  {
     files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"],
     plugins: {
       pluginReact,
