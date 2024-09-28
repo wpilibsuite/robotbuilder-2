@@ -221,7 +221,6 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
           // Select the default tab
           handleChange(null, defaultTab)
-          console.log('Opening settings')
           setSettingsDialogProps({ visible: true, allowCancel: false })
         } }>
           New
