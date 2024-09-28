@@ -1,10 +1,13 @@
+import { Project } from "../bindings/Project"
 import { unindent } from "../codegen/java/util"
 
-export const BundledPreferences = unindent(`
-  {
-    "enableCppIntellisense": false,
-    "currentLanguage": "java",
-    "projectYear": "2025",
-    "teamNumber": 9999
-  }
-`).trim()
+export const generateBundledPreferences = (project: Project): string => {
+  return unindent(`
+    {
+      "enableCppIntellisense": false,
+      "currentLanguage": "java",
+      "projectYear": "2025",
+      "teamNumber": ${ project.settings["robotbuilder.general.team_number"] }
+    }
+  `).trim()
+}

@@ -1,4 +1,4 @@
-import React, { CSSProperties, useState } from "react"
+import React, { CSSProperties, useEffect, useState } from "react"
 import { GeneratedFile, Project } from "../../bindings/Project"
 import { Box } from "@mui/material"
 import SyntaxHighlighter from "react-syntax-highlighter"
@@ -64,6 +64,20 @@ const sortTree = (roots: FileTreeEntry[], sorter: (a: FileTreeEntry, b: FileTree
 export function Robot({ project }: { project: Project }) {
   const [selectedFile, setSelectedFile] = useState(project.generatedFiles.find(f => f.name === ROBOT_CLASS_PATH))
 
+  // Reload the current file when the project changes
+  useEffect(() => {
+    const currentFile = selectedFile
+    const correspondingFile = project.generatedFiles.find(f => f.name === currentFile.name)
+
+    if (correspondingFile !== undefined) {
+      // The project changed but still has a file in the same path. Keep it rendered.
+      setSelectedFile(correspondingFile)
+    } else {
+      // Fall back to render the README. This should still exist, right?
+      setSelectedFile(project.generatedFiles.find(f => f.name === "README.md"))
+    }
+  }, [project])
+
   return (
     <PanelGroup direction="horizontal" style={{ height: "100%" }}>
       <Panel defaultSize={ 30 } minSize={ 20 }>
@@ -85,7 +99,9 @@ export function Robot({ project }: { project: Project }) {
       <PanelResizeHandle className="code-panel-divider" />
       <Panel defaultSize={ 70 } minSize={ 50 } style={{ height: "calc(100% - 50px)", overflowY: "clip" }}>
         <Box style={{ height: "100%" }}>
-          <code style={{ padding: "0.5em", paddingLeft: "3em", fontSize: "10pt", color: "gray" }}>/{ selectedFile.name }</code>
+          <code style={{ padding: "0.5em", paddingLeft: "3em", fontSize: "10pt", color: "gray" }}>
+            /{ selectedFile.name }
+          </code>
           <div style={{ height: "100%", overflowY: "scroll" }}>
             <SyntaxHighlighter
               language={ selectedFile.name.split(".").slice(-1)[0] }

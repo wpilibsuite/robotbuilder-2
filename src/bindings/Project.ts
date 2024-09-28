@@ -4,12 +4,14 @@ import { v4 as uuidV4 } from "uuid"
 import * as IR from "../bindings/ir"
 import { BundledMain } from "../bundled_files/Main.java"
 import { BundledGitignore } from "../bundled_files/.gitignore"
-import { BundledPreferences } from "../bundled_files/wpilib_preferences.json"
+import { generateBundledPreferences } from "../bundled_files/wpilib_preferences.json"
 import { generateRobotClass } from "../codegen/java/RobotGenerator"
 import { BundledGradleBuild } from "../bundled_files/build.gradle"
 import { generateReadme } from "../bundled_files/README.md"
 import { BundledLaunchJson, BundledSettingsJson } from "../bundled_files/vscode"
 import { BundledWpilibCommandsV2 } from "../bundled_files/vendordeps"
+import { className } from "../codegen/java/util"
+import { generateSubsystem } from "../codegen/java/SubsystemGenerator"
 
 export type GeneratedFile = {
   name: string
@@ -19,12 +21,56 @@ export type GeneratedFile = {
 }
 
 export type Project = {
-  name: string
   controllers: Controller[]
   subsystems: Subsystem[]
   commands: IR.Group[]
   generatedFiles: GeneratedFile[]
+  settings: Settings
 };
+
+export type SettingsKey = string
+export type SettingsType = string | number | boolean | null
+export type SettingsTypeName = "string" | "number" | "boolean"
+
+export type Settings = Record<SettingsKey, SettingsType>
+
+export type SettingsCategory = {
+  key: string
+  name: string
+  settings: SettingConfig[]
+}
+
+export type SettingConfig = {
+  /**
+   * A unique key to identify this setting. For example, a UUID or a unique identifier like "wpilib.epilogue.enabled".
+   */
+  key: SettingsKey
+
+  /**
+   * The name of the setting to display to users.
+   */
+  name: string
+
+  /**
+   * A description of this setting and what it does or how it's used.
+   */
+  description: string
+
+  /**
+   * Whether or not the setting is required.
+   */
+  required: boolean
+
+  /**
+   * The data type of the setting object. This will be used to determine the UI element that edits this setting.
+   */
+  type: SettingsTypeName
+
+  /**
+   * The default value of the setting.
+   */
+  defaultValue: SettingsType
+}
 
 const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
   return [
@@ -41,7 +87,7 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
     {
       name: ".wpilib/wpilib_preferences.json",
       description: "",
-      contents: BundledPreferences,
+      contents: "",
     },
     {
       name: ".gitignore",
@@ -83,26 +129,48 @@ const makeDefaultGeneratedFiles = (): GeneratedFile[] => {
 
 export const makeNewProject = (): Project => {
   const project: Project = {
-    name: "New Project",
     controllers: [
       { name: "New Controller", uuid: uuidV4(), type: "ps5", className: "CommandPS5Controller", fqn: "", port: 1 , buttons: [] },
     ],
     subsystems: [],
     commands: [],
     generatedFiles: makeDefaultGeneratedFiles(),
-  }
-
-  // Update the robot class contents
-  project.generatedFiles.find(f => f.name === "src/main/java/frc/robot/Robot.java").contents = generateRobotClass(project)
-
-  // Update the readme
-  project.generatedFiles.find(f => f.name === "README.md").contents = generateReadme(project)
+    settings: {
+      "robotbuilder.general.project_name": "",
+      "robotbuilder.general.team_number": null,
+      // "robotbuilder.general.cache_sensor_values": false,
+      "wpilib.epilogue.enabled": true,
+    },
+  } 
+  
+  // Update pregenerated files to give them a valid initial state
+  // These files may need to be updated over time while the project is edited
+  updateFile(project, ".wpilib/wpilib_preferences.json",  generateBundledPreferences(project))
+  updateFile(project, "src/main/java/frc/robot/Robot.java", generateRobotClass(project))
+  updateFile(project, "README.md", generateReadme(project))
 
   return project
 }
 
 export function updateFile(project: Project, path: string, contents: string): void {
   project.generatedFiles.find(f => f.name === path).contents = contents
+}
+
+/**
+ * Regenerates all dynamic project files.
+ * 
+ * @param project the project to regenerate
+ */
+export function regenerateFiles(project: Project): void {
+  // Regenerate subsystems
+  project.subsystems.forEach(subsytem => {
+    updateFile(project, `src/main/java/frc/robot/subsystems/${ className(subsytem.name) }.java`, generateSubsystem(subsytem, project))
+  })
+  
+  updateFile(project, "src/main/java/frc/robot/Robot.java", generateRobotClass(project))
+
+  updateFile(project, `README.md`, generateReadme(project))
+  updateFile(project, ".wpilib/wpilib_preferences.json", generateBundledPreferences(project))
 }
 
 export function findCommand(project: Project, commandOrId: AtomicCommand | IR.Group | string): AtomicCommand | IR.Group | null {

@@ -685,3 +685,10 @@ div.gutter {
   width: 0.125em;
   background: #ccc;
 }
+
+.project-settings-dialog {
+  td.MuiTableCell-root.MuiTableCell-body {
+    // Reduce the default 16px padding
+    padding: 8px;
+  }
+}
