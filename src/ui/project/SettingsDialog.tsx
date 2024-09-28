@@ -13,7 +13,7 @@ type SettingsDialogProps = {
 }
 
 export default function({ project, visible, allowCancel, onSave, onCancel  }: SettingsDialogProps) {
-  const blankStringRegex = /^[ ]*$/g
+  const blankStringRegex = /^[ ]*$/
 
   const [settings, setSettings] = useState({ ...project.settings })
   const [isValid, setValid] = useState(false)
