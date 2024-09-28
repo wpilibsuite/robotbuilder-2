@@ -277,6 +277,7 @@ export function ProjectView({ initialProject }: ProjectProps) {
 
           // Select the default tab
           handleChange(null, defaultTab)
+          setShowSettings(true)
         } }>
           New
         </Button>
