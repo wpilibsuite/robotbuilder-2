@@ -1,0 +1,101 @@
+import { ComponentDefinition } from "../ComponentDefinition"
+
+export const ANALOG_INPUT: ComponentDefinition = {
+  id: "SAMPLE-analoginput",
+  name: "Analog Input",
+  description: "A sensor that reads analog signals from various devices and converts them into voltage values on the RoboRIO.",
+  fqn: "edu.wpi.first.wpilibj.AnalogInput",
+  className: "AnalogInput",
+  wpilibApiTypes: ["AnalogInput"],
+  type: "sensor",
+  hints: ["state", "control"],
+  methods: [
+    {
+      name: "Get Value",
+      description: "Gets the raw analog value from the input channel, scaled between 0 and 4095.",
+      codeName: "getValue",
+      returns: "int",
+      parameters: [],
+      hints: ["state", "controller-setpoint"],
+    },
+    {
+      name: "Get Voltage",
+      description: "Gets the analog voltage from the input channel, typically in the range of 0V to 5V.",
+      codeName: "getVoltage",
+      returns: "double",
+      parameters: [],
+      hints: ["state", "controller-setpoint"],
+    },
+    {
+      name: "Get Average Value",
+      description: "Gets the average of the analog values over the oversample count, scaled between 0 and 4095.",
+      codeName: "getAverageValue",
+      returns: "int",
+      parameters: [],
+      hints: ["state", "controller-setpoint"],
+    },
+    {
+      name: "Get Average Voltage",
+      description: "Gets the average of the analog voltages over the oversample count.",
+      codeName: "getAverageVoltage",
+      returns: "double",
+      parameters: [],
+      hints: ["state", "controller-setpoint"],
+    },
+    {
+      name: "Set Oversample Bits",
+      description: "Sets the number of oversample bits for averaging the analog values.",
+      codeName: "setOversampleBits",
+      returns: "void",
+      parameters: [
+        {
+          name: "Bits",
+          type: "int",
+          codeName: "bits",
+          description: "The number of oversample bits to apply for increased precision.",
+        },
+      ],
+      hints: ["control"],
+    },
+    {
+      name: "Set Average Bits",
+      description: "Sets the number of bits used for averaging analog readings.",
+      codeName: "setAverageBits",
+      returns: "void",
+      parameters: [
+        {
+          name: "Bits",
+          type: "int",
+          codeName: "bits",
+          description: "The number of bits to use for averaging readings.",
+        },
+      ],
+      hints: ["control"],
+    },
+    {
+      name: "Get Oversample Bits",
+      description: "Gets the number of oversample bits currently being used.",
+      codeName: "getOversampleBits",
+      returns: "int",
+      parameters: [],
+      hints: ["state"],
+    },
+    {
+      name: "Get Average Bits",
+      description: "Gets the number of bits currently used for averaging readings.",
+      codeName: "getAverageBits",
+      returns: "int",
+      parameters: [],
+      hints: ["state"],
+    },
+  ],
+  properties: [
+    {
+      name: "Analog Channel",
+      description: "The analog input channel used for the sensor, from 0 to 3 on the RoboRIO.",
+      codeName: "channel",
+      type: "int",
+      setInConstructor: true,
+    },
+  ],
+}
