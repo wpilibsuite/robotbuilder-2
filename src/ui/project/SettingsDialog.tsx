@@ -67,7 +67,7 @@ export default function SettingsDialog({ project, visible, allowCancel, onSave, 
                 for (const categoryKey in ALL_SETTINGS) {
                   const category: SettingsCategory = ALL_SETTINGS[categoryKey]
                   elements.push((
-                    <TableRow>
+                    <TableRow key={ categoryKey }>
                       <TableCell>
                         <h3>
                           { category.name }
