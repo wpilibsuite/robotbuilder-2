@@ -12,6 +12,7 @@ import { BundledLaunchJson, BundledSettingsJson } from "../bundled_files/vscode"
 import { BundledWpilibCommandsV2 } from "../bundled_files/vendordeps"
 import { className } from "../codegen/java/util"
 import { generateSubsystem } from "../codegen/java/SubsystemGenerator"
+import { ALL_SETTINGS } from "../settings/Settings"
 
 export type GeneratedFile = {
   name: string
@@ -135,13 +136,15 @@ export const makeNewProject = (): Project => {
     subsystems: [],
     commands: [],
     generatedFiles: makeDefaultGeneratedFiles(),
-    settings: {
-      "robotbuilder.general.project_name": "",
-      "robotbuilder.general.team_number": null,
-      // "robotbuilder.general.cache_sensor_values": false,
-      "wpilib.epilogue.enabled": true,
-    },
-  } 
+    settings: { },
+  }
+
+  for (const categoryKey in ALL_SETTINGS) {
+    const category: SettingsCategory = ALL_SETTINGS[categoryKey]
+    category.settings.forEach(setting => {
+      project.settings[setting.key] = setting.defaultValue
+    })
+  }
   
   // Update pregenerated files to give them a valid initial state
   // These files may need to be updated over time while the project is edited
