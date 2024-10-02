@@ -13,7 +13,7 @@ export function generateRobotClass(project: Project): string {
     ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.Epilogue;" : "" }
     ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.Logged;" : "" }
     ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.NotLogged;" : "" }
-    import edu.wpi.first.wpilibj.RuntimeType;
+    ${ project.settings["wpilib.epilogue.enabled"] ? "import edu.wpi.first.epilogue.logging.*;" : "" }
     import edu.wpi.first.wpilibj.TimedRobot;
     import edu.wpi.first.wpilibj2.command.Command;
     import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -38,16 +38,8 @@ ${
 
         ${ project.settings["wpilib.epilogue.enabled"] ? `
           Epilogue.configure(config -> {
-            // TODO: Add a UI for customizing epilogue
-
-            if (getRuntimeType() == RuntimeType.kRoboRIO) {
-              // Only log to networktables on a roboRIO 1 because of limited disk space.
-              // If the disk fills up, there's a real risk of getting locked out of the rio!
-              config.dataLogger = new NTDataLogger(NetworkTablesInstance.getDefault());
-            } else {
-              // On a roboRIO 2 there's enough disk space to be able to safely log to disk
-              config.dataLogger = new FileSystemLogger(DataLogManager.getDataLog());
-            }
+            ${ generateEpilogueLoggers(project) }
+            ${ generateEpilogueRoot(project) }
           });
           ` : ""
 }
@@ -181,4 +173,37 @@ function findCommand(project: Project, commandUUID: string): [Project | Subsyste
   }
 
   return []
+}
+
+function generateEpilogueLoggers(project: Project): string {
+  if (project.settings["wpilib.epilogue.log_to_disk"]) {
+    if (project.settings["wpilib.epilogue.log_to_nt"]) {
+      // Log to both backends; need a multilogger
+      return `
+        config.dataLogger = new MultiLogger(
+          new NTDataLogger(NetworkTablesInstance.getDefault()),
+          new FileLogger(DataLogManager.getDataLog())
+        );
+      `
+    } else {
+      // Just disk logging
+      return "config.dataLogger = new FileLogger(DataLogManager.getDataLog());"
+    }
+  } else if (project.settings["wpilib.epilogue.log_to_nt"]) {
+    // Just NT logging
+    return "config.dataLogger = new NTDataLogger(NetworkTableInstance.getDefault());"
+  } else {
+    return `
+      // No logging backend. Data will be queried as normal, but will not be logged anywhere.
+      config.dataLogger = new NullLogger();
+      `
+  }
+}
+
+function generateEpilogueRoot(project: Project): string {
+  let root: string | null = project.settings["wpilib.epilogue.logging_root"]
+  if (!root || root.trim().length === 0) {
+    root = "Robot"
+  }
+  return `config.root = "${ root }";`
 }
